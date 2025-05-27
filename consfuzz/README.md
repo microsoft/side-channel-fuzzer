@@ -59,6 +59,10 @@ Example:
 
 ## ACTUAL EXAMPLE
 
+```
+echo 0 | sudo tee /proc/sys/kernel/randomize_va_space
+
 ./consfuzz.py pub_gen -c dbg/consfuzz.yaml -w ~/results/ -t 10 --target-cov 50 -- ~/eval-rvzr-sw/drivers/bearssl/bearssl -k @# -i ~/eval-rvzr-sw/drivers/bearssl/test/iv.bin -o enc.bin @@
 ./consfuzz.py stage2 -c dbg/consfuzz.yaml -w ~/results/ -n 2 -- ~/eval-rvzr-sw/drivers/bearssl/bearssl -k @# -i ~/eval-rvzr-sw/drivers/bearssl/test/iv.bin -o enc.bin @@
 ./consfuzz.py report -c dbg/consfuzz.yaml -w ~/results -b ~/eval-rvzr-sw/drivers/bearssl/bearssl
+```

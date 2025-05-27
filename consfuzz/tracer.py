@@ -70,9 +70,10 @@ class Tracer:
                 log_file = os.path.join(input_group_dir, f"{pair_name}.log")
 
                 # Execute the target binary and collect traces
-                if self._execute(expanded_cmd, trace_file, log_file):
-                    print(f"[ERROR]: Error while tracing `{expanded_cmd}`")
-                    return 1
+                _ = self._execute(expanded_cmd, trace_file, log_file)
+                # NOTE: we intentionally ignore the return value here, as many files generated
+                # by AFL++ are invalid, which leads to errors during execution; this is
+                # expected and does not affect the correctness of the fuzzing process
 
         return 0
 
