@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final, List, Optional
 
 import os
+import sys
 import subprocess
 
 from .sec_gen import generate_one_secret
@@ -81,22 +82,18 @@ class PubGen:
         env["AFL_PRELOAD"] = self._libcompcov
         env["AFL_KEEP_TRACES"] = "1"
         env["AFL_SKIP_CPUFREQ"] = "1"
-        # env["AFL_QEMU_PERSISTENT_ADDR"] = "0x401d10"
-        # env["AFL_QEMU_PERSISTENT_GPR"] = "1"
 
         afl_flags = [
             "-V",
             str(timeout_s), "-c", cmd[0], "-i", self._config.afl_seed_dir, "-o", self._wd
         ]
-        # if self._config.afl_qemu_mode:
-        #     afl_flags += ["-Q"]
 
         cmd = [self._afl_bin] + afl_flags + ["--"] + cmd
         cmd = [s if s != "@#" else self._baseline_private_input for s in cmd]
-        print(cmd)
+        # print(cmd, flush=True)
 
         try:
-            subprocess.check_call(cmd, timeout=timeout_s, env=env)
+            subprocess.check_call(cmd, timeout=timeout_s, env=env, shell=False)
         except subprocess.TimeoutExpired:
             # ignore timeout errors
             # it just means a clock mismatch between AFL and this function
@@ -104,5 +101,10 @@ class PubGen:
         except subprocess.CalledProcessError as e:
             print(f"[AFL ERROR]: {e}")
             return 1
+        finally:
+            # Workaround: AFL++ corrupts the terminal output under some environments;
+            # Force cursor restoration to mitigate this issue.
+            sys.stdout.write('\033[?25h')  # ANSI escape to show cursor
+            sys.stdout.flush()
 
         return 0
