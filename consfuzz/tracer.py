@@ -14,6 +14,24 @@ if TYPE_CHECKING:
     from .config import Config
 
 
+class _ProgressBar:
+    """
+    Class responsible for displaying a progress bar in the console.
+    """
+
+    def __init__(self, total: int) -> None:
+        self._total = total
+        self._current = 0
+
+    def update(self, increment: int = 1) -> None:
+        """Update the progress bar by a given increment."""
+        self._current += increment
+        percent = (self._current / self._total) * 100
+        n_ticks = int(percent // 2)  # 50 ticks for 100%
+        print(f"\rProgress: [{'#' * n_ticks}{'_' * (50 - n_ticks)}] {self._current}/{self._total} "
+              f"({percent:.2f}%)", end="", flush=True)
+
+
 class Tracer:
     """
     Class responsible for executing the target binary on the leakage model and retrieving the
@@ -48,7 +66,10 @@ class Tracer:
             input_group_dirs.append(input_group_dir)
 
         # Iterate over all input groups and collect traces
+        progress_bar = _ProgressBar(len(input_group_dirs))
         for input_group_dir in input_group_dirs:
+            progress_bar.update()
+
             # Get a list of public-private input pairs
             pairs = []
             pub_input = os.path.join(input_group_dir, "public")
