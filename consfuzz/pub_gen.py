@@ -34,11 +34,6 @@ class PubGen:
         self._afl_bin = os.path.join(config.afl_root, "afl-fuzz")
         self._libcompcov = os.path.join(config.afl_root, "libcompcov.so")
 
-        # replace ~ with the home directory
-        self._wd = os.path.expanduser(self._wd)
-        self._afl_bin = os.path.expanduser(self._afl_bin)
-        self._libcompcov = os.path.expanduser(self._libcompcov)
-
     def generate(self, cmd: List[str], target_cov: int, timeout_s: int) -> int:
         """
         Generate public inputs for the target binary invoked with the given command.

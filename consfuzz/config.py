@@ -5,20 +5,130 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
-from typing import Final, Dict, Optional
 
+from typing import Final, Dict, Optional, Literal
 import os
 import pathlib
+import shutil
+
 import yaml
+from typing_extensions import assert_never
+
+FuzzingStages = Literal["all", "pub_gen", "stage2", "report"]
 
 
-class ConfigException(SystemExit):
+# ==================================================================================================
+# Service Classes
+# ==================================================================================================
+class _ConfigException(SystemExit):
     """ Custom exception class for configuration errors. """
 
     def __init__(self, var, message: str) -> None:
         super().__init__(f"[ERROR] Invalid value of config variable {var}\nIssue: {message}\n")
 
 
+class _WorkingDirManager:
+    """
+    Context manager for handling the working directory.
+    It ensures that the working directory is created and preserved properly.
+    """
+
+    def __init__(self, config: Config) -> None:
+        self.config = config
+
+    def set_working_dirs(self, stage: FuzzingStages) -> None:
+        """
+        Ensure that the working directory is set up correctly.
+
+        Algorithm:
+        1. If the directory does not exist, throw an exception.
+        2. If the directory is empty, do nothing.
+        3. If the directory is not empty:
+           - If `force_working_dir_overwrite` is set, remove the contents of the subdirectory
+                corresponding to the given stage.
+           - If `archive_dir` is set, archive the contents of the subdirectory corresponding
+              to the given stage into `archive_dir` and remove the contents of the subdirectory.
+           - If `archive_dir` is not set, throw an exception.
+
+        """
+        assert self.config.working_dir is not None, \
+            "working_dir must be checked before calling this method."
+
+        # Throw an exception if the working directory does not exist
+        if not pathlib.Path(self.config.working_dir).is_dir():
+            raise _ConfigException(
+                "working_dir",
+                f"Working directory {self.config.working_dir} does not exist. "
+                "Please create it before running the fuzzer.",
+            )
+
+        # Empty working directory? We're good to go
+        if not os.listdir(self.config.working_dir):
+            return
+
+        # Identify the target directory for the given stage
+        if stage == "all":
+            stage_dir = self.config.working_dir
+        elif stage == "pub_gen":
+            stage_dir = self.config.stage1_wd
+        elif stage == "stage2":
+            stage_dir = self.config.stage2_wd
+        elif stage == "report":
+            stage_dir = self.config.stage3_wd
+        else:
+            assert_never(stage)
+
+        # Stage directory does not exist? Create it
+        if not os.path.exists(stage_dir):
+            os.makedirs(stage_dir, exist_ok=True)
+            return
+
+        # Stage directory exists, but is empty? We're good to go
+        if not os.listdir(stage_dir):
+            return
+
+        # If force overwrite is set, remove the contents of the target directory
+        if self.config.force_working_dir_overwrite:
+            print(f"[INFO] Directory {stage_dir} is not empty; removing its contents.")
+            shutil.rmtree(stage_dir)
+            os.makedirs(stage_dir, exist_ok=True)
+            return
+
+        # If archive directory is not set and force overwrite is not set, raise an exception
+        if self.config.archive_dir is None:
+            raise _ConfigException(
+                "archive_dir",
+                "Working directory is not empty and force_working_dir_overwrite is not set. "
+                "Please set archive_dir to preserve the contents of the working directory.",
+            )
+
+        # Archive based on the stage
+        self._archive(stage_dir, stage, self.config.working_dir, self.config.archive_dir)
+        shutil.rmtree(stage_dir)
+        os.makedirs(stage_dir, exist_ok=True)
+
+    def _archive(self, source_dir: str, target_name: str, working_dir: str,
+                 archive_dir: str) -> None:
+        """ Archive the contents of source_dir to the archive directory """
+        # Ensure that archives have unique names
+        primary_timestamp = int(pathlib.Path(working_dir).stat().st_mtime)
+        archive_name = f"{primary_timestamp}_{target_name}"
+
+        # Ensure that different per-stage archives from the same work dir have unique names
+        if source_dir != working_dir:
+            secondary_timestamp = int(pathlib.Path(source_dir).stat().st_mtime)
+            archive_name += f"_{secondary_timestamp}"
+
+        archive_path = archive_dir + "/" + archive_name
+
+        # Create the archive
+        shutil.make_archive(archive_path, 'gztar', str(source_dir))
+        print(f"[INFO] Archived {working_dir} to {archive_path}.tar.gz.")
+
+
+# ==================================================================================================
+# Main Configuration Class
+# ==================================================================================================
 class Config:
     """
     Class responsible for storing global fuzzing configuration.
@@ -30,11 +140,41 @@ class Config:
     __config_instantiated: bool = False
     """ Class-local flag that allows us to detect attempts to instantiate Config more than once. """
 
-    working_dir: Final[str]
+    # ==============================================================================================
+    # Fuzzing directories
+    working_dir: Optional[str] = None
+    """ Working directory for the fuzzer. It will contain all fuzzing artifacts
+    as well as log files and fuzzing reports. """
+
+    archive_dir: Optional[str] = None
+    """ Directory where the fuzzing artifacts from previous runs will be archived.
+    If the working directory is non-empty and `force_working_dir_overwrite` is False,
+    the contents of the working_dir will be moved into archive_dir into a timestamped archive. """
+
+    force_working_dir_overwrite: bool = False
+    """ Flag indicating whether the fuzzer should overwrite the working directory
+    if it already exists.
+    If set to True, the fuzzer will remove the contents of the working directory before starting.
+    If set to False, the fuzzer will refuse to run if the working directory is not empty and
+    the `archive_dir` is not set.
+    """
+
+    # internal working directories for each stage of the fuzzing process
+    # (cannot be set directly from the config YAML file)
     stage1_wd: Final[str]
     stage2_wd: Final[str]
     stage3_wd: Final[str]
 
+    # ==============================================================================================
+    # Fuzzing parameters
+    secret_size_bytes: int = 32
+    """ Size of the secret (private) input, in bytes. """
+
+    contract_observation_clause: str = "ct"
+    contract_execution_clause: str = "seq"
+
+    # ==============================================================================================
+    # Tool paths and parameters
     model_root: str = "~/.local/dynamorio/"
     """ Path to the directory containing the installation of the leakage model. """
 
@@ -47,35 +187,19 @@ class Config:
     # afl_qemu_mode: bool = False
     # """ Flag indicating whether AFL++ should be run in QEMU mode. """
 
-    secret_size_bytes: int = 32
-    """ Size of the secret (private) input, in bytes. """
-
-    contract_observation_clause: str = "ct"
-    contract_execution_clause: str = "seq"
-
-    def __init__(self, config_yaml: str, working_dir: str) -> None:
+    def __init__(self, config_yaml: str, stage: FuzzingStages) -> None:
         if self.__config_instantiated:
             raise RuntimeError("Config class should be instantiated only once.")
         self.__config_instantiated = True
 
-        self.working_dir = working_dir
-        self._create_working_dirs()
-
+        # Parse the config YAML file and ensure that it is set up correctly
         yaml_data = self._parse_yaml(config_yaml)
         self._set_from_yaml(yaml_data)
         self._validate_config()
 
-    def _create_working_dirs(self) -> None:
-        """
-        Create the working directories for each stage of the fuzzing process.
-        """
-        if not self.working_dir:
-            raise ConfigException("working_dir", "Working directory is not set.")
-        if not pathlib.Path(self.working_dir).expanduser().is_dir():
-            raise ConfigException("working_dir", f"{self.working_dir} does not exist.")
-        self.stage1_wd = os.path.join(self.working_dir, "stage1")  # type: ignore
-        self.stage2_wd = os.path.join(self.working_dir, "stage2")  # type: ignore
-        self.stage3_wd = os.path.join(self.working_dir, "stage3")  # type: ignore
+        # Ensure that the working directory is managed properly
+        wd_manager = _WorkingDirManager(self)
+        wd_manager.set_working_dirs(stage)
 
     def _parse_yaml(self, config_yaml: str) -> Dict:
         """
@@ -96,30 +220,54 @@ class Config:
         Set configuration values from the parsed YAML data.
         :param yaml_data: Parsed configuration data as a dictionary
         """
+        self.working_dir = yaml_data.get("working_dir", None)
+        if self.working_dir is not None:
+            self.working_dir = str(pathlib.Path(self.working_dir).expanduser())
+        self.stage1_wd = os.path.join(self.working_dir, "stage1")  # type: ignore
+        self.stage2_wd = os.path.join(self.working_dir, "stage2")  # type: ignore
+        self.stage3_wd = os.path.join(self.working_dir, "stage3")  # type: ignore
+
+        self.archive_dir = yaml_data.get("archive_dir", None)
+        if self.archive_dir is not None:
+            self.archive_dir = str(pathlib.Path(self.archive_dir).expanduser())
+
+        self.force_working_dir_overwrite = yaml_data.get("force_working_dir_overwrite",
+                                                         self.force_working_dir_overwrite)
+
         self.model_root = yaml_data.get("model_root", self.model_root)
+        if not self.model_root.startswith("/"):
+            self.model_root = str(pathlib.Path(self.model_root).expanduser())
+
         self.afl_root = yaml_data.get("afl_root", self.afl_root)
+        if not self.afl_root.startswith("/"):
+            self.afl_root = str(pathlib.Path(self.afl_root).expanduser())
+
         self.afl_seed_dir = yaml_data.get("afl_seed_dir", self.afl_seed_dir)
+        if self.afl_seed_dir is not None:
+            self.afl_seed_dir = str(pathlib.Path(self.afl_seed_dir).expanduser())
+
         self.contract_observation_clause = yaml_data.get("contract_observation_clause",
                                                          self.contract_observation_clause)
         self.contract_execution_clause = yaml_data.get("contract_execution_clause",
                                                        self.contract_execution_clause)
 
-        # afl_qemu_mode = yaml_data.get("afl_qemu_mode", None)
-        # if afl_qemu_mode is not None:
-        #     if isinstance(afl_qemu_mode, bool):
-        #         self.afl_qemu_mode = afl_qemu_mode
-        #     else:
-        #         raise ConfigException("afl_qemu_mode", "Expected a boolean value.")
+        # check for attempts to set internal config variables
+        internal_opts = ["stage1_wd", "stage2_wd", "stage3_wd"]
+        for opt in internal_opts:
+            if opt in yaml_data:
+                raise _ConfigException(
+                    opt, f"Option {opt} is for internal use only and should not be set in"
+                    " the user config; use working_dir instead.")
 
     def _validate_config(self) -> None:
         """
         Validate the configuration values.
         """
         if not pathlib.Path(self.model_root).expanduser().is_dir():
-            raise ConfigException("model_root", f"{self.model_root} does not exist.")
+            raise _ConfigException("model_root", f"{self.model_root} does not exist.")
         if not pathlib.Path(self.afl_root).expanduser().is_dir():
-            raise ConfigException("afl_root", f"{self.afl_root} does not exist.")
+            raise _ConfigException("afl_root", f"{self.afl_root} does not exist.")
         if self.afl_seed_dir is None:
-            raise ConfigException("afl_seed_dir", "Seed directory is not set.")
+            raise _ConfigException("afl_seed_dir", "Seed directory is not set.")
         if not pathlib.Path(self.afl_seed_dir).expanduser().is_dir():
-            raise ConfigException("afl_seed_dir", f"{self.afl_seed_dir} does not exist.")
+            raise _ConfigException("afl_seed_dir", f"{self.afl_seed_dir} does not exist.")

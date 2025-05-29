@@ -39,7 +39,6 @@ class FuzzerCore:
         :param timeout_s: Timeout for the fuzzing process
         :return: 0 if the target coverage or timeout is reached, 1 if error occurs
         """
-        pathlib.Path(self._config.stage1_wd).mkdir(parents=True, exist_ok=True)
         pub_gen = PubGen(self._config)
         return pub_gen.generate(cmd, target_cov, timeout_s)
 
@@ -53,7 +52,6 @@ class FuzzerCore:
         :param num_sec_inputs: Number of secret (private) inputs to generate for each public input
         :return: 0 if successful, 1 if error occurs
         """
-        pathlib.Path(self._config.stage2_wd).mkdir(parents=True, exist_ok=True)
         sec_gen = SecGen(self._config)
         tracer = Tracer(self._config)
 
@@ -68,7 +66,6 @@ class FuzzerCore:
         :param target_binary: Path to the target binary
         :return: 0 if successful, 1 if error occurs
         """
-        pathlib.Path(self._config.stage3_wd).mkdir(parents=True, exist_ok=True)
         reporter = Reporter(self._config)
         reporter.analyze()
         reporter.generate_report(target_binary)

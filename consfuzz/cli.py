@@ -6,11 +6,14 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
-from typing import Any
-from argparse import ArgumentParser
-import os
 
-from .config import Config
+from typing import Any
+import os
+from argparse import ArgumentParser
+
+from typing_extensions import get_args
+
+from .config import Config, FuzzingStages
 from .fuzzer import FuzzerCore
 
 CMD_HELP =\
@@ -20,8 +23,8 @@ CMD_HELP =\
 
 
 def _parse_args() -> Any:  # pylint: disable=r0915
-    parser = ArgumentParser(add_help=False)
-    subparsers = parser.add_subparsers(dest='subparser_name')
+    parser = ArgumentParser(add_help=True)
+    subparsers = parser.add_subparsers(dest='subparser_name', help="Subcommand to run")
     subparsers.required = True
 
     # ==============================================================================================
@@ -34,13 +37,6 @@ def _parse_args() -> Any:  # pylint: disable=r0915
         required=False,
         help="Path to the configuration file (YAML) that will be used during fuzzing.",
     )
-    common_parser.add_argument(
-        "-w",
-        "--working-dir",
-        type=str,
-        required=True,
-        help="Path to the working directory where the fuzzing will be performed.",
-    )
 
     # ==============================================================================================
     # Phase 1: Public input generation (AFL++ interface)
@@ -52,12 +48,13 @@ def _parse_args() -> Any:  # pylint: disable=r0915
         default=10,
         help="Fuzzing timeout, in seconds (default: 10)",
     )
-    pub_gen.add_argument(
-        "--target-cov",
-        type=int,
-        default=10,
-        help="Target coverage to achieve, in percentage (default: 10)",
-    )
+    # TODO: target-cov is not used yet, but it will be used in the future to control the coverage
+    # pub_gen.add_argument(
+    #     "--target-cov",
+    #     type=int,
+    #     default=10,
+    #     help="Target coverage to achieve, in percentage (default: 10)",
+    # )
 
     # everything after '--' is saved into 'target_cmd' argument
     pub_gen.add_argument(
@@ -118,14 +115,16 @@ def main() -> int:
     args = _parse_args()
     if not _validate_args(args):
         return 1
-    config = Config(args.config, args.working_dir)
+
+    assert args.subparser_name in get_args(FuzzingStages)
+    config = Config(args.config, args.subparser_name)
     fuzzer = FuzzerCore(config)
 
     # Start the fuzzer in the mode requested by the user
     if args.subparser_name == 'pub_gen':
         return fuzzer.generate_public_inputs(
             cmd=args.target_cmd,
-            target_cov=args.target_cov,
+            target_cov=0,  # TODO: will be replaced with args.target_cov when implemented
             timeout_s=args.timeout,
         )
     if args.subparser_name == 'stage2':
