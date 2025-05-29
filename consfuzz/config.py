@@ -96,17 +96,13 @@ class Config:
         Set configuration values from the parsed YAML data.
         :param yaml_data: Parsed configuration data as a dictionary
         """
-        model_root = yaml_data.get("model_root", None)
-        if model_root is not None:
-            self.model_root = model_root
-
-        afl_root = yaml_data.get("afl_root", None)
-        if afl_root is not None:
-            self.afl_root = afl_root
-
-        afl_seed_dir = yaml_data.get("afl_seed_dir", None)
-        if afl_seed_dir is not None:
-            self.afl_seed_dir = afl_seed_dir
+        self.model_root = yaml_data.get("model_root", self.model_root)
+        self.afl_root = yaml_data.get("afl_root", self.afl_root)
+        self.afl_seed_dir = yaml_data.get("afl_seed_dir", self.afl_seed_dir)
+        self.contract_observation_clause = yaml_data.get("contract_observation_clause",
+                                                         self.contract_observation_clause)
+        self.contract_execution_clause = yaml_data.get("contract_execution_clause",
+                                                       self.contract_execution_clause)
 
         # afl_qemu_mode = yaml_data.get("afl_qemu_mode", None)
         # if afl_qemu_mode is not None:
