@@ -7,8 +7,6 @@ SPDX-License-Identifier: MIT
 from __future__ import annotations
 from typing import TYPE_CHECKING, List
 
-import pathlib
-
 from .pub_gen import PubGen
 from .sec_gen import SecGen
 from .tracer import Tracer
@@ -27,6 +25,26 @@ class FuzzerCore:
 
     def __init__(self, config: Config) -> None:
         self._config = config
+
+    def all(self, cmd: List[str], target_cov: int, timeout_s: int, num_sec_inputs: int) -> int:
+        """
+        Run all fuzzing stages: public input generation, private input generation, and reporting.
+
+        :param cmd: Command to run the target binary, with placeholders for public (@@)
+                    and private (@#) inputs
+        :param target_cov: Target coverage to achieve
+        :param timeout_s: Timeout for the fuzzing process
+        :param num_sec_inputs: Number of secret (private) inputs to generate for each public input
+        :return: 0 if successful, 1 if error occurs
+        """
+        if self.generate_public_inputs(cmd, target_cov, timeout_s) != 0:
+            return 1
+        print("\n")  # Print a newline for better readability in the console output
+
+        if self.stage2(cmd, num_sec_inputs) != 0:
+            return 1
+
+        return self.report(cmd[0])
 
     def generate_public_inputs(self, cmd: List[str], target_cov: int, timeout_s: int) -> int:
         """

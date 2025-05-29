@@ -14,7 +14,7 @@ import shutil
 import yaml
 from typing_extensions import assert_never
 
-FuzzingStages = Literal["all", "pub_gen", "stage2", "report"]
+FuzzingStages = Literal["fuzz", "pub_gen", "stage2", "report"]
 
 
 # ==================================================================================================
@@ -62,12 +62,16 @@ class _WorkingDirManager:
                 "Please create it before running the fuzzer.",
             )
 
-        # Empty working directory? We're good to go
+        # Empty working directory? No risk of overwriting anything
         if not os.listdir(self.config.working_dir):
+            if stage == "fuzz":
+                os.makedirs(self.config.stage1_wd, exist_ok=True)
+                os.makedirs(self.config.stage2_wd, exist_ok=True)
+                os.makedirs(self.config.stage3_wd, exist_ok=True)
             return
 
         # Identify the target directory for the given stage
-        if stage == "all":
+        if stage == "fuzz":
             stage_dir = self.config.working_dir
         elif stage == "pub_gen":
             stage_dir = self.config.stage1_wd
@@ -90,7 +94,7 @@ class _WorkingDirManager:
         # If force overwrite is set, remove the contents of the target directory
         if self.config.force_working_dir_overwrite:
             print(f"[INFO] Directory {stage_dir} is not empty; removing its contents.")
-            shutil.rmtree(stage_dir)
+            self._reset_dirs(stage_dir, stage)
             os.makedirs(stage_dir, exist_ok=True)
             return
 
@@ -104,8 +108,7 @@ class _WorkingDirManager:
 
         # Archive based on the stage
         self._archive(stage_dir, stage, self.config.working_dir, self.config.archive_dir)
-        shutil.rmtree(stage_dir)
-        os.makedirs(stage_dir, exist_ok=True)
+        self._reset_dirs(stage_dir, stage)
 
     def _archive(self, source_dir: str, target_name: str, working_dir: str,
                  archive_dir: str) -> None:
@@ -124,6 +127,14 @@ class _WorkingDirManager:
         # Create the archive
         shutil.make_archive(archive_path, 'gztar', str(source_dir))
         print(f"[INFO] Archived {working_dir} to {archive_path}.tar.gz.")
+
+    def _reset_dirs(self, stage_dir: str, stage: FuzzingStages) -> None:
+        shutil.rmtree(stage_dir)
+        os.makedirs(stage_dir, exist_ok=True)
+        if stage == "fuzz":
+            os.makedirs(self.config.stage1_wd, exist_ok=True)
+            os.makedirs(self.config.stage2_wd, exist_ok=True)
+            os.makedirs(self.config.stage3_wd, exist_ok=True)
 
 
 # ==================================================================================================

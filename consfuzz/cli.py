@@ -39,6 +39,31 @@ def _parse_args() -> Any:  # pylint: disable=r0915
     )
 
     # ==============================================================================================
+    # All Phases Together: Public input generation, secret input generation, and reporting
+    all_phases = subparsers.add_parser('fuzz', add_help=True, parents=[common_parser])
+    all_phases.add_argument(
+        "-t",
+        "--timeout",
+        type=int,
+        default=10,
+        help="Fuzzing timeout, in seconds (default: 10)",
+    )
+    all_phases.add_argument(
+        "-n",
+        "--num-sec-inputs",
+        type=int,
+        default=10,
+        help="Number of secret inputs to generate per public input (default: 10)",
+    )
+
+    # everything after '--' is saved into 'target_cmd' argument
+    all_phases.add_argument(
+        "target_cmd",
+        nargs="+",
+        help=CMD_HELP,
+    )
+
+    # ==============================================================================================
     # Phase 1: Public input generation (AFL++ interface)
     pub_gen = subparsers.add_parser('pub_gen', add_help=True, parents=[common_parser])
     pub_gen.add_argument(
@@ -134,6 +159,13 @@ def main() -> int:
         )
     if args.subparser_name == 'report':
         return fuzzer.report(target_binary=args.target_binary)
+    if args.subparser_name == 'fuzz':
+        return fuzzer.all(
+            cmd=args.target_cmd,
+            target_cov=0,  # TODO: will be replaced with args.target_cov when implemented
+            timeout_s=args.timeout,
+            num_sec_inputs=args.num_sec_inputs,
+        )
 
     print("ERROR: Unknown subcommand")
     return 1
