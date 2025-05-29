@@ -33,7 +33,28 @@ class _TracedInstruction:
         return self.address == value.address and self.mem_accesses == value.mem_accesses
 
 
-_Trace = List[_TracedInstruction]
+class _Trace:
+    """
+    A trace of a contract execution, containing a list of instructions executed
+    during the execution and their memory accesses.
+    """
+
+    def __init__(self, source: str) -> None:
+        self.source = source
+        self.instructions: List[_TracedInstruction] = []
+
+    def __len__(self) -> int:
+        return len(self.instructions)
+
+    def __iter__(self):
+        return iter(self.instructions)
+
+    def __getitem__(self, item: int) -> _TracedInstruction:
+        return self.instructions[item]
+
+    def append(self, instruction: _TracedInstruction) -> None:
+        """ Append a new instruction to the trace. """
+        self.instructions.append(instruction)
 
 
 class Reporter:
@@ -119,7 +140,7 @@ class _Analyser:
         return leaky_instr
 
     def _parse_trace_file(self, trace_file: str) -> _Trace:
-        trace = []
+        trace = _Trace(trace_file)
         with open(trace_file, "r") as f:
             lines = f.readlines()
             for i, line in enumerate(lines):
@@ -145,7 +166,8 @@ class _Analyser:
         return leaky_instr
 
     def _process_different_length(self, trace1: _Trace, trace2: _Trace) -> List[int]:
-        raise NotImplementedError("Processing different length traces is not implemented yet.")
+        raise NotImplementedError("Processing different length traces is not implemented yet: "
+                                  f"{trace1.source} and {trace2.source}")
         # assert len(trace1) != len(trace2)
 
         # leaky_instr: List[int] = []
