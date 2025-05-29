@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, List, Set, Tuple, Optional, Dict
 import os
 from elftools.elf.elffile import ELFFile  # type: ignore
 
+from .logger import ProgressBar
+
 if TYPE_CHECKING:
     from .config import Config
 
@@ -97,8 +99,13 @@ class _Analyser:
         Analyse all leaks stored in the given directory after a completed fuzzing campaign.
         """
         leakage_map: LeakageMap = {}
+        input_groups = os.listdir(stage2_dir)
 
-        for input_group in os.listdir(stage2_dir):
+        # Initialize a progress bar to track the progress of the analysis
+        progress_bar = ProgressBar(len(input_groups), "Analysis Progress")
+        progress_bar.start()
+
+        for input_group in input_groups:
             input_group_dir = os.path.join(stage2_dir, input_group)
 
             # Get a reference trace for the given group; we will use it to check that
@@ -123,6 +130,8 @@ class _Analyser:
                     if addr not in leakage_map:
                         leakage_map[addr] = []
                     leakage_map[addr].append(trace_file)
+
+            progress_bar.update()
 
         return leakage_map
 
