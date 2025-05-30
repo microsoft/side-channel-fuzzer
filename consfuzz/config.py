@@ -232,8 +232,11 @@ class Config:
         :param yaml_data: Parsed configuration data as a dictionary
         """
         self.working_dir = yaml_data.get("working_dir", None)
-        if self.working_dir is not None:
-            self.working_dir = str(pathlib.Path(self.working_dir).expanduser())
+        if self.working_dir is None:
+            raise _ConfigException("working_dir",
+                                   "working_dir is a required field in the config file.")
+
+        self.working_dir = str(pathlib.Path(self.working_dir).expanduser())
         self.stage1_wd = os.path.join(self.working_dir, "stage1")  # type: ignore
         self.stage2_wd = os.path.join(self.working_dir, "stage2")  # type: ignore
         self.stage3_wd = os.path.join(self.working_dir, "stage3")  # type: ignore
