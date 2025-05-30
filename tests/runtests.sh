@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 AVAILABLE_STAGES=("type_check" "code_style_check" "core_unit_tests" "package_install_test"
-    "km_tests" "arch_unit_tests" "acceptance_tests")
+    "km_tests" "arch_unit_tests" "acceptance_tests" "consfuzz_unit_test")
 
 function parse_args() {
     POSITIONAL_ARGS=()
@@ -220,6 +220,14 @@ function acceptance_tests() {
     fi
 }
 
+function consfuzz_unit_test() {
+    echo ""
+    echo "===== Consfuzz unit tests ====="
+    cd $SCRIPT_DIR/.. || exit
+    python3 -m unittest tests.consfuzz.unit_config -v
+    cd - >/dev/null || exit
+}
+
 # ==================================================================================================
 # Runners
 # ==================================================================================================
@@ -247,6 +255,9 @@ function run_one_stage() {
         ;;
     acceptance_tests)
         acceptance_tests
+        ;;
+    consfuzz_unit_test)
+        consfuzz_unit_test
         ;;
     *)
         echo "Unknown stage: $stage"
