@@ -12,12 +12,14 @@ on:
       - main-fixes
       - pre-release
       - dev
+      - feature-software-testing
   pull_request:
     branches:
       - main
       - main-fixes
       - pre-release
       - dev
+      - feature-software-testing
 
 jobs:
   build:
