@@ -199,9 +199,9 @@ class Config:
     # """ Flag indicating whether AFL++ should be run in QEMU mode. """
 
     def __init__(self, config_yaml: str, stage: FuzzingStages) -> None:
-        if self.__config_instantiated:
+        if Config.__config_instantiated:
             raise RuntimeError("Config class should be instantiated only once.")
-        self.__config_instantiated = True
+        Config.__config_instantiated = True
 
         # Parse the config YAML file and ensure that it is set up correctly
         yaml_data = self._parse_yaml(config_yaml)
