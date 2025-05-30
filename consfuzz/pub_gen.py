@@ -14,7 +14,7 @@ import subprocess
 from .sec_gen import generate_one_secret
 
 if TYPE_CHECKING:
-    from config import Config
+    from .config import Config
 
 
 class PubGen:
@@ -49,7 +49,7 @@ class PubGen:
         self._generate_baseline_private_input()
         return self._start_afl_fuzz(cmd, target_cov, timeout_s)
 
-    def _generate_baseline_private_input(self):
+    def _generate_baseline_private_input(self) -> None:
         """
         Generate a private input that will be used as a basis for generating new public inputs.
         """
@@ -64,7 +64,7 @@ class PubGen:
             self._config.secret_size_bytes,
         )
 
-    def _start_afl_fuzz(self, cmd: List[str], _: int, timeout_s: int):
+    def _start_afl_fuzz(self, cmd: List[str], _: int, timeout_s: int) -> int:
         """
         Starts the AFL++ fuzzing process.
         """

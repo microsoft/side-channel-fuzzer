@@ -22,7 +22,7 @@ class TestConfig(unittest.TestCase):
     # ==============================================================================================
     # Helper methods
 
-    def setUp(self):
+    def setUp(self) -> None:
         self._reset_config_instantiation()
 
         # Create temporary directories for testing
@@ -49,19 +49,19 @@ afl_root: {self.afl_root}
 afl_seed_dir: {self.afl_seed_dir}
 """
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         # Clean up temporary directories
         shutil.rmtree(self.temp_dir, ignore_errors=True)
         self._reset_config_instantiation()
 
-    def _reset_config_instantiation(self):
+    def _reset_config_instantiation(self) -> None:
         # Helper method to reset the Config instantiation flag
         Config._Config__config_instantiated = False  # type: ignore
 
     # ==============================================================================================
     # Tests
 
-    def test_config_single_instantiation(self):
+    def test_config_single_instantiation(self) -> None:
         # Test that Config can only be instantiated once
         with patch("os.path.exists", return_value=True):
             with patch("builtins.open", mock_open(read_data=self.valid_config)):
@@ -69,12 +69,12 @@ afl_seed_dir: {self.afl_seed_dir}
                 with self.assertRaises(RuntimeError):
                     Config("config.yaml", "fuzz")
 
-    def test_config_nonexistent_yaml(self):
+    def test_config_nonexistent_yaml(self) -> None:
         # Test that missing config file raises SystemExit
         with self.assertRaises(SystemExit):
             Config("nonexistent.yaml", "fuzz")
 
-    def test_config_invalid_yaml(self):
+    def test_config_invalid_yaml(self) -> None:
         # Test that invalid YAML content raises SystemExit
         with patch("os.path.exists", return_value=True):
             with patch("builtins.open", mock_open(read_data="invalid: yaml: content")):
@@ -86,7 +86,7 @@ afl_seed_dir: {self.afl_seed_dir}
                 with self.assertRaises(SystemExit):
                     Config("config.yaml", "fuzz")
 
-    def test_config_missing_required_fields(self):
+    def test_config_missing_required_fields(self) -> None:
         # Test that missing required fields raises _ConfigException
         with patch("os.path.exists", return_value=True):
             # working_dir
@@ -96,7 +96,7 @@ afl_seed_dir: {self.afl_seed_dir}
                     Config("config.yaml", "fuzz")
                 self.assertIn("working_dir", str(cm.exception))
 
-    def test_config_empty_working_dir(self):
+    def test_config_empty_working_dir(self) -> None:
         # Test configuration with empty working directory
         with patch("os.path.exists", return_value=True):
             with patch("builtins.open", mock_open(read_data=self.valid_config)):
@@ -106,7 +106,7 @@ afl_seed_dir: {self.afl_seed_dir}
                 self.assertTrue(os.path.exists(config.stage2_wd))
                 self.assertTrue(os.path.exists(config.stage3_wd))
 
-    def test_config_nonexistent_working_dir(self):
+    def test_config_nonexistent_working_dir(self) -> None:
         # Test that nonexistent working directory raises exception
         config_data = f"""
 working_dir: /nonexistent/directory
@@ -120,7 +120,7 @@ afl_seed_dir: {self.afl_seed_dir}
                     Config("config.yaml", "fuzz")
 
     @patch('sys.stdout', new_callable=StringIO)
-    def test_config_force_overwrite(self, mock_stdout):
+    def test_config_force_overwrite(self, mock_stdout: StringIO) -> None:
         # Test force_working_dir_overwrite functionality
         # Create some files in working directory
         test_file = os.path.join(self.working_dir, "test.txt")
@@ -144,7 +144,7 @@ afl_seed_dir: {self.afl_seed_dir}
         self.assertIn("removing", output)
 
     @patch('sys.stdout', new_callable=StringIO)
-    def test_config_archive_functionality(self, mock_stdout):
+    def test_config_archive_functionality(self, mock_stdout: StringIO) -> None:
         # Test archiving functionality when working dir is not empty
         # Create a file in working directory
         test_file = os.path.join(self.working_dir, "test.txt")
@@ -166,7 +166,7 @@ afl_seed_dir: {self.afl_seed_dir}
         self.assertEqual(len(archives), 1)
         self.assertTrue(archives[0].endswith(".tar.gz"))
 
-    def test_config_no_archive_no_force(self):
+    def test_config_no_archive_no_force(self) -> None:
         # Test that exception is raised when working dir is not empty without archive or force
         # Create a file in working directory
         test_file = os.path.join(self.working_dir, "test.txt")
@@ -185,7 +185,7 @@ afl_seed_dir: {self.afl_seed_dir}
                 with self.assertRaises(_ConfigException):
                     Config("config.yaml", "fuzz")
 
-    def test_config_invalid_model_root(self):
+    def test_config_invalid_model_root(self) -> None:
         # Test that invalid model_root raises exception
         config_data = f"""
 working_dir: {self.working_dir}
@@ -199,7 +199,7 @@ afl_seed_dir: {self.afl_seed_dir}
                     Config("config.yaml", "fuzz")
                 self.assertIn("model_root", str(cm.exception))
 
-    def test_config_invalid_afl_root(self):
+    def test_config_invalid_afl_root(self) -> None:
         # Test that invalid afl_root raises exception
         config_data = f"""
 working_dir: {self.working_dir}
@@ -213,7 +213,7 @@ afl_seed_dir: {self.afl_seed_dir}
                     Config("config.yaml", "fuzz")
                 self.assertIn("afl_root", str(cm.exception))
 
-    def test_config_missing_afl_seed_dir(self):
+    def test_config_missing_afl_seed_dir(self) -> None:
         # Test that missing afl_seed_dir raises exception
         config_data = f"""
 working_dir: {self.working_dir}
@@ -226,7 +226,7 @@ afl_root: {self.afl_root}
                     Config("config.yaml", "fuzz")
                 self.assertIn("afl_seed_dir", str(cm.exception))
 
-    def test_config_internal_option_rejection(self):
+    def test_config_internal_option_rejection(self) -> None:
         # Test that internal options cannot be set via YAML
         config_data = f"""
 working_dir: {self.working_dir}
@@ -241,7 +241,7 @@ afl_seed_dir: {self.afl_seed_dir}
                     Config("config.yaml", "fuzz")
                 self.assertIn("internal use only", str(cm.exception))
 
-    def test_config_stage_directories(self):
+    def test_config_stage_directories(self) -> None:
         # Test different stage directory behaviors
         # Test stage2 with existing empty directory
         os.makedirs(os.path.join(self.working_dir, "stage2"))

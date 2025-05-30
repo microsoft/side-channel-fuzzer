@@ -6,7 +6,7 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, Set, Tuple, Optional, Dict
+from typing import TYPE_CHECKING, List, Set, Tuple, Optional, Dict, Iterator
 
 import os
 from elftools.elf.elffile import ELFFile  # type: ignore
@@ -48,7 +48,7 @@ class _Trace:
     def __len__(self) -> int:
         return len(self.instructions)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[_TracedInstruction]:
         return iter(self.instructions)
 
     def __getitem__(self, item: int) -> _TracedInstruction:

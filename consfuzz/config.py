@@ -6,7 +6,7 @@ SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
 
-from typing import Final, Dict, Optional, Literal
+from typing import Dict, Optional, Literal, Any
 import os
 import pathlib
 import shutil
@@ -15,6 +15,7 @@ import yaml
 from typing_extensions import assert_never
 
 FuzzingStages = Literal["fuzz", "pub_gen", "stage2", "report"]
+YAMLData = Dict[str, Any]
 
 
 # ==================================================================================================
@@ -23,7 +24,7 @@ FuzzingStages = Literal["fuzz", "pub_gen", "stage2", "report"]
 class _ConfigException(SystemExit):
     """ Custom exception class for configuration errors. """
 
-    def __init__(self, var, message: str) -> None:
+    def __init__(self, var: str, message: str) -> None:
         super().__init__(f"[ERROR] Invalid value of config variable {var}\nIssue: {message}\n")
 
 
@@ -172,9 +173,9 @@ class Config:
 
     # internal working directories for each stage of the fuzzing process
     # (cannot be set directly from the config YAML file)
-    stage1_wd: Final[str]
-    stage2_wd: Final[str]
-    stage3_wd: Final[str]
+    stage1_wd: str
+    stage2_wd: str
+    stage3_wd: str
 
     # ==============================================================================================
     # Fuzzing parameters
@@ -212,7 +213,7 @@ class Config:
         wd_manager = _WorkingDirManager(self)
         wd_manager.set_working_dirs(stage)
 
-    def _parse_yaml(self, config_yaml: str) -> Dict:
+    def _parse_yaml(self, config_yaml: str) -> YAMLData:
         """
         Parse the YAML configuration file.
         :param config_yaml: Path to the YAML configuration file
@@ -226,7 +227,7 @@ class Config:
             raise SystemExit(f"[ERROR] YAML file {config_yaml} isn't a valid ConSFuzz config file.")
         return config_data
 
-    def _set_from_yaml(self, yaml_data: Dict) -> None:
+    def _set_from_yaml(self, yaml_data: YAMLData) -> None:
         """
         Set configuration values from the parsed YAML data.
         :param yaml_data: Parsed configuration data as a dictionary
@@ -237,9 +238,9 @@ class Config:
                                    "working_dir is a required field in the config file.")
 
         self.working_dir = str(pathlib.Path(self.working_dir).expanduser())
-        self.stage1_wd = os.path.join(self.working_dir, "stage1")  # type: ignore
-        self.stage2_wd = os.path.join(self.working_dir, "stage2")  # type: ignore
-        self.stage3_wd = os.path.join(self.working_dir, "stage3")  # type: ignore
+        self.stage1_wd = os.path.join(self.working_dir, "stage1")
+        self.stage2_wd = os.path.join(self.working_dir, "stage2")
+        self.stage3_wd = os.path.join(self.working_dir, "stage3")
 
         self.archive_dir = yaml_data.get("archive_dir", None)
         if self.archive_dir is not None:
