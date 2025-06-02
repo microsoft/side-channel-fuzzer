@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, List, Final
 import os
 import subprocess
 
-from .logger import ProgressBar
+from .logger import ProgressBar, Logger
 
 if TYPE_CHECKING:
     from .config import Config
@@ -23,8 +23,11 @@ class Tracer:
     """
 
     _drrun_cmd: Final[str]
+    _log: Final[Logger]
 
     def __init__(self, config: Config) -> None:
+        self._log = Logger("Tracer")
+
         self._config = config
         self._drrun_cmd = f"{config.model_root}/drrun " \
                           f"-c {config.model_root}/libdr_model.so " \
@@ -41,6 +44,11 @@ class Tracer:
                         and private (@#) inputs
         :return: 0 if successful, 1 if error occurs
         """
+        # Check if the traces are deterministic; abort if they are not
+        if not self._check_determinism(self._config.stage2_wd, cmd):
+            self._log.error("The target binary produces non-deterministic traces. Tracing aborted.")
+            return 1
+
         # Get a list of input groups
         input_group_dirs = []
         for input_group in os.listdir(self._config.stage2_wd):
@@ -107,3 +115,36 @@ class Tracer:
         except subprocess.CalledProcessError:
             return True
         return False
+
+    def _check_determinism(self, wd: str, cmd: List[str]) -> bool:
+        """
+        Check if the traces are deterministic by running the target binary multiple times
+        with the same inputs and comparing the outputs.
+        """
+        # pick an arbitrary input pair from the working directory
+        input_group = next((d for d in os.listdir(wd) if os.path.isdir(os.path.join(wd, d))), None)
+        assert input_group is not None
+        input_group_dir = os.path.join(wd, input_group)
+        pub_input = os.path.join(input_group_dir, "public")
+        sec_input = os.path.join(input_group_dir, "private_0")
+
+        # expand the command with the public and private inputs
+        expanded_cmd = self._expand_target_cmd(cmd, pub_input, sec_input)
+        log_file = os.path.join(input_group_dir, "det_trace.log")
+
+        # execute the target binary twice and collect traces
+        for i in [0, 1]:
+            trace_file = os.path.join(input_group_dir, f"{i}.det_trace")
+            if self._execute(expanded_cmd, trace_file, log_file):
+                print(f"Error executing command: {expanded_cmd}", flush=True)
+                return False
+
+        # compare the traces
+        with open(os.path.join(input_group_dir, "0.det_trace"), "r") as f0, \
+             open(os.path.join(input_group_dir, "1.det_trace"), "r") as f1:
+            trace_0_content = f0.read()
+            trace_1_content = f1.read()
+        if trace_0_content != trace_1_content:
+            return False
+
+        return True
