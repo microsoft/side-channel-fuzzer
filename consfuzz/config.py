@@ -6,7 +6,7 @@ SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
 
-from typing import Dict, Optional, Literal, Any
+from typing import Dict, Optional, Literal, Any, Final, List
 import os
 import pathlib
 import shutil
@@ -148,28 +148,36 @@ class Config:
     Note: This class is expected to be instantiated only once by `rvzr-sw.py` and passed to all
           other modules by reference.
     """
+    # pylint: disable=too-few-public-methods,too-many-instance-attributes
+    # NOTE: disabling is justified here, as this class is a configuration holder
 
     __config_instantiated: bool = False
     """ Class-local flag that allows us to detect attempts to instantiate Config more than once. """
 
+    _internal_opts: Final[List[str]] = ["stage1_wd", "stage2_wd", "stage3_wd"]
+    _help: str = ""
+
     # ==============================================================================================
     # Fuzzing directories
     working_dir: Optional[str] = None
-    """ Working directory for the fuzzer. It will contain all fuzzing artifacts
-    as well as log files and fuzzing reports. """
+    _help += """\n\n working_dir (None)
+    Working directory for the fuzzer. It will contain all fuzzing artifacts as well as
+    log files and fuzzing reports. """
 
     archive_dir: Optional[str] = None
-    """ Directory where the fuzzing artifacts from previous runs will be archived.
+    _help += """\n\n archive_dir (None)
+    Directory where the fuzzing artifacts from previous runs will be archived.
     If the working directory is non-empty and `force_working_dir_overwrite` is False,
     the contents of the working_dir will be moved into archive_dir into a timestamped archive. """
 
     force_working_dir_overwrite: bool = False
-    """ Flag indicating whether the fuzzer should overwrite the working directory
+    _help += """\n\n force_working_dir_overwrite (False)
+    Flag indicating whether the fuzzer should overwrite the working directory
     if it already exists.
-    If set to True, the fuzzer will remove the contents of the working directory before starting.
-    If set to False, the fuzzer will refuse to run if the working directory is not empty and
-    the `archive_dir` is not set.
-    """
+        * If set to True, the fuzzer will remove the contents of
+          the working directory before starting.
+        * If set to False, the fuzzer will refuse to run if the working directory is not empty and
+          the `archive_dir` is not set. """
 
     # internal working directories for each stage of the fuzzing process
     # (cannot be set directly from the config YAML file)
@@ -180,21 +188,33 @@ class Config:
     # ==============================================================================================
     # Fuzzing parameters
     secret_size_bytes: int = 32
-    """ Size of the secret (private) input, in bytes. """
+    _help += """\n\n secret_size_bytes (32)
+    Size of the secret (private) input, in bytes. """
 
     contract_observation_clause: str = "ct"
+    _help += """\n\n contract_observation_clause (ct)"""
     contract_execution_clause: str = "seq"
+    _help += """\n\n contract_execution_clause (seq)"""
 
     # ==============================================================================================
-    # Tool paths and parameters
+    # DR backend parameters
     model_root: str = "~/.local/dynamorio/"
-    """ Path to the directory containing the installation of the leakage model. """
+    _help += """\n\n model_root (~/.local/dynamorio/)
+    Path to the directory containing the installation of the leakage model. """
 
+    # ==============================================================================================
+    # AFL++ parameters
     afl_root: str = "~/.local/afl/"
-    """ Path to the directory containing the installation of AFL++. """
+    _help += """\n\n afl_root (~/.local/afl/)
+    th to the directory containing the installation of AFL++. """
 
     afl_seed_dir: Optional[str] = None
-    """ Path to the directory containing the seed corpus for AFL++. """
+    _help += """\n\n afl_seed_dir (None)
+    Path to the directory containing the seed corpus for AFL++. """
+
+    afl_exec_timeout_ms: int = 100
+    _help += """\n\n afl_exec_timeout_ms (100)
+    Timeout for AFL++ execution, in milliseconds. """
 
     # afl_qemu_mode: bool = False
     # """ Flag indicating whether AFL++ should be run in QEMU mode. """
@@ -212,6 +232,16 @@ class Config:
         # Ensure that the working directory is managed properly
         wd_manager = _WorkingDirManager(self)
         wd_manager.set_working_dirs(stage)
+
+    @classmethod
+    def help(cls) -> str:
+        """
+        Return a help string describing all configuration options.
+        :return: Help string
+        """
+        help_str = "ConSFuzz Configuration Options:\n"
+        help_str += cls._help
+        return help_str
 
     def _parse_yaml(self, config_yaml: str) -> YAMLData:
         """
@@ -267,8 +297,7 @@ class Config:
                                                        self.contract_execution_clause)
 
         # check for attempts to set internal config variables
-        internal_opts = ["stage1_wd", "stage2_wd", "stage3_wd"]
-        for opt in internal_opts:
+        for opt in self._internal_opts:
             if opt in yaml_data:
                 raise _ConfigException(
                     opt, f"Option {opt} is for internal use only and should not be set in"

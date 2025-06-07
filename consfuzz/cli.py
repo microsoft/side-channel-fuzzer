@@ -25,7 +25,12 @@ CMD_HELP =\
 def _parse_args() -> Any:  # pylint: disable=r0915
     parser = ArgumentParser(add_help=True)
     subparsers = parser.add_subparsers(dest='subparser_name', help="Subcommand to run")
-    subparsers.required = True
+
+    parser.add_argument(
+        "--help-config",
+        action='store_true',
+        help="Print a help message for the configuration file format and defaults.",
+    )
 
     # ==============================================================================================
     # Common arguments
@@ -117,7 +122,14 @@ def _parse_args() -> Any:  # pylint: disable=r0915
         help="Path to the target binary to be fuzzed (e.g., '/usr/bin/openssl')",
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    # Custom check for subparser name
+    if not args.subparser_name and not args.help_config:
+        parser.print_help()
+        return None
+
+    return args
 
 
 def _validate_args(args: Any) -> bool:
@@ -137,9 +149,21 @@ def _validate_args(args: Any) -> bool:
 
 def main() -> int:
     """ Main function for the CLI """
+
+    # pylint: disable=too-many-return-statements,too-many-branches
+    # NOTE: disabling is justified here, as this function is the main entry point
+    #       and it naturally has many branches due to different subcommands
+
     args = _parse_args()
+    if args is None:
+        return 1
     if not _validate_args(args):
         return 1
+
+    # Config help requested
+    if args.help_config:
+        print(Config.help())
+        return 0
 
     assert args.subparser_name in get_args(FuzzingStages)
     config = Config(args.config, args.subparser_name)
