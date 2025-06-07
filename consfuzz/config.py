@@ -16,6 +16,7 @@ from typing_extensions import assert_never
 
 FuzzingStages = Literal["fuzz", "pub_gen", "stage2", "report"]
 YAMLData = Dict[str, Any]
+ReportVerbosity = Literal[1, 2, 3]
 
 
 # ==================================================================================================
@@ -219,6 +220,15 @@ class Config:
     # afl_qemu_mode: bool = False
     # """ Flag indicating whether AFL++ should be run in QEMU mode. """
 
+    # ==============================================================================================
+    # Reporting parameters
+    report_verbosity: ReportVerbosity = 3
+    _help += """\n\n report_verbosity (3)
+    Verbosity level for the report:
+        * 1 - only lines of code with leaks;
+        * 2 - also include PC of the instructions that cause the leaks;
+        * 3 - also include the file names of the traces that contain the leaks """
+
     def __init__(self, config_yaml: str, stage: FuzzingStages) -> None:
         if Config.__config_instantiated:
             raise RuntimeError("Config class should be instantiated only once.")
@@ -291,10 +301,14 @@ class Config:
         if self.afl_seed_dir is not None:
             self.afl_seed_dir = str(pathlib.Path(self.afl_seed_dir).expanduser())
 
+        self.afl_exec_timeout_ms = yaml_data.get("afl_exec_timeout_ms", self.afl_exec_timeout_ms)
+
         self.contract_observation_clause = yaml_data.get("contract_observation_clause",
                                                          self.contract_observation_clause)
         self.contract_execution_clause = yaml_data.get("contract_execution_clause",
                                                        self.contract_execution_clause)
+
+        self.report_verbosity = yaml_data.get("report_verbosity", self.report_verbosity)
 
         # check for attempts to set internal config variables
         for opt in self._internal_opts:

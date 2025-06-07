@@ -6,16 +6,18 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Iterator, NewType, Literal, Final
+from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Iterator, NewType, Literal, \
+    Final, Union
 
 import os
 import json
 from elftools.elf.elffile import ELFFile  # type: ignore
+from typing_extensions import assert_never
 
 from .logger import ProgressBar
 
 if TYPE_CHECKING:
-    from .config import Config
+    from .config import Config, ReportVerbosity
 
 # ==================================================================================================
 # Local type definitions
@@ -75,7 +77,7 @@ CodeLine = NewType('CodeLine', str)
     * line_number is the line number in the source file.
 """
 
-LeakageLineMap = Dict[
+LeakageLineMapVrb3 = Dict[
     LeakType,
     Dict[
         CodeLine,
@@ -89,6 +91,27 @@ LeakageLineMap = Dict[
     The value is a map of PCs where the leak was found, and a list of locations
     where the leak was found in the trace files.
 """
+
+LeakageLineMapVrb2 = Dict[
+    LeakType,
+    Dict[
+        CodeLine,
+        List[PC],
+    ],
+]
+""" A variant of LeakageLineMap for the lower verbosity level (verbosity 2). """
+
+LeakageLineMapVrb1 = Dict[
+    LeakType,
+    List[CodeLine],
+]
+""" A variant of LeakageLineMap for the lowest verbosity level (verbosity 1). """
+
+LeakageLineMap = Union[
+    LeakageLineMapVrb3,
+    LeakageLineMapVrb2,
+    LeakageLineMapVrb1,
+]
 
 
 # ==================================================================================================
@@ -289,14 +312,15 @@ class _ReportPrinter:
     Class responsible for printing the analysis results to a report file.
     """
 
-    def __init__(self, target_binary: str) -> None:
+    def __init__(self, target_binary: str, config: Config) -> None:
+        self._config = config
         with open(target_binary, "rb") as f:
             self._elf_data = ELFFile(f)
             self.dwarf_info = self._elf_data.get_dwarf_info()
 
     def final_report(self, leakage_map: LeakageMap, report_file: str) -> None:
         """ Print the global map of leaks to the trace log """
-        leakage_line_map = self._group_by_code_line(leakage_map)
+        leakage_line_map = self._group_by_code_line(leakage_map, self._config.report_verbosity)
         self._write_report(report_file, leakage_line_map)
 
     def _write_report(self, report_file: str, leakage_line_map: LeakageLineMap) -> None:
@@ -317,17 +341,34 @@ class _ReportPrinter:
             }
         }
         """
-        report_dict: Dict[str, LeakageLineMap] = {'seq': leakage_line_map}
+        report_dict = {'seq': leakage_line_map}
         with open(report_file, "w") as f:
             json.dump(report_dict, f, indent=4, sort_keys=True)
 
-    def _group_by_code_line(self, leakage_map: LeakageMap) -> LeakageLineMap:
+    def _group_by_code_line(self, leakage_map: LeakageMap,
+                            verbosity: ReportVerbosity) -> LeakageLineMap:
         """
         Transform a LeakageMap object into a LeakageLineMap object by
-        grouping all instructions that map to the same line in the source code. Use
-        DWARF information to get the source code line for each instruction address.
+        grouping all instructions that map to the same line in the source code and filtering
+        them based on the verbosity level.
+
+        Use DWARF information to get the source code line for each instruction address.
+
+        :param leakage_map: Map of leaks found in the traces, indexed by leak type and PC.
+        :param verbosity: Amount of information to include in the report
+               (see Config.report_verbosity for details).
+        :return: Map of unique leaks, grouped by source code line.
         """
-        leakage_line_map: LeakageLineMap = {'I': {}, 'D': {}}
+        if verbosity == 1:
+            return self._group_by_code_line_vrb1(leakage_map)
+        if verbosity == 2:
+            return self._group_by_code_line_vrb2(leakage_map)
+        if verbosity == 3:
+            return self._group_by_code_line_vrb3(leakage_map)
+        assert_never(verbosity)
+
+    def _group_by_code_line_vrb3(self, leakage_map: LeakageMap) -> LeakageLineMapVrb3:
+        leakage_line_map: LeakageLineMapVrb3 = {'I': {}, 'D': {}}
         for type_ in leakage_map:
             per_type_map = leakage_map[type_]
             for pc in per_type_map:
@@ -345,6 +386,35 @@ class _ReportPrinter:
                 # append the trace locations to the map
                 leakage_line_map[type_][source_code_line][pc].extend(per_type_map[pc])
 
+        return leakage_line_map
+
+    def _group_by_code_line_vrb2(self, leakage_map: LeakageMap) -> LeakageLineMapVrb2:
+        leakage_line_map: LeakageLineMapVrb2 = {'I': {}, 'D': {}}
+        for type_ in leakage_map:
+            per_type_map = leakage_map[type_]
+            for pc in per_type_map:
+                # get the source code line for the instruction address
+                source_code_line = self._decode_addr(pc)
+
+                # create a new entry in the leakage line map if it does not exist
+                if source_code_line not in leakage_line_map[type_]:
+                    leakage_line_map[type_][source_code_line] = []
+
+                # append the PC to the map
+                leakage_line_map[type_][source_code_line].append(pc)
+        return leakage_line_map
+
+    def _group_by_code_line_vrb1(self, leakage_map: LeakageMap) -> LeakageLineMapVrb1:
+        leakage_line_map: LeakageLineMapVrb1 = {'I': [], 'D': []}
+        for type_ in leakage_map:
+            per_type_map = leakage_map[type_]
+            for pc in per_type_map:
+                # get the source code line for the instruction address
+                source_code_line = self._decode_addr(pc)
+
+                # append the source code line to the map if it does not exist
+                if source_code_line not in leakage_line_map[type_]:
+                    leakage_line_map[type_].append(source_code_line)
         return leakage_line_map
 
     def _decode_addr(self, address: int) -> CodeLine:
@@ -408,5 +478,5 @@ class Reporter:
         """
         assert self._leakage_map is not None, "No leakage map found. Did you run analyze()?"
         report_file = os.path.join(self._config.stage3_wd, "fuzzing_report.json")
-        printer = _ReportPrinter(target_binary)
+        printer = _ReportPrinter(target_binary, self._config)
         printer.final_report(self._leakage_map, report_file)
