@@ -80,7 +80,8 @@ class PubGen:
 
         afl_flags = [
             "-V",
-            str(timeout_s), "-c", cmd[0], "-i", self._config.afl_seed_dir, "-o", self._wd
+            str(timeout_s), "-c", cmd[0], "-i", self._config.afl_seed_dir, "-o", self._wd, "-t",
+            str(self._config.afl_exec_timeout_ms)
         ]
 
         cmd = [self._afl_bin] + afl_flags + ["--"] + cmd
