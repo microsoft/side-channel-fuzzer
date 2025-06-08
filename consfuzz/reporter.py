@@ -15,9 +15,9 @@ from copy import deepcopy
 from subprocess import run
 from elftools.elf.elffile import ELFFile  # type: ignore
 from typing_extensions import assert_never
+from tqdm import tqdm
 
 from rvzr.model_dynamorio.trace_decoder import TraceDecoder, TraceEntryType
-from .logger import ProgressBar
 
 if TYPE_CHECKING:
     from .config import Config, ReportVerbosity
@@ -180,19 +180,16 @@ class _Analyser:
         leakage_map: LeakageMap = {'I': {}, 'D': {}}
         input_groups = os.listdir(stage2_dir)
 
-        # Initialize a progress bar to track the progress of the analysis
-        progress_bar = ProgressBar(len(input_groups), "Analysis Progress")
-        progress_bar.start()
-
         # Iterate over all input groups
         # (i.e., groups of traces collected from the same public input)
+        inputs: Dict[str, List[str]] = {}
         for input_group in input_groups:
             input_group_dir = os.path.join(stage2_dir, input_group)
 
             # Get a reference trace for the given group; we will use it to check that
             # all other traces are the same
             reference_trace_file = os.path.join(input_group_dir, "private_0.trace")
-            reference_trace = self._parse_trace_file(reference_trace_file)
+            inputs[reference_trace_file] = []
 
             # Compare the reference trace with all other traces in the group
             for trace_file in os.listdir(input_group_dir):
@@ -204,6 +201,17 @@ class _Analyser:
 
                 # parse the trace file and extract a list of leaky instructions
                 trace_file = os.path.join(input_group_dir, trace_file)
+                inputs[reference_trace_file].append(trace_file)
+
+        # Initialize a progress bar to track the progress of the analysis
+        progress_bar = tqdm(total=sum(len(traces) for ref_file, traces in inputs.items()))
+
+        # Collect traces for each pair and check for leaks
+        for reference_trace_file, trace_files in inputs.items():
+            reference_trace = self._parse_trace_file(reference_trace_file)
+
+            for trace_file in trace_files:
+                progress_bar.update()
                 trace = self._parse_trace_file(trace_file)
                 leaky_instructions = self._identify_leaks(reference_trace, trace)
 
@@ -214,8 +222,7 @@ class _Analyser:
                 # add the leaky instructions to the global map
                 self._update_global_map(leakage_map, leaky_instructions, trace_file)
 
-            progress_bar.update()
-
+        progress_bar.close()
         return leakage_map
 
     def _parse_trace_file(self, trace_file: str) -> _Trace:

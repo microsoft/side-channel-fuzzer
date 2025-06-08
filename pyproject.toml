@@ -30,6 +30,8 @@ dependencies = [
     "setuptools<80",  # To avoid deprecation warnings cased by Unicorn
     "cffi",
     "types-cffi",
+    "tqdm",
+    "types-tqdm"
 ]
 maintainers = [{name = "Oleksii Oleksenko", email = ""}]
 
