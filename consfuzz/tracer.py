@@ -120,6 +120,11 @@ class Tracer:
         """
         Check if the traces are deterministic by running the target binary multiple times
         with the same inputs and comparing the outputs.
+        :param wd: Working directory containing the input pairs
+        :param cmd: Command to run the target binary, with placeholders for public (@@)
+                    and private (@#) inputs
+        :return: True if the traces are deterministic, False otherwise
+        :raise: AssertionError if no input pairs are found
         """
         # pick an arbitrary input pair from the working directory
         input_group = next((d for d in os.listdir(wd) if os.path.isdir(os.path.join(wd, d))), None)
@@ -136,8 +141,7 @@ class Tracer:
         for i in [0, 1]:
             trace_file = os.path.join(input_group_dir, f"{i}.det_trace")
             if self._execute(expanded_cmd, trace_file, log_file):
-                print(f"Error executing command: {expanded_cmd}", flush=True)
-                return False
+                raise RuntimeError(f"Error executing command: {expanded_cmd}")
 
         # compare the traces
         with open(os.path.join(input_group_dir, "0.det_trace"), "r") as f0, \
