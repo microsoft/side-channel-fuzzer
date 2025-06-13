@@ -175,7 +175,7 @@ class Tracer:
         assert input_group is not None
         input_group_dir = os.path.join(wd, input_group)
         pub_input = os.path.join(input_group_dir, "public")
-        sec_input = os.path.join(input_group_dir, "private_0")
+        sec_input = os.path.join(input_group_dir, "private_000")
 
         # expand the command with the public and private inputs
         expanded_cmd = self._expand_target_cmd(cmd, pub_input, sec_input)

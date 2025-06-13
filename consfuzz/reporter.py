@@ -188,7 +188,7 @@ class _Analyser:
 
             # Get a reference trace for the given group; we will use it to check that
             # all other traces are the same
-            reference_trace_file = os.path.join(input_group_dir, "private_0.trace")
+            reference_trace_file = os.path.join(input_group_dir, "private_000.trace")
             inputs[reference_trace_file] = []
 
             # Compare the reference trace with all other traces in the group
@@ -196,7 +196,7 @@ class _Analyser:
                 # skip non-trace files and the reference trace itself
                 if not trace_file.endswith(".trace"):
                     continue
-                if trace_file == "private_0.trace":
+                if trace_file == "private_000.trace":
                     continue
 
                 # parse the trace file and extract a list of leaky instructions

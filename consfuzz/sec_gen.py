@@ -46,7 +46,7 @@ class SecGen:
 
             # Generate private inputs
             for i in range(num_sec_inputs):
-                priv_input_path = os.path.join(dest_dir, f"private_{i}")
+                priv_input_path = os.path.join(dest_dir, f"private_{i:03}")
                 if generate_one_secret(priv_input_path, self._config.secret_size_bytes) != 0:
                     return 1
         return 0
