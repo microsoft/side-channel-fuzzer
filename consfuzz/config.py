@@ -229,6 +229,13 @@ class Config:
         * 2 - also include PC of the instructions that cause the leaks;
         * 3 - also include the file names of the traces that contain the leaks """
 
+    report_allowlist: Optional[str] = None
+    _help += """\n\n report_allowlist (None)
+    Path to a file containing a list of allowed lines of code, in the format:
+    <file_path>:<line_number>
+    If set, the report will only include lines of code that are not in this list.
+    This is useful for filtering out known leaks or false positives. """
+
     def __init__(self, config_yaml: str, stage: FuzzingStages) -> None:
         if Config.__config_instantiated:
             raise RuntimeError("Config class should be instantiated only once.")
@@ -309,6 +316,7 @@ class Config:
                                                        self.contract_execution_clause)
 
         self.report_verbosity = yaml_data.get("report_verbosity", self.report_verbosity)
+        self.report_allowlist = yaml_data.get("report_allowlist", self.report_allowlist)
 
         # check for attempts to set internal config variables
         for opt in self._internal_opts:

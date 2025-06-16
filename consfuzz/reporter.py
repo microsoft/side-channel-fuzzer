@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Iterator, NewType
 
 import os
 import json
+from copy import deepcopy
 from elftools.elf.elffile import ELFFile  # type: ignore
 from typing_extensions import assert_never
 
@@ -321,6 +322,7 @@ class _ReportPrinter:
     def final_report(self, leakage_map: LeakageMap, report_file: str) -> None:
         """ Print the global map of leaks to the trace log """
         leakage_line_map = self._group_by_code_line(leakage_map, self._config.report_verbosity)
+        leakage_line_map = self._filter_allowlist(leakage_line_map)
         self._write_report(report_file, leakage_line_map)
 
     def _write_report(self, report_file: str, leakage_line_map: LeakageLineMap) -> None:
@@ -416,6 +418,34 @@ class _ReportPrinter:
                 if source_code_line not in leakage_line_map[type_]:
                     leakage_line_map[type_].append(source_code_line)
         return leakage_line_map
+
+    def _filter_allowlist(self, leakage_line_map: LeakageLineMap) -> LeakageLineMap:
+        """
+        Filter the leakage line map by the allowlist of source code lines.
+        The allowlist is a list of source code lines that should be included in the report.
+        """
+        allowlist_file = self._config.report_allowlist
+        if not allowlist_file:
+            return leakage_line_map
+
+        # Read the allowlist file and create a set of allowed source code lines
+        with open(allowlist_file, "r") as f:
+            allowlist_lines = {line.strip() for line in f if line.strip()}
+
+        # Filter the leakage line map by the allowlist
+        filtered_leakage_line_map: LeakageLineMap = deepcopy(leakage_line_map)
+        for type_ in leakage_line_map:
+            per_type_map = leakage_line_map[type_]
+            for code_line in per_type_map:
+                if code_line in allowlist_lines:
+                    filtered_per_type_map = filtered_leakage_line_map[type_]
+                    if isinstance(filtered_per_type_map, list):  # Verbosity 1
+                        filtered_per_type_map.remove(code_line)
+                        continue
+                    if isinstance(filtered_per_type_map, dict):  # Verbosity 2 or 3
+                        filtered_per_type_map.pop(code_line)
+
+        return filtered_leakage_line_map
 
     def _decode_addr(self, address: int) -> CodeLine:
         # Go over all the line programs in the DWARF information, looking for
