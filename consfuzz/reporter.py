@@ -16,6 +16,7 @@ from subprocess import run
 from elftools.elf.elffile import ELFFile  # type: ignore
 from typing_extensions import assert_never
 
+from rvzr.model_dynamorio.trace_decoder import TraceDecoder, TraceEntryType
 from .logger import ProgressBar
 
 if TYPE_CHECKING:
@@ -167,6 +168,10 @@ class _Analyser:
     Class responsible for checking the collected contract traces for violations of the
     non-interference property.
     """
+    trace_decoder: TraceDecoder
+
+    def __init__(self) -> None:
+        self.trace_decoder = TraceDecoder()
 
     def build_leakage_map(self, stage2_dir: str) -> LeakageMap:
         """
@@ -215,16 +220,15 @@ class _Analyser:
 
     def _parse_trace_file(self, trace_file: str) -> _Trace:
         trace = _Trace(trace_file)
-        with open(trace_file, "r") as f:
-            lines = f.readlines()
-            for i, line in enumerate(lines):
-                words = line.split(" ")
-                assert len(words) == 3
-                type_, val, _ = words
-                if type_ == "1":
-                    trace.append(_TracedInstruction(int("0x" + val, 16), i + 1))
-                if type_ in ["2", "3"]:
-                    trace[-1].mem_accesses.append(int("0x" + val, 16))
+        raw_traces, _ = self.trace_decoder.decode_trace_file(trace_file)
+
+        for i, entry in enumerate(raw_traces[0]):
+            type_ = TraceEntryType(entry.type)
+            if type_ == TraceEntryType.ENTRY_PC:
+                trace.append(_TracedInstruction(entry.addr, i + 1))
+            elif type_ in (TraceEntryType.ENTRY_READ, TraceEntryType.ENTRY_WRITE):
+                trace[-1].mem_accesses.append(entry.addr)
+
         return trace
 
     def _identify_leaks(self, ref_trace: _Trace, target_trace: _Trace) -> List[LeakyInstr]:

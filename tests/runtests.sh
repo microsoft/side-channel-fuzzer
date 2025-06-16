@@ -227,7 +227,7 @@ function consfuzz_type_check() {
     echo ""
     echo "===== Consfuzz MyPy ====="
     cd $SCRIPT_DIR/.. || exit
-    MYPYPATH=consfuzz/ python3 -m mypy --strict consfuzz/*.py \
+    MYPYPATH=rvzr/ python3 -m mypy --strict consfuzz/*.py \
         --no-warn-unused-ignores --untyped-calls-exclude=elftools
     cd - >/dev/null || exit
 
@@ -235,7 +235,7 @@ function consfuzz_type_check() {
         echo ""
         cd $SCRIPT_DIR/.. || exit
         echo "===== STRICT CHECK: Consfuzz MyPy (Unit Tests) ====="
-        MYPYPATH=consfuzz/ python3 -m mypy --strict tests/consfuzz/unit_*.py \
+        MYPYPATH=rvzr/ python3 -m mypy --strict tests/consfuzz/unit_*.py \
             --no-warn-unused-ignores --untyped-calls-exclude=elftools
         cd - >/dev/null || exit
     fi
