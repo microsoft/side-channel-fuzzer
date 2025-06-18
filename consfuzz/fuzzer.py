@@ -87,4 +87,5 @@ class FuzzerCore:
         reporter = Reporter(self._config)
         reporter.analyze()
         reporter.generate_report(target_binary)
+        reporter.process_coverage(target_binary)
         return 0

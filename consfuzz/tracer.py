@@ -34,6 +34,7 @@ class Tracer:
                           f"--tracer {config.contract_observation_clause} " \
                           f"--speculator {config.contract_execution_clause} " \
                           "--instrumented-func wrapper -- {cmd} > {trace_file}"
+        self._coverage_cmd = "LLVM_PROFILE_FILE={cov_file} {cmd}"
 
     def collect_traces(self, cmd: List[str]) -> int:
         """
@@ -76,15 +77,13 @@ class Tracer:
 
             # Process each pair
             for pub_input, sec_input in pairs:
-                pair_name = os.path.basename(sec_input)
+                pair_name = sec_input
 
                 # Expand the command with the public and private inputs
                 expanded_cmd = self._expand_target_cmd(cmd, pub_input, sec_input)
-                trace_file = os.path.join(input_group_dir, f"{pair_name}.trace")
-                log_file = os.path.join(input_group_dir, f"{pair_name}.log")
 
                 # Execute the target binary and collect traces
-                _ = self._execute(expanded_cmd, trace_file, log_file)
+                _ = self._execute(expanded_cmd, pair_name, self._config.coverage)
                 # NOTE: we intentionally ignore the return value here, as many files generated
                 # by AFL++ are invalid, which leads to errors during execution; this is
                 # expected and does not affect the correctness of the fuzzing process
@@ -103,16 +102,39 @@ class Tracer:
         expanded_str = " ".join(expanded_cmd)
         return expanded_str
 
-    def _execute(self, expanded_str: str, trace_file: str, log_file: str) -> bool:
+    def _execute(self, expanded_str: str, pair_name: str, enable_cov: bool) -> bool:
         """
         Execute the target binary on the leakage model with the given public and private inputs.
+
+        If `enable_cov` is True, the command will also collect coverage information.
+
+        :param expanded_str: Command to run the target binary, with public and private inputs
+        :param pair_name: Base name for the output files (trace and log)
+        :param enable_cov: Whether to collect coverage information
+        :return: True if an error occurs during execution, False otherwise
         """
+        trace_file = f"{pair_name}.trace"
+        log_file = f"{pair_name}.log"
+
         complete_cmd = self._drrun_cmd.format(cmd=expanded_str, trace_file=trace_file)
         # print(complete_cmd, flush=True)
         try:
             with open(log_file, "a") as f:
                 subprocess.check_call(complete_cmd, shell=True, stdout=f, stderr=f)
         except subprocess.CalledProcessError:
+            return True
+
+        if not enable_cov:
+            return False
+
+        # If coverage is enabled, run the command with coverage collection
+        cov_file = f"{pair_name}.profraw"
+        coverage_cmd = self._coverage_cmd.format(cov_file=cov_file, cmd=expanded_str)
+        try:
+            subprocess.check_call(
+                coverage_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            self._log.error(f"Error executing coverage command: {coverage_cmd}")
             return True
         return False
 
@@ -135,17 +157,16 @@ class Tracer:
 
         # expand the command with the public and private inputs
         expanded_cmd = self._expand_target_cmd(cmd, pub_input, sec_input)
-        log_file = os.path.join(input_group_dir, "det_trace.log")
 
         # execute the target binary twice and collect traces
         for i in [0, 1]:
-            trace_file = os.path.join(input_group_dir, f"{i}.det_trace")
-            if self._execute(expanded_cmd, trace_file, log_file):
+            pair_name = os.path.join(input_group_dir, f"determinism_check_{i}")
+            if self._execute(expanded_cmd, pair_name, False):
                 raise RuntimeError(f"Error executing command: {expanded_cmd}")
 
         # compare the traces
-        with open(os.path.join(input_group_dir, "0.det_trace"), "r") as f0, \
-             open(os.path.join(input_group_dir, "1.det_trace"), "r") as f1:
+        with open(os.path.join(input_group_dir, "determinism_check_0.trace"), "r") as f0, \
+             open(os.path.join(input_group_dir, "determinism_check_1.trace"), "r") as f1:
             trace_0_content = f0.read()
             trace_1_content = f1.read()
         if trace_0_content != trace_1_content:
