@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from .config import Config
 
 
-class ExecOutcome(Enum):
+class _ExecOutcome(Enum):
     """
     Outcome of an execution of the tracer. The program can either exit without errors, or throw
     an (architectural) exception, or an unexpected failure can be happening in the instrumentation.
@@ -96,7 +96,7 @@ class Tracer:
 
             # Execute the target binary and collect traces
             outcome = self._execute(expanded_cmd, pair_name, self._config.coverage)
-            if outcome == ExecOutcome.INSTR_EXCEPTION:
+            if outcome == _ExecOutcome.INSTR_EXCEPTION:
                 # Check if the error was produced by the target program or by a bug in the
                 # instrumentation
                 # NOTE: we intentionally ignore errors in the target program, as many files
@@ -121,7 +121,7 @@ class Tracer:
         expanded_str = " ".join(expanded_cmd)
         return expanded_str
 
-    def _execute(self, expanded_str: str, pair_name: str, enable_cov: bool) -> ExecOutcome:
+    def _execute(self, expanded_str: str, pair_name: str, enable_cov: bool) -> _ExecOutcome:
         """
         Execute the target binary on the leakage model with the given public and private inputs.
 
@@ -143,11 +143,11 @@ class Tracer:
                 subprocess.check_call(complete_cmd, shell=True, stdout=f, stderr=f)
         except subprocess.CalledProcessError:
             if TraceDecoder().is_trace_corrupted(trace_file):
-                return ExecOutcome.INSTR_EXCEPTION
-            return ExecOutcome.PROGRAM_EXCEPTION
+                return _ExecOutcome.INSTR_EXCEPTION
+            return _ExecOutcome.PROGRAM_EXCEPTION
 
         if not enable_cov:
-            return ExecOutcome.SUCCESS
+            return _ExecOutcome.SUCCESS
 
         # If coverage is enabled, run the command with coverage collection
         cov_file = f"{pair_name}.profraw"
@@ -157,8 +157,8 @@ class Tracer:
                 coverage_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except subprocess.CalledProcessError:
             self._log.error(f"Error executing coverage command: {coverage_cmd}")
-            return ExecOutcome.COV_EXCEPTION
-        return ExecOutcome.SUCCESS
+            return _ExecOutcome.COV_EXCEPTION
+        return _ExecOutcome.SUCCESS
 
     def _check_determinism(self, wd: str, cmd: List[str]) -> bool:
         """
@@ -183,7 +183,7 @@ class Tracer:
         # execute the target binary twice and collect traces
         for i in [0, 1]:
             pair_name = os.path.join(input_group_dir, f"determinism_check_{i}")
-            if self._execute(expanded_cmd, pair_name, False) != ExecOutcome.SUCCESS:
+            if self._execute(expanded_cmd, pair_name, False) != _ExecOutcome.SUCCESS:
                 raise RuntimeError(f"Error executing command: {expanded_cmd}")
 
         # compare the traces

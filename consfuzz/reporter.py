@@ -204,7 +204,10 @@ class _Analyser:
                 inputs[reference_trace_file].append(trace_file)
 
         # Initialize a progress bar to track the progress of the analysis
-        progress_bar = tqdm(total=sum(len(traces) for ref_file, traces in inputs.items()))
+        progress_bar = tqdm(
+            total=sum(len(traces) for ref_file, traces in inputs.items()),
+            colour='green',
+        )
 
         # Collect traces for each pair and check for leaks
         for reference_trace_file, trace_files in inputs.items():
