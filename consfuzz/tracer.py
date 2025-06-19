@@ -183,7 +183,7 @@ class Tracer:
         # execute the target binary twice and collect traces
         for i in [0, 1]:
             pair_name = os.path.join(input_group_dir, f"determinism_check_{i}")
-            if self._execute(expanded_cmd, pair_name, False):
+            if self._execute(expanded_cmd, pair_name, False) != ExecOutcome.SUCCESS:
                 raise RuntimeError(f"Error executing command: {expanded_cmd}")
 
         # compare the traces

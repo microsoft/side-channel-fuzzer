@@ -197,15 +197,6 @@ class Config:
     contract_execution_clause: str = "seq"
     _help += """\n\n contract_execution_clause (seq)"""
 
-    coverage: bool = False
-    _help += """\n\n coverage (True)
-    Flag indicating whether the fuzzer should collect coverage information.
-    If set to True, the fuzzer will execute an additional run in Stage 2 where it will run
-    the target binary with the generated public-private input pairs and collect
-    coverage information. This information will be later used to build a coverage model
-    for the complete fuzzing campaign, and it will be summarized in the final report.
-    """
-
     # ==============================================================================================
     # DR backend parameters
     model_root: str = "~/.local/dynamorio/"
@@ -244,6 +235,17 @@ class Config:
     <file_path>:<line_number>
     If set, the report will only include lines of code that are not in this list.
     This is useful for filtering out known leaks or false positives. """
+
+    # ==============================================================================================
+    # Coverage-related parameters
+    coverage: bool = False
+    _help += """\n\n coverage (True)
+    Flag indicating whether the fuzzer should collect coverage information.
+    If set to True, the fuzzer will execute an additional run in Stage 2 where it will run
+    the target binary with the generated public-private input pairs and collect
+    coverage information. This information will be later used to build a coverage model
+    for the complete fuzzing campaign, and it will be summarized in the final report.
+    """
 
     llvm_cov_cmd: str = "llvm-cov"
     llvm_profdata_cmd: str = "llvm-profdata"
@@ -330,6 +332,7 @@ class Config:
         self.report_verbosity = yaml_data.get("report_verbosity", self.report_verbosity)
         self.report_allowlist = yaml_data.get("report_allowlist", self.report_allowlist)
 
+        self.coverage = yaml_data.get("coverage", self.coverage)
         self.llvm_cov_cmd = yaml_data.get("llvm_cov_cmd", self.llvm_cov_cmd)
         self.llvm_profdata_cmd = yaml_data.get("llvm_profdata_cmd", self.llvm_profdata_cmd)
 
