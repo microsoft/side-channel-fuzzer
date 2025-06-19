@@ -197,7 +197,7 @@ class Config:
     contract_execution_clause: str = "seq"
     _help += """\n\n contract_execution_clause (seq)"""
 
-    coverage: bool = True
+    coverage: bool = False
     _help += """\n\n coverage (True)
     Flag indicating whether the fuzzer should collect coverage information.
     If set to True, the fuzzer will execute an additional run in Stage 2 where it will run
@@ -353,8 +353,8 @@ class Config:
         if not pathlib.Path(self.afl_seed_dir).expanduser().is_dir():
             raise _ConfigException("afl_seed_dir", f"{self.afl_seed_dir} does not exist.")
 
-        if not shutil.which(self.llvm_cov_cmd):
+        if self.coverage and not shutil.which(self.llvm_cov_cmd):
             raise _ConfigException("llvm_cov_cmd", f"command {self.llvm_cov_cmd} not found.")
-        if not shutil.which(self.llvm_profdata_cmd):
+        if self.coverage and not shutil.which(self.llvm_profdata_cmd):
             raise _ConfigException("llvm_profdata_cmd",
                                    f"command {self.llvm_profdata_cmd} not found.")
