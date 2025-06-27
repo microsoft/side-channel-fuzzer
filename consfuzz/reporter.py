@@ -46,7 +46,7 @@ LeakyInstr = Tuple[PC, LeakType, TraceLine, TraceLine]
     * Second element is the line number in the trace file where
         the instruction was found,
     * Third element is the line number in the reference trace file
-        (private_0.trace, which is the same for all leaks),
+        (000.trace, which is the same for all leaks),
     * Fourth element is the type of the leak (see LeakType).
 """
 
@@ -59,7 +59,7 @@ LinesInTracePair = NewType('LinesInTracePair', str)
     * line_number_in_trace is the line number in the trace file where
         the leak was found,
     * line_number_in_reference is the line number in the reference trace file
-        (private_0.trace, which is the same for all leaks).
+        (000.trace, which is the same for all leaks).
 """
 
 LeakageMap = Dict[
@@ -188,7 +188,10 @@ class _Analyser:
 
             # Get a reference trace for the given group; we will use it to check that
             # all other traces are the same
-            reference_trace_file = os.path.join(input_group_dir, "private_000.trace")
+            reference_trace_file = os.path.join(input_group_dir, "000.trace")
+            if not os.path.exists(reference_trace_file):
+                # If the reference trace does not exist, skip this group
+                continue
             inputs[reference_trace_file] = []
 
             # Compare the reference trace with all other traces in the group
@@ -196,7 +199,7 @@ class _Analyser:
                 # skip non-trace files and the reference trace itself
                 if not trace_file.endswith(".trace"):
                     continue
-                if trace_file == "private_000.trace":
+                if trace_file == "000.trace":
                     continue
 
                 # parse the trace file and extract a list of leaky instructions
@@ -236,7 +239,8 @@ class _Analyser:
             type_ = TraceEntryType(entry.type)
             if type_ == TraceEntryType.ENTRY_PC:
                 trace.append(_TracedInstruction(entry.addr, i + 1))
-            elif type_ in (TraceEntryType.ENTRY_READ, TraceEntryType.ENTRY_WRITE):
+            elif type_ in (TraceEntryType.ENTRY_READ, TraceEntryType.ENTRY_WRITE,
+                           TraceEntryType.ENTRY_IND):
                 trace[-1].mem_accesses.append(entry.addr)
 
         return trace

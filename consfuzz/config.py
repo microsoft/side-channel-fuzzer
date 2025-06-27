@@ -188,10 +188,6 @@ class Config:
 
     # ==============================================================================================
     # Fuzzing parameters
-    secret_size_bytes: int = 32
-    _help += """\n\n secret_size_bytes (32)
-    Size of the secret (private) input, in bytes. """
-
     contract_observation_clause: str = "ct"
     _help += """\n\n contract_observation_clause (ct)"""
     contract_execution_clause: str = "seq"

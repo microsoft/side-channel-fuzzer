@@ -73,7 +73,7 @@ class FuzzerCore:
         sec_gen = SecGen(self._config)
         tracer = Tracer(self._config)
 
-        sec_gen.generate(cmd, num_sec_inputs)
+        sec_gen.generate(num_sec_inputs)
         return tracer.collect_traces(cmd)
 
     def report(self, target_binary: str) -> int:

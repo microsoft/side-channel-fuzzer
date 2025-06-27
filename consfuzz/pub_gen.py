@@ -5,13 +5,11 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Final, List, Optional
+from typing import TYPE_CHECKING, Final, List
 
 import os
 import sys
 import subprocess
-
-from .sec_gen import generate_one_secret
 
 if TYPE_CHECKING:
     from .config import Config
@@ -26,7 +24,6 @@ class PubGen:
 
     _afl_bin: Final[str]  # Path to the AFL++ binary
     _libcompcov: Final[str]  # Path to the libcompcov.so library
-    _baseline_private_input: Optional[str] = None
 
     def __init__(self, config: Config) -> None:
         self._config = config
@@ -46,29 +43,12 @@ class PubGen:
         :param timeout_s: Timeout for the fuzzing process
         :return: 0 if the target coverage or timeout is reached, 1 if error occurs
         """
-        self._generate_baseline_private_input()
         return self._start_afl_fuzz(cmd, target_cov, timeout_s)
-
-    def _generate_baseline_private_input(self) -> None:
-        """
-        Generate a private input that will be used as a basis for generating new public inputs.
-        """
-        # -----------------
-        # FIXME: the approach of generating public inputs based on a single private input
-        # has a known issue where a secret-dependent branch is always takes the same path,
-        # thus bounding the coverage. This problem will be fixed in the future.
-        # -----------------
-        self._baseline_private_input = os.path.join(self._wd, "main.sec")
-        generate_one_secret(
-            self._baseline_private_input,
-            self._config.secret_size_bytes,
-        )
 
     def _start_afl_fuzz(self, cmd: List[str], _: int, timeout_s: int) -> int:
         """
         Starts the AFL++ fuzzing process.
         """
-        assert self._baseline_private_input is not None, "Private input not generated yet."
         assert self._config.afl_seed_dir is not None, "AFL seed directory not set."
 
         # configure the AFL++ environment
@@ -85,7 +65,6 @@ class PubGen:
         ]
 
         cmd = [self._afl_bin] + afl_flags + ["--"] + cmd
-        cmd = [s if s != "@#" else self._baseline_private_input for s in cmd]
         # print(cmd, flush=True)
 
         try:
