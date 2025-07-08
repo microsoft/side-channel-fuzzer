@@ -327,6 +327,16 @@ class _Analyser:
 # ==================================================================================================
 # Reporting of the analysis results
 # ==================================================================================================
+
+
+class _HexEncoder(json.JSONEncoder):
+
+    def encode(self, o):
+        if isinstance(o, int):
+            return hex(o)
+        return super().encode(o)
+
+
 class _ReportPrinter:
     """
     Class responsible for printing the analysis results to a report file.
@@ -364,7 +374,7 @@ class _ReportPrinter:
         """
         report_dict = {'seq': leakage_line_map}
         with open(report_file, "w") as f:
-            json.dump(report_dict, f, indent=4, sort_keys=True)
+            json.dump(report_dict, f, indent=4, sort_keys=True, cls=_HexEncoder)
 
     def _group_by_code_line(self, leakage_map: LeakageMap,
                             verbosity: ReportVerbosity) -> LeakageLineMap:
