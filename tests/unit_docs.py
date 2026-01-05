@@ -12,6 +12,16 @@ from rvzr.config import CONF
 FILE_DIR = pathlib.Path(__file__).parent.resolve()
 DOC_DIR = FILE_DIR.parent / "docs"
 
+ACTOR_SECTION_HEADER = "## <a name=\"actor\"></a> Actor Configuration"
+AVAILABLE_OPTIONS_HEADER = '=== "Available Options"'
+DEFAULT_VALUE_PREFIX = ":material-water:"
+AUTODETECTED_PREFIX = ":octicons-cpu-24:"
+
+
+def _is_option_name(line: str) -> bool:
+    # format: #### `option_name`
+    return line.startswith("#### `") and "`" in line[6:]
+
 
 def parse_config_options_from_docs(doc_lines: List[str]) -> Dict[str, List[Union[str, List[str]]]]:
     """
@@ -27,13 +37,13 @@ def parse_config_options_from_docs(doc_lines: List[str]) -> Dict[str, List[Union
 
     for line in doc_lines:
         # Detect actor section
-        if "## <a name=\"actor\"></a> Actor Configuration" in line:
+        if ACTOR_SECTION_HEADER in line:
             in_actor_section = True
         elif line.startswith("## "):
             in_actor_section = False
 
-        # Parse option name from heading (e.g., #### `option_name`)
-        if line.startswith("#### `") and "`" in line[6:]:
+        # Parse option name from heading
+        if _is_option_name(line):
             end_idx = line.index("`", 6)
             option_name = line[6:end_idx]
 
@@ -48,19 +58,19 @@ def parse_config_options_from_docs(doc_lines: List[str]) -> Dict[str, List[Union
 
         # Parse default value (e.g., :material-water: `value`)
         elif curr_name and doc_options[curr_name][0] == "":
-            if ":material-water:" in line and "`" in line:
+            if DEFAULT_VALUE_PREFIX in line and "`" in line:
                 # Find backtick-quoted value after :material-water:
                 parts = line.split("`")
                 for j in range(1, len(parts), 2):
-                    if j > 0 and ":material-water:" in parts[j-1]:
+                    if j > 0 and DEFAULT_VALUE_PREFIX in parts[j - 1]:
                         doc_options[curr_name][0] = parts[j]
                         break
-            elif ":octicons-cpu-24:" in line:
+            elif AUTODETECTED_PREFIX in line:
                 # Auto-detected default value
                 doc_options[curr_name][0] = "(auto-detected)"
 
         # Detect Available Options section
-        elif '=== "Available Options"' in line:
+        elif AVAILABLE_OPTIONS_HEADER in line:
             in_available_options = True
 
         # Parse available options (e.g., `opt1` | `opt2` | `opt3`)
