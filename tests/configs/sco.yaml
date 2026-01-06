@@ -1,4 +1,0 @@
-file: !include common.yaml
-
-min_bb_per_function: 1
-max_bb_per_function: 1

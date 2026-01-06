@@ -1,3 +1,0 @@
-file: !include common-nsco.yaml
-
-x86_disable_div64: false

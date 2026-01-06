@@ -1,0 +1,6 @@
+file: !include detect-v1.yaml
+
+# prevent speculative stores from being observed
+contract_observation_clause: ct-nonspecstore
+contract_execution_clause:
+  - cond

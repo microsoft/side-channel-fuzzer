@@ -17,7 +17,7 @@ This guide will help you understand and validate violations detected by Revizor.
 When Revizor detects a violation during fuzzing, it prints a summary message to the console similar to this:
 
 ```plaintext
-(venv-3.12) main ➜  revizor ./revizor.py fuzz -s base.json -c demo/detecting-v1.yaml -n 1000 -i 100 -w ./
+(venv-3.12) main ➜  revizor ./revizor.py fuzz -s base.json -c demo/detect-v1.yaml -n 1000 -i 100 -w ./
 
 INFO: [prog_gen] Setting program_generator_seed to random value: 599740
 

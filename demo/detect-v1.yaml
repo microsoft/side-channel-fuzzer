@@ -1,18 +1,14 @@
-# This demo illustrates detection of Foreshadow
-#
-#
-#
-
 # contract
 contract_observation_clause: loads+stores+pc
 contract_execution_clause:
-  - delayed-exception-handling
+  - no_speculation
 
 # tested instructions
 instruction_categories:
   - BASE-BINARY
   - BASE-BITBYTE
   - BASE-CMOV
+  - BASE-COND_BR
   - BASE-CONVERT
   - BASE-DATAXFER
   - BASE-LOGICAL
@@ -22,25 +18,11 @@ instruction_categories:
   - BASE-PUSH
   - BASE-SETCC
 
-instruction_blocklist_append:
-  - DIV
-  - IDIV
-
-actors:
-  - main:
-    - data_properties:
-      - present: false
-      - writable: false
-
-# misc. fuzzing configuration
+# fuzzing configuration
 enable_speculation_filter: true
 enable_observation_filter: true
-enable_priming: false
-data_generator_entropy_bits: 16
-min_bb_per_function: 1
-max_bb_per_function: 1
 program_size: 16
 avg_mem_accesses: 8
 inputs_per_class: 2
-executor_warmups: 2
-x86_disable_div64: false
+
+program_generator_seed: 100

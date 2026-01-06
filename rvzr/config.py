@@ -215,7 +215,7 @@ class Conf:
     """ data_generator: type of the input generator """
     data_generator_seed: int = 10
     """ data_generator_seed: input generation seed; will use a random seed if set to zero """
-    data_generator_entropy_bits: int = 16
+    data_generator_entropy_bits: int = 31
     """ data_generator_entropy_bits: entropy of the random values created by the input generator """
     inputs_per_class: int = 2
     """ inputs_per_class: number of inputs per input class """

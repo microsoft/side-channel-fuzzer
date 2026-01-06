@@ -1,4 +1,0 @@
-file: !include v1.yaml
-
-contract_execution_clause:
-  - conditional_br_misprediction

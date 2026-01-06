@@ -21,12 +21,12 @@ To illustrate how Revizor works, consider a simple fuzzing campaign that will le
 !!! info "Prerequisites"
     Before running this example, ensure you have Revizor installed and set up correctly. Follow the [Installation Guide](02-install.md) if you haven't done so already.
 
-We will use a configuration file in `demo/detecting-v1.yaml`. This config file tells Revizor to test a small subset of x86-64 ISA (arithmetic instructions + conditional branches) against a contract that states that the CPU should not speculate and should only leak information about loads, stores, and the program counter. As most modern CPUs implement branch prediction, we expect to see a violation of this contract.
+We will use a configuration file in `demo/detect-v1.yaml`. This config file tells Revizor to test a small subset of x86-64 ISA (arithmetic instructions + conditional branches) against a contract that states that the CPU should not speculate and should only leak information about loads, stores, and the program counter. As most modern CPUs implement branch prediction, we expect to see a violation of this contract.
 
 Run the fuzzer with the following command:
 
 ```bash
-$ rvzr fuzz -s base.json -n 1000 -i 100 -c demo/detecting-v1.yaml -w ./
+$ rvzr fuzz -s base.json -n 1000 -i 100 -c demo/detect-v1.yaml -w ./
 ```
 
 After a short while, you should see output similar to this:

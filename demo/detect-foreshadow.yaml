@@ -1,19 +1,15 @@
-# This demo illustrates detection of a Spectre V1
-#
-#
-# Run it with: ./revizor.py fuzz -s x86/isa_spec/base.json -n 1000 -i 100 -c ../demo/detecting-v1.yaml
+# This demo illustrates detection of Foreshadow
 
 # contract
 contract_observation_clause: loads+stores+pc
 contract_execution_clause:
-  - no_speculation
+  - delayed-exception-handling
 
 # tested instructions
 instruction_categories:
   - BASE-BINARY
   - BASE-BITBYTE
   - BASE-CMOV
-  - BASE-COND_BR
   - BASE-CONVERT
   - BASE-DATAXFER
   - BASE-LOGICAL
@@ -23,14 +19,21 @@ instruction_categories:
   - BASE-PUSH
   - BASE-SETCC
 
-# fuzzing configuration
+instruction_blocklist_append:
+  - DIV
+  - IDIV
+
+actors:
+  - main:
+    - data_properties:
+      - present: false
+      - writable: false
+
+# misc. fuzzing configuration
 enable_speculation_filter: true
 enable_observation_filter: true
-min_bb_per_function: 2
-max_bb_per_function: 2
-min_successors_per_bb: 2
-max_successors_per_bb: 2
 program_size: 16
 avg_mem_accesses: 8
 inputs_per_class: 2
+executor_warmups: 2
 x86_disable_div64: false

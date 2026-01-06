@@ -1,9 +1,0 @@
-file: !include common-nsco.yaml
-
-min_successors_per_bb: 2
-max_successors_per_bb: 2
-min_bb_per_function: 3
-max_bb_per_function: 3
-contract_observation_clause: ct-nonspecstore
-contract_execution_clause:
-  - conditional_br_misprediction

@@ -6,19 +6,16 @@ contract_execution_clause:
 # tested instructions
 instruction_categories:
   - BASE-BITBYTE
-  - BASE-COND_BR
+  - BASE-BINARY
   - BASE-CMOV
   - BASE-LOGICAL
-
-# environment
-x86_executor_enable_ssbp_patch: false
 
 # fuzzing configuration
 enable_speculation_filter: true
 enable_observation_filter: true
-data_generator_entropy_bits: 16
-min_bb_per_function: 1
-max_bb_per_function: 1
-program_size: 20
-avg_mem_accesses: 10
+program_size: 64
+avg_mem_accesses: 24
 inputs_per_class: 2
+
+program_generator_seed: 252633
+x86_disable_div64: false
