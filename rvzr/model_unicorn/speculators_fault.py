@@ -84,8 +84,8 @@ class SequentialAssistSpeculator(FaultSpeculator):
         if not self._fault_triggers_speculation(errno):
             return 0
 
-        # no speculation - simply reset the permissions
-        self._restore_faulty_page_permissions(self._model.state.current_actor.get_id())
+        # no speculation - simply reset the permissions to permit access
+        self._model.set_faulty_area_rw(self._model.state.current_actor.get_id(), True, True)
         return self._curr_instruction_addr
 
 
