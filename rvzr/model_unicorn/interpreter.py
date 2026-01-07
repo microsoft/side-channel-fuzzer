@@ -593,6 +593,8 @@ class _FaultInterpreterCommon(ABC):
         and the current execution mode
         """
         # identify the target page privilege level
+        if not self._model.layout.is_data_addr(address):
+            return
         target_aid = self._model.layout.data_addr_to_actor_id(address)
         faulty_area_start = self._model.layout.get_data_addr(DataArea.FAULTY, target_aid)
         is_faulty_page = (address & 0xFFFFFFFFFFFFF000) == faulty_area_start
