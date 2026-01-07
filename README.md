@@ -9,13 +9,13 @@
 Revizor is a security-oriented fuzzer for detecting information leaks in CPUs, such as [Spectre and Meltdown](https://meltdownattack.com/).
 It tests CPUs against [Leakage Contracts](https://arxiv.org/abs/2006.03841) and searches for unexpected leaks.
 
-For more details, see our [Paper](https://dl.acm.org/doi/10.1145/3503222.3507729) (open access [here](https://arxiv.org/abs/2105.06872)), and the follow-up papers ([1](https://arxiv.org/pdf/2301.07642.pdf), [2](https://www.usenix.org/conference/usenixsecurity23/presentation/hofmann)).
+<!-- For more details, see our [Paper](https://dl.acm.org/doi/10.1145/3503222.3507729) (open access [here](https://arxiv.org/abs/2105.06872)), and the follow-up papers ([1](https://arxiv.org/pdf/2301.07642.pdf), [2](https://www.usenix.org/conference/usenixsecurity23/presentation/hofmann)). -->
 
 ## Getting Started and Documentation
 
 You can find a quick start guide at [Quick Start](https://microsoft.github.io/sca-fuzzer/quick-start/).
 
-For information on how to use Revizor, see [User Documentation](https://microsoft.github.io/sca-fuzzer/cli/).
+For information on how to use Revizor, see [User Documentation](https://microsoft.github.io/sca-fuzzer/user/).
 
 For information on how to contribute to Revizor, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -27,7 +27,7 @@ If something is confusing or you need help in using Revizor, we have a [discussi
 
 ## Citing Revizor
 
-To cite this project, you can use the following references:
+To cite this project, you can use any of the following references:
 
 1. Original paper that introduced the concept of Model-based Relation Testing as well as the Revizor tool:
 
@@ -49,7 +49,9 @@ To cite this project, you can use the following references:
 
     Jana Hofmann, Emanuele Vannacci, Cédric Fournet, Boris Köpf, and Oleksii Oleksenko. "[Speculation at Fault: Modeling and Testing Microarchitectural Leakage of CPU Exceptions.](https://www.usenix.org/conference/usenixsecurity23/presentation/hofmann)" in Proceedings of 32nd USENIX Security Symposium (USENIX Security), 2023.
 
+6. Paper that introduced testing of cross-VM and user-kernel leaks in Revizor, as well as presented TSA attacks on AMD CPUs:
 
+    Oleksii Oleksenko, Flavien Solt, Cédric Fournet, Jana Hofmann, Boris Köpf, and Stavros Volos. "[Enter, Exit, Page Fault, Leak: Testing Isolation Boundaries for Microarchitectural Leaks](https://www.microsoft.com/en-us/research/wp-content/uploads/2025/07/Enter-Exit-SP26.pdf)" (to be published) in Proceedings of the 2026 IEEE Symposium on Security and Privacy (SP), 2026.
 
 ## Trademarks
 
