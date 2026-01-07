@@ -20,4 +20,4 @@ from .arch.x86 import *
 from .model_unicorn import *
 from .postprocessing import *
 
-__version__ = "2.0.0"
+__version__ = "2.1.0-dev"

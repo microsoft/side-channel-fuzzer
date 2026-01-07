@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "revizor-fuzzer"
-version = "2.0.0"
+version = "2.1.0-dev"
 description = "A fuzzer to search for microarchitectural leaks in CPUs"
 readme = "README.md"
 requires-python = ">=3.9"
