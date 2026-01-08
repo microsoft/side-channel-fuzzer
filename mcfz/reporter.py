@@ -233,7 +233,7 @@ class _Analyser:
 
     def _parse_trace_file(self, trace_file: str) -> _Trace:
         trace = _Trace(trace_file)
-        raw_traces, _ = self.trace_decoder.decode_trace_file(trace_file)
+        raw_traces = self.trace_decoder.decode_trace_file(trace_file)
 
         for i, entry in enumerate(raw_traces[0]):
             type_ = TraceEntryType(entry.type)
