@@ -14,7 +14,7 @@ from unittest.mock import patch, mock_open
 from io import StringIO
 
 import yaml
-from consfuzz.config import Config, _ConfigException
+from mcfz.config import Config, _ConfigException
 
 
 class TestConfig(unittest.TestCase):

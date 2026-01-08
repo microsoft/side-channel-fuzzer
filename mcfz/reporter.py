@@ -7,7 +7,7 @@ SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Iterator, NewType, Literal, \
-    Final, Union
+    Final, Union, Any
 
 import os
 import json
@@ -331,7 +331,7 @@ class _Analyser:
 
 class _HexEncoder(json.JSONEncoder):
 
-    def encode(self, o):
+    def encode(self, o: Any) -> str:
         if isinstance(o, int):
             return hex(o)
         return super().encode(o)

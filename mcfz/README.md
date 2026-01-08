@@ -31,7 +31,7 @@ in the target binary.
 
 Example:
 ```
-./consfuzz.py pub_gen -c config.yaml -w ~/consfuzz-results/ -t 60 --target-cov 5 -- /usr/bin/openssl enc -e -aes256 -out enc.bin -in @@ -pbkdf2 -pass @#
+./mcfz.py pub_gen -c config.yaml -w ~/mcfz-results/ -t 60 --target-cov 5 -- /usr/bin/openssl enc -e -aes256 -out enc.bin -in @@ -pbkdf2 -pass @#
 ```
 
 ## Stage 2: [NAME TBD]
@@ -43,7 +43,7 @@ collected in a directory. The underlying tracing engine is the DynamoRIO-based b
 
 Example:
 ```
-./consfuzz.py stage2 -c config.yaml -w ~/consfuzz-results/ -n 10 -- /usr/bin/openssl enc -e -aes256 -out enc.bin -in @@ -pbkdf2 -pass @#
+./mcfz.py stage2 -c config.yaml -w ~/mcfz-results/ -n 10 -- /usr/bin/openssl enc -e -aes256 -out enc.bin -in @@ -pbkdf2 -pass @#
 ```
 
 ## Stage 3: Leakage Analysis & Reporting
@@ -53,7 +53,7 @@ the results.
 
 Example:
 ```
-./consfuzz.py report -c  config.yaml -w ~/consfuzz-results/ -b /usr/bin/openssl
+./mcfz.py report -c  config.yaml -w ~/mcfz-results/ -b /usr/bin/openssl
 ```
 
 
@@ -62,7 +62,7 @@ Example:
 ```
 echo 0 | sudo tee /proc/sys/kernel/randomize_va_space
 
-./consfuzz.py pub_gen -c dbg/consfuzz.yaml -w ~/results/ -t 10 --target-cov 50 -- ~/eval-rvzr-sw/drivers/bearssl/bearssl -k @# -i ~/eval-rvzr-sw/drivers/bearssl/test/iv.bin -o enc.bin @@
-./consfuzz.py stage2 -c dbg/consfuzz.yaml -w ~/results/ -n 2 -- ~/eval-rvzr-sw/drivers/bearssl/bearssl -k @# -i ~/eval-rvzr-sw/drivers/bearssl/test/iv.bin -o enc.bin @@
-./consfuzz.py report -c dbg/consfuzz.yaml -w ~/results -b ~/eval-rvzr-sw/drivers/bearssl/bearssl
+./mcfz.py pub_gen -c dbg/mcfz.yaml -w ~/results/ -t 10 --target-cov 50 -- ~/eval-rvzr-sw/drivers/bearssl/bearssl -k @# -i ~/eval-rvzr-sw/drivers/bearssl/test/iv.bin -o enc.bin @@
+./mcfz.py stage2 -c dbg/mcfz.yaml -w ~/results/ -n 2 -- ~/eval-rvzr-sw/drivers/bearssl/bearssl -k @# -i ~/eval-rvzr-sw/drivers/bearssl/test/iv.bin -o enc.bin @@
+./mcfz.py report -c dbg/mcfz.yaml -w ~/results -b ~/eval-rvzr-sw/drivers/bearssl/bearssl
 ```

@@ -1,6 +1,6 @@
 """
-File: Function definitions for using Contract-based Software Fuzzer (ConSFuzz) as command-line tool
-(Note: the actual CLI is accessed via consfuzz.py)
+File: Function definitions for using Model-based Constant-time Fuzzer (McFuzz) as command-line tool
+(Note: the actual CLI is accessed via mcfz.py)
 
 Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
