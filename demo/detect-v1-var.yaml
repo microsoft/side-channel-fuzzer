@@ -1,24 +1,8 @@
 file: !include detect-v1.yaml
 
-# contract
-# contract_observation_clause: ct
 contract_execution_clause:
   - cond
-# analyser_subsets_is_violation: false
 
-# # tested instructions
-# instruction_categories:
-#   - BASE-BITBYTE
-#   - BASE-COND_BR
-#   - BASE-CMOV
-#   - BASE-LOGICAL
-
-# # fuzzing configuration
-# enable_speculation_filter: true
-# enable_observation_filter: true
-# data_generator_entropy_bits: 16
-# min_bb_per_function: 2
-# max_bb_per_function: 2
-# program_size: 20
-# avg_mem_accesses: 10
-# inputs_per_class: 2
+program_size: 32
+avg_mem_accesses: 16
+inputs_per_class: 2
