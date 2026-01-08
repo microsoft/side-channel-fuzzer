@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-File: Command Line Interface to Contract-based Software Fuzzer (ConSFuzz)
+File: Command Line Interface to Model-based Constant-time Fuzzer (McFuzz, or mcfz for short)
 
 Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 import sys
-from consfuzz.cli import main
+from mcfz.cli import main
 
 if __name__ == '__main__':
     exit_code = main()

@@ -1,5 +1,5 @@
 """
-File: Global ConSFuzz configuration.
+File: Global McFuzz configuration.
 
 Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
@@ -266,7 +266,7 @@ class Config:
         Return a help string describing all configuration options.
         :return: Help string
         """
-        help_str = "ConSFuzz Configuration Options:\n"
+        help_str = "McFuzz Configuration Options:\n"
         help_str += cls._help
         return help_str
 
@@ -281,7 +281,7 @@ class Config:
         with open(config_yaml, 'r') as file:
             config_data = yaml.safe_load(file)
         if not isinstance(config_data, dict):
-            raise SystemExit(f"[ERROR] YAML file {config_yaml} isn't a valid ConSFuzz config file.")
+            raise SystemExit(f"[ERROR] YAML file {config_yaml} isn't a valid McFuzz config file.")
         return config_data
 
     def _set_from_yaml(self, yaml_data: YAMLData) -> None:

@@ -7,7 +7,7 @@ SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Iterator, NewType, Literal, \
-    Final, Union
+    Final, Union, Any
 
 import os
 import json
@@ -233,7 +233,7 @@ class _Analyser:
 
     def _parse_trace_file(self, trace_file: str) -> _Trace:
         trace = _Trace(trace_file)
-        raw_traces, _ = self.trace_decoder.decode_trace_file(trace_file)
+        raw_traces = self.trace_decoder.decode_trace_file(trace_file)
 
         for i, entry in enumerate(raw_traces[0]):
             type_ = TraceEntryType(entry.type)
@@ -331,7 +331,7 @@ class _Analyser:
 
 class _HexEncoder(json.JSONEncoder):
 
-    def encode(self, o):
+    def encode(self, o: Any) -> str:
         if isinstance(o, int):
             return hex(o)
         return super().encode(o)
