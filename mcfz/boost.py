@@ -22,66 +22,69 @@ class Boost:
 
     def __init__(self, config: Config) -> None:
         self._config = config
+        self._boosting_factor = config.num_secrets_per_class
 
-    def _generate_from_reference(self, wd: str, reference_input: str, num_sec_inputs: int) -> int:
+    def _generate_from_reference(self, wd: str, reference_input: str) -> int:
         """
-        Given a reference input, generate mode inputs that will contain the same public data,
+        Given a reference input, generate more inputs that will contain the same public data,
         but the secret (private) data will be randomly generated
-        (though the size of the secret data will be the same).
+        (the size of the secret data will be the same).
 
-        The input file contains three sections: config data, public data, and private data.
-        * The config data is always 16 bytes long, and it should be copied from the reference input.
-          The first byte of the config data is a ratio of public to private data, and it thus
-          determines the layout of the remaining data.
-          E.g., if the value of the first config byte is 1 and the file size is 1040 bytes, then
-          data_size = 1040 - 16 = 1024 bytes, which is split into public and private data
+        The input file contains two sections: config and data.
+
+        Config section (16 bytes total):
+        * Bytes 0-1: irrelevant for this function.
+        * Byte 2: Private-to-public ratio - determines the layout of the data section.
+          E.g., if this byte is 1 and the data size is 1024 bytes, then
           priv_size = (1 / 256) * 1024 = 4 bytes, and
           pub_size = (255 / 256) * 1024 = 1020 bytes.
-        * The private data has size priv_size. This is the region that will be randomized.
-        * The public data has size pub_size. This region will be copied from the
-          reference input.
+        * Bytes 3-7: Unused (reserved for future use)
+        * Bytes 8-15: irrelevant for this function.
+
+        Data section (variable size):
+        * Private data (priv_size bytes): This region will be randomized.
+        * Public data (pub_size bytes): This region will be copied from the reference input.
+
+        :param wd: Working directory to store the generated inputs
         :param reference_input: Path to the reference input file
-        :param num_sec_inputs: Number of secret (private) inputs to generate
-        :return: 0 if successful, 1 if the reference input is invalid or an error occurs
         """
         # Read the reference input to determine the sizes of public and private data
         with open(reference_input, 'rb') as f:
             ref_data = f.read()
 
         if len(ref_data) < CONF_SIZE + 2:  # Public and private data must be present
-            return 1
+            raise ValueError("Reference input is too small to contain config and data sections.")
 
         data_size = len(ref_data) - CONF_SIZE
-        priv_size = (ref_data[0] * data_size) // 256
+        priv_size = (ref_data[2] * data_size) // 256
         pub_size = data_size - priv_size
         if len(ref_data) < (CONF_SIZE + pub_size):
-            return 1
+            raise ValueError("Reference input is too small for the calculated public data size.")
 
         # Copy the reference input to the working directory
-        new_ref_name = os.path.join(wd, "000.bin")
-        with open(new_ref_name, 'wb') as dest_file:
+        with open(os.path.join(wd, "000.bin"), 'wb') as dest_file:
             dest_file.write(ref_data)
 
         # Generate the secret inputs
         config_data = ref_data[:CONF_SIZE]
         pub_data = ref_data[CONF_SIZE + priv_size:CONF_SIZE + priv_size + pub_size]
-        for i in range(1, num_sec_inputs):
+        for i in range(1, self._boosting_factor):
             priv_data = os.urandom(priv_size)
             dest_path = os.path.join(wd, f"{i:03}.bin")
             with open(dest_path, 'wb') as dest_file:
-                dest_file.write(config_data + pub_data + priv_data)
+                dest_file.write(config_data + priv_data + pub_data)
 
         return 0
 
-    def generate(self, num_sec_inputs: int) -> int:
+    def generate(self) -> None:
         """
-        Generate public-equivalent inputs for each reference input generated on Stage 1 by AFL++.
-        The inputs will contain the same public data, but the secret (private) data will be
+        Generate public-equivalent variants for each reference input generated during fuzzing.
+        The variants will contain the same public data, but the secret (private) data will be
         randomly generated (though the size of the secret data will be the same).
-        The inputs will be stored in the stage 2 working directory.
-        :param num_sec_inputs: Number of secret (private) inputs to generate for each reference
-        :return: 0 if successful, 1 if an error occurs
-        :raises FileNotFoundError: If the AFL++ working directory does not exist
+        The variants will be stored in the stage 2 working directory.
+
+        :return: None
+        :raises FileNotFoundError: If the fuzzing working directory does not exist
         :raises OSError: If there is an error creating directories or files
         """
 
@@ -94,10 +97,10 @@ class Boost:
             os.makedirs(dest_dir, exist_ok=True)
 
             # Try generating more public-equivalent inputs from the reference input
-            if self._generate_from_reference(dest_dir, ref_input_path, num_sec_inputs) == 0:
+            if self._generate_from_reference(dest_dir, ref_input_path) == 0:
                 continue
 
             # If we failed, remove the directory
             os.rmdir(dest_dir)
 
-        return 0
+        return
