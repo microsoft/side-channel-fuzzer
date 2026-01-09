@@ -26,7 +26,7 @@ $(dr_path)/drrun:
 
 backend:
 	mkdir -p $(current_dir)/backend/build
-	cd $(current_dir)/backend/build && cmake $(CMAKE_FLAGS) -DDynamoRIO_DIR=$(dr_path)/DynamoRIO-Linux-$(release)/cmake -D CMAKE_BUILD_TYPE=Debug  $(current_dir)/backend
+	cd $(current_dir)/backend/build && cmake $(CMAKE_FLAGS) -DDynamoRIO_DIR=$(dr_path)/DynamoRIO-Linux-$(release)/cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo $(current_dir)/backend
 	make -C $(current_dir)/backend/build
 	cp $(current_dir)/backend/build/libdr_model.so $(dr_path)
 
