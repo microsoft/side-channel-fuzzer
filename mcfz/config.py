@@ -14,7 +14,7 @@ import shutil
 import yaml
 from typing_extensions import assert_never
 
-FuzzingStages = Literal["fuzz", "pub_gen", "stage2", "report"]
+TestingStages = Literal["fuzz", "fuzz_gen", "boost", "trace", "report"]
 YAMLData = Dict[str, Any]
 ReportVerbosity = Literal[1, 2, 3]
 
@@ -38,7 +38,7 @@ class _WorkingDirManager:
     def __init__(self, config: Config) -> None:
         self.config = config
 
-    def set_working_dirs(self, stage: FuzzingStages) -> None:
+    def set_working_dirs(self, stage: TestingStages) -> None:
         """
         Ensure that the working directory is set up correctly.
 
@@ -75,12 +75,14 @@ class _WorkingDirManager:
         # Identify the target directory for the given stage
         if stage == "fuzz":
             stage_dir = self.config.working_dir
-        elif stage == "pub_gen":
+        elif stage == "fuzz_gen":
             stage_dir = self.config.stage1_wd
-        elif stage == "stage2":
+        elif stage == "boost":
             stage_dir = self.config.stage2_wd
-        elif stage == "report":
+        elif stage == "trace":
             stage_dir = self.config.stage3_wd
+        elif stage == "report":
+            stage_dir = self.config.stage4_wd
         else:
             assert_never(stage)
 
@@ -130,7 +132,7 @@ class _WorkingDirManager:
         shutil.make_archive(archive_path, 'gztar', str(source_dir))
         print(f"[INFO] Archived {working_dir} to {archive_path}.tar.gz.")
 
-    def _reset_dirs(self, stage_dir: str, stage: FuzzingStages) -> None:
+    def _reset_dirs(self, stage_dir: str, stage: TestingStages) -> None:
         shutil.rmtree(stage_dir)
         os.makedirs(stage_dir, exist_ok=True)
         if stage == "fuzz":
@@ -185,6 +187,7 @@ class Config:
     stage1_wd: str
     stage2_wd: str
     stage3_wd: str
+    stage4_wd: str
 
     # ==============================================================================================
     # Fuzzing parameters
@@ -246,7 +249,7 @@ class Config:
     llvm_cov_cmd: str = "llvm-cov"
     llvm_profdata_cmd: str = "llvm-profdata"
 
-    def __init__(self, config_yaml: str, stage: FuzzingStages) -> None:
+    def __init__(self, config_yaml: str, stage: TestingStages) -> None:
         if Config.__config_instantiated:
             raise RuntimeError("Config class should be instantiated only once.")
         Config.__config_instantiated = True
@@ -298,6 +301,7 @@ class Config:
         self.stage1_wd = os.path.join(self.working_dir, "stage1")
         self.stage2_wd = os.path.join(self.working_dir, "stage2")
         self.stage3_wd = os.path.join(self.working_dir, "stage3")
+        self.stage4_wd = os.path.join(self.working_dir, "stage4")
 
         self.archive_dir = yaml_data.get("archive_dir", None)
         if self.archive_dir is not None:
@@ -324,6 +328,9 @@ class Config:
                                                          self.contract_observation_clause)
         self.contract_execution_clause = yaml_data.get("contract_execution_clause",
                                                        self.contract_execution_clause)
+
+        self.num_secrets_per_class = yaml_data.get(
+            "num_secrets_per_class", self.num_secrets_per_class)
 
         self.report_verbosity = yaml_data.get("report_verbosity", self.report_verbosity)
         self.report_allowlist = yaml_data.get("report_allowlist", self.report_allowlist)

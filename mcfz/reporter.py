@@ -173,18 +173,18 @@ class _Analyser:
     def __init__(self) -> None:
         self.trace_decoder = TraceDecoder()
 
-    def build_leakage_map(self, stage2_dir: str) -> LeakageMap:
+    def build_leakage_map(self, stage3_dir: str) -> LeakageMap:
         """
         Analyse all leaks stored in the given directory after a completed fuzzing campaign.
         """
         leakage_map: LeakageMap = {'I': {}, 'D': {}}
-        input_groups = os.listdir(stage2_dir)
+        input_groups = os.listdir(stage3_dir)
 
         # Iterate over all input groups
         # (i.e., groups of traces collected from the same public input)
         inputs: Dict[str, List[str]] = {}
         for input_group in input_groups:
-            input_group_dir = os.path.join(stage2_dir, input_group)
+            input_group_dir = os.path.join(stage3_dir, input_group)
 
             # Get a reference trace for the given group; we will use it to check that
             # all other traces are the same
@@ -517,26 +517,26 @@ def _build_cov_report(config: Config, target_binary: str) -> None:
     Simple function to invoke llvm-profdata to merge all collected coverage files
     and then invoke llvm-cov to generate a coverage report.
     """
-    stage2_wd = config.stage2_wd
     stage3_wd = config.stage3_wd
+    stage4_wd = config.stage4_wd
     profdata = config.llvm_profdata_cmd
     cov = config.llvm_cov_cmd
 
     # merge all reports
-    profdata_cmd = f"{profdata} merge -sparse {stage2_wd}/*/*.profraw " \
-                   f"-o {os.path.join(stage3_wd, 'merged.profdata')}"
+    profdata_cmd = f"{profdata} merge -sparse {stage3_wd}/*/*.profraw " \
+                   f"-o {os.path.join(stage4_wd, 'merged.profdata')}"
     run(profdata_cmd, check=True, shell=True)
 
     # generate the coverage report (txt)
     cov_cmd = f"{cov} report {target_binary} -instr-profile " \
-              f"{os.path.join(stage3_wd, 'merged.profdata')} > " \
-              f"{os.path.join(stage3_wd, 'coverage_report.txt')}"
+              f"{os.path.join(stage4_wd, 'merged.profdata')} > " \
+              f"{os.path.join(stage4_wd, 'coverage_report.txt')}"
     run(cov_cmd, check=True, shell=True)
 
     # generate another, more detailed coverage report (html)
     cov_html_cmd = f"{cov} show {target_binary} -instr-profile " \
-                   f"{os.path.join(stage3_wd, 'merged.profdata')} " \
-                   f"-format html -output-dir {os.path.join(stage3_wd, 'cov_html')}"
+                   f"{os.path.join(stage4_wd, 'merged.profdata')} " \
+                   f"-format html -output-dir {os.path.join(stage4_wd, 'cov_html')}"
     run(cov_html_cmd, check=True, shell=True)
 
 
@@ -560,14 +560,14 @@ class Reporter:
         :param target_binary: Path to the target binary
         """
         analyser = _Analyser()
-        self._leakage_map = analyser.build_leakage_map(self._config.stage2_wd)
+        self._leakage_map = analyser.build_leakage_map(self._config.stage3_wd)
 
     def generate_report(self, target_binary: str) -> None:
         """
         Generate a report of the analysis.
         """
         assert self._leakage_map is not None, "No leakage map found. Did you run analyze()?"
-        report_file = os.path.join(self._config.stage3_wd, "fuzzing_report.json")
+        report_file = os.path.join(self._config.stage4_wd, "fuzzing_report.json")
         printer = _ReportPrinter(target_binary, self._config)
         printer.final_report(self._leakage_map, report_file)
 

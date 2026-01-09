@@ -13,13 +13,12 @@ from argparse import ArgumentParser
 
 from typing_extensions import get_args
 
-from .config import Config, FuzzingStages
+from .config import Config, TestingStages
 from .fuzzer import FuzzerCore
 
 CMD_HELP =\
-    "Command to execute (e.g., 'openssl enc -e -aes256 -out enc.bin -in @@ -pbkdf2 -pass @#').\n" \
-    "NOTE: use '@@' as a placeholder for generated public argument and\n" \
-    "'@#' for generated private argument"
+    "Command to execute (e.g., 'openssl-driver -d @@ -p policy.txt').\n" \
+    "NOTE: use '@@' as a placeholder for generated driver input files."
 
 
 def _parse_args() -> Any:  # pylint: disable=r0915
@@ -94,25 +93,23 @@ def _parse_args() -> Any:  # pylint: disable=r0915
     )
 
     # ==============================================================================================
-    # Phase 2: Secret input generation and collection of contract traces
-    stage2 = subparsers.add_parser('stage2', add_help=True, parents=[common_parser])
-    stage2.add_argument(
-        "-n",
-        "--num-sec-inputs",
-        type=int,
-        default=10,
-        help="Number of secret inputs to generate per public input (default: 10)",
-    )
+    # Stage 2: Boosting - generate public-equivalent variants
+    _ = subparsers.add_parser('boost', add_help=True, parents=[common_parser])
+    # no arguments for now
+
+    # ==============================================================================================
+    # Stage 3: Collection of contract traces
+    trace = subparsers.add_parser('trace', add_help=True, parents=[common_parser])
 
     # everything after '--' is saved into 'target_cmd' argument
-    stage2.add_argument(
+    trace.add_argument(
         "target_cmd",
         nargs="+",
         help=CMD_HELP,
     )
 
     # ==============================================================================================
-    # Phase 3: Analysis of traces and reporting of leaks
+    # Stage 4: Analysis of traces and reporting of leaks
     report = subparsers.add_parser('report', add_help=True, parents=[common_parser])
     report.add_argument(
         "-b",
@@ -165,7 +162,7 @@ def main() -> int:
         print(Config.help())
         return 0
 
-    assert args.subparser_name in get_args(FuzzingStages)
+    assert args.subparser_name in get_args(TestingStages)
     config = Config(args.config, args.subparser_name)
     fuzzer = FuzzerCore(config)
 
@@ -176,20 +173,27 @@ def main() -> int:
             target_cov=0,  # TODO: will be replaced with args.target_cov when implemented
             timeout_s=args.timeout,
         )
-    if args.subparser_name == 'stage2':
-        return fuzzer.stage2(
-            cmd=args.target_cmd,
-            num_sec_inputs=args.num_sec_inputs,
-        )
+        return 0
+
+    if args.subparser_name == 'boost':
+        fuzzer.boost()
+        return 0
+
+    if args.subparser_name == 'trace':
+        fuzzer.trace(cmd=args.target_cmd)
+        return 0
+
     if args.subparser_name == 'report':
-        return fuzzer.report(target_binary=args.target_binary)
+        fuzzer.report(target_binary=args.target_binary)
+        return 0
+
     if args.subparser_name == 'fuzz':
-        return fuzzer.all(
+        fuzzer.all(
             cmd=args.target_cmd,
             target_cov=0,  # TODO: will be replaced with args.target_cov when implemented
             timeout_s=args.timeout,
-            num_sec_inputs=args.num_sec_inputs,
         )
+        return 0
 
     print("ERROR: Unknown subcommand")
     return 1

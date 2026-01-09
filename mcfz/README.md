@@ -20,49 +20,57 @@ traces for the non-interference property: if two executions of the binary with d
 private values but identical public data produce different traces, then the binary is
 leaking information.
 
-The fuzzer operates in three stages:
+The fuzzer operates in four stages:
 
-## THE BELOW IS NOT YET IMPLEMENTED (SEE "ACTUAL EXAMPLE" BELOW)
+## Stage 1: Fuzzing-based Input Generation
 
-## Stage 1: Public Input Generation
-
-The fuzzer uses AFL++ to generate a set of public inputs that cover a wide range of execution paths
-in the target binary.
+The fuzzer uses AFL++ to generate a diverse set of inputs (containing both public and secret data)
+that cover a wide range of execution paths in the target binary.
 
 Example:
 ```
-./mcfz.py pub_gen -c config.yaml -w ~/mcfz-results/ -t 60 --target-cov 5 -- /usr/bin/openssl enc -e -aes256 -out enc.bin -in @@ -pbkdf2 -pass @#
+./mcfz.py fuzz_gen -c config.yaml -t 60 -- /usr/bin/openssl enc -e -aes256 -out enc.bin -in @@ -pbkdf2 -pass @#
 ```
 
-## Stage 2: [NAME TBD]
+## Stage 2: Boosting
 
-The second stage combines generation of secret inputs (fully random) and tracing of the binary.
-The tracing is done for each pair of public and secret inputs, and the traces are
-collected in a directory. The underlying tracing engine is the DynamoRIO-based backend of Revizor
-(see `rvzr/model_dynamorio/backend`).
+The second stage takes each input generated during the fuzzing stage and creates public-equivalent
+variants. Each variant contains the same public data as the original input, but with randomly
+generated secret values. This creates equivalence classes for non-interference testing.
 
 Example:
 ```
-./mcfz.py stage2 -c config.yaml -w ~/mcfz-results/ -n 10 -- /usr/bin/openssl enc -e -aes256 -out enc.bin -in @@ -pbkdf2 -pass @#
+./mcfz.py boost -c config.yaml
 ```
 
-## Stage 3: Leakage Analysis & Reporting
+## Stage 3: Tracing
 
-The third stage analyzes the traces collected in the previous stage and reports
-the results.
+The third stage collects contract traces for each input using the DynamoRIO-based leakage model
+backend of Revizor (see `rvzr/model_dynamorio/backend`).
 
 Example:
 ```
-./mcfz.py report -c  config.yaml -w ~/mcfz-results/ -b /usr/bin/openssl
+./mcfz.py trace -c config.yaml -- /usr/bin/openssl enc -e -aes256 -out enc.bin -in @@ -pbkdf2 -pass @#
+```
+
+## Stage 4: Leakage Analysis & Reporting
+
+The final stage analyzes the traces collected in the previous stage to detect violations of
+non-interference and reports any information leaks.
+
+Example:
+```
+./mcfz.py report -c config.yaml -b /usr/bin/openssl
 ```
 
 
-## ACTUAL EXAMPLE
+## Complete Example
 
 ```
 echo 0 | sudo tee /proc/sys/kernel/randomize_va_space
 
-./mcfz.py pub_gen -c dbg/mcfz.yaml -w ~/results/ -t 10 --target-cov 50 -- ~/eval-rvzr-sw/drivers/bearssl/bearssl -k @# -i ~/eval-rvzr-sw/drivers/bearssl/test/iv.bin -o enc.bin @@
-./mcfz.py stage2 -c dbg/mcfz.yaml -w ~/results/ -n 2 -- ~/eval-rvzr-sw/drivers/bearssl/bearssl -k @# -i ~/eval-rvzr-sw/drivers/bearssl/test/iv.bin -o enc.bin @@
-./mcfz.py report -c dbg/mcfz.yaml -w ~/results -b ~/eval-rvzr-sw/drivers/bearssl/bearssl
+./mcfz.py fuzz_gen -c dbg/mcfz.yaml -t 30 -- ~/openssl/openssl-driver -d @@ -p policy.txt
+./mcfz.py boost -c dbg/mcfz.yaml
+./mcfz.py trace -c dbg/mcfz.yaml -- ~/openssl/openssl-driver -d @@ -p policy.txt
+./mcfz.py report -c dbg/mcfz.yaml -b ~/openssl/openssl-driver
 ```
