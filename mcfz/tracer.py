@@ -45,10 +45,10 @@ class Tracer:
 
         self._config = config
         self._drrun_cmd = f"{config.model_root}/drrun " \
-                          f"-c {config.model_root}/libdr_model.so " \
-                          f"--tracer {config.contract_observation_clause} " \
-                          f"--speculator {config.contract_execution_clause} " \
-                          "--instrumented-func wrapper --trace-output {trace_file} -- {cmd}"
+            f"-c {config.model_root}/libdr_model.so " \
+            f"--tracer {config.contract_observation_clause} " \
+            f"--speculator {config.contract_execution_clause} " \
+            "--instrumented-func start_driver --trace-output {trace_file} -- {cmd}"
         self._coverage_cmd = "LLVM_PROFILE_FILE={cov_file} {cmd}"
 
     def collect_traces(self, cmd: List[str]) -> int:
