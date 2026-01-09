@@ -197,6 +197,15 @@ class Config:
     _help += """\n\n contract_execution_clause (seq)"""
 
     # ==============================================================================================
+    # Generation parameters
+    num_secrets_per_class: int = 2
+    _help += """\n\n num_secrets_per_class (2)
+    Number of public-equivalent inputs to be generated per original randomly-generated input.
+    E.g., if set to 2, for each randomly-generated input created during Stage 1, one more input
+    will be generated during Stage 2, such that the public values in the two inputs are identical,
+    but the secret values differ. """
+
+    # ==============================================================================================
     # DR backend parameters
     model_root: str = "~/.local/dynamorio/"
     _help += """\n\n model_root (~/.local/dynamorio/)
@@ -364,3 +373,11 @@ class Config:
         if self.coverage and not shutil.which(self.llvm_profdata_cmd):
             raise _ConfigException("llvm_profdata_cmd",
                                    f"command {self.llvm_profdata_cmd} not found.")
+
+        if self.num_secrets_per_class < 2:
+            raise _ConfigException("num_secrets_per_class",
+                                   "num_secrets_per_class must be at least 2."
+                                   "(fuzzing is meaningless otherwise).")
+        if self.num_secrets_per_class > 10:
+            print("[WARNING] num_secrets_per_class is set to a high value;"
+                  " this may lead to very long fuzzing times.")
