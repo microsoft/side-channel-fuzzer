@@ -1,5 +1,5 @@
 """
-File: Module responsible for generation of secret (private) inputs for the target binary.
+File: Module responsible for boosting inputs by generating public-equivalent variants.
 
 Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
@@ -15,9 +15,9 @@ if TYPE_CHECKING:
 CONF_SIZE: Final[int] = 0x10  # Size of the config data in bytes
 
 
-class SecGen:
+class Boost:
     """
-    Class responsible for generating secret (private) inputs for the target binary.
+    Class responsible for boosting inputs by generating public-equivalent variants.
     """
 
     def __init__(self, config: Config) -> None:

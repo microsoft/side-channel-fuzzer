@@ -1,5 +1,5 @@
 """
-File: Implementation of the high-level fuzzing logic for the software leakage fuzzer.
+File: Implementation of the high-level fuzzing logic for model-based constant-time testing.
 
 Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
@@ -7,8 +7,8 @@ SPDX-License-Identifier: MIT
 from __future__ import annotations
 from typing import TYPE_CHECKING, List
 
-from .pub_gen import PubGen
-from .sec_gen import SecGen
+from .fuzz_gen import FuzzGen
+from .boost import Boost
 from .tracer import Tracer
 from .reporter import Reporter
 

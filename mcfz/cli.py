@@ -44,7 +44,7 @@ def _parse_args() -> Any:  # pylint: disable=r0915
     )
 
     # ==============================================================================================
-    # All Phases Together: Public input generation, secret input generation, and reporting
+    # All Phases Together: Fuzzing-based generation, boosting, tracing, and reporting
     all_phases = subparsers.add_parser('fuzz', add_help=True, parents=[common_parser])
     all_phases.add_argument(
         "-t",
@@ -58,7 +58,7 @@ def _parse_args() -> Any:  # pylint: disable=r0915
         "--num-sec-inputs",
         type=int,
         default=10,
-        help="Number of secret inputs to generate per public input (default: 10)",
+        help="Number of variants to generate per fuzzed input (default: 10)",
     )
 
     # everything after '--' is saved into 'target_cmd' argument
@@ -69,9 +69,9 @@ def _parse_args() -> Any:  # pylint: disable=r0915
     )
 
     # ==============================================================================================
-    # Phase 1: Public input generation (AFL++ interface)
-    pub_gen = subparsers.add_parser('pub_gen', add_help=True, parents=[common_parser])
-    pub_gen.add_argument(
+    # Stage 1: Fuzzing-based input generation (AFL++ interface)
+    fuzz_gen = subparsers.add_parser('fuzz_gen', add_help=True, parents=[common_parser])
+    fuzz_gen.add_argument(
         "-t",
         "--timeout",
         type=int,
@@ -79,7 +79,7 @@ def _parse_args() -> Any:  # pylint: disable=r0915
         help="Fuzzing timeout, in seconds (default: 10)",
     )
     # TODO: target-cov is not used yet, but it will be used in the future to control the coverage
-    # pub_gen.add_argument(
+    # fuzz_gen.add_argument(
     #     "--target-cov",
     #     type=int,
     #     default=10,
@@ -87,7 +87,7 @@ def _parse_args() -> Any:  # pylint: disable=r0915
     # )
 
     # everything after '--' is saved into 'target_cmd' argument
-    pub_gen.add_argument(
+    fuzz_gen.add_argument(
         "target_cmd",
         nargs="+",
         help=CMD_HELP,
@@ -170,8 +170,8 @@ def main() -> int:
     fuzzer = FuzzerCore(config)
 
     # Start the fuzzer in the mode requested by the user
-    if args.subparser_name == 'pub_gen':
-        return fuzzer.generate_public_inputs(
+    if args.subparser_name == 'fuzz_gen':
+        fuzzer.fuzz_gen(
             cmd=args.target_cmd,
             target_cov=0,  # TODO: will be replaced with args.target_cov when implemented
             timeout_s=args.timeout,

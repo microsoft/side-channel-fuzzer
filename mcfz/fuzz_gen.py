@@ -1,5 +1,5 @@
 """
-File: Module responsible for generation of diverse public inputs for the target binary.
+File: Module responsible for fuzzing-based generation of diverse inputs for the target binary.
 
 Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
@@ -15,9 +15,9 @@ if TYPE_CHECKING:
     from .config import Config
 
 
-class PubGen:
+class FuzzGen:
     """
-    Class responsible for generating public inputs for the target binary using AFL++.
+    Class responsible for generating diverse inputs for the target binary using AFL++.
     """
     _config: Config
     _wd: Final[str]  # Working directory for AFL++
@@ -33,12 +33,11 @@ class PubGen:
 
     def generate(self, cmd: List[str], target_cov: int, timeout_s: int) -> int:
         """
-        Generate public inputs for the target binary invoked with the given command.
+        Generate diverse inputs for the target binary invoked with the given command.
         The generation continues until either the target coverage is achieved or
         the timeout is reached.
 
-        :param cmd: Command to run the target binary, with placeholders for public (@@)
-                    and private (@#) inputs
+        :param cmd: Command to run the target binary, with placeholders for inputs (@@)
         :param target_cov: Target coverage to achieve
         :param timeout_s: Timeout for the fuzzing process
         :return: 0 if the target coverage or timeout is reached, 1 if error occurs
