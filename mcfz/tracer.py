@@ -99,7 +99,7 @@ class Tracer:
 
             # Execute the target binary and collect traces
             try:
-                self._execute(expanded_cmd, input_, output_base, self._config.coverage)
+                self._execute(expanded_cmd, output_base, self._config.coverage)
             except InstrException:
                 # Mark this test as failed by creating a .failed file
                 with open(f"{output_base}.failed", "w") as failed_log:
@@ -143,15 +143,13 @@ class Tracer:
         expanded_str = " ".join(expanded_cmd)
         return expanded_str
 
-    def _execute(self, expanded_str: str, input_name: str, output_base: str,
-                 enable_cov: bool) -> None:
+    def _execute(self, expanded_str: str, output_base: str, enable_cov: bool) -> None:
         """
         Execute the target binary on the leakage model with the given public and private inputs.
 
         If `enable_cov` is True, the command will also collect coverage information.
 
         :param expanded_str: Command to run the target binary, with public and private inputs
-        :param input_name: Path to the input file (used in the command)
         :param output_base: Base path for the output files (trace and log) in stage3_wd
         :param enable_cov: Whether to collect coverage information
         :return: None
@@ -217,7 +215,7 @@ class Tracer:
             expanded_cmd = self._expand_target_cmd(cmd, ref_input)
             output_base = self._get_output_path(ref_input)
             try:
-                self._execute(expanded_cmd, ref_input, output_base, False)
+                self._execute(expanded_cmd, output_base, False)
             except (InstrException, ProgramException):
                 # if the target binary throws an exception, skip this input group
                 continue
@@ -234,7 +232,7 @@ class Tracer:
 
         for i in [0, 1]:
             output_base = os.path.join(output_dir, f"determinism_check_{i}")
-            self._execute(expanded_cmd, ref_input, output_base, False)
+            self._execute(expanded_cmd, output_base, False)
 
         # compare the traces
         with open(os.path.join(output_dir, "determinism_check_0.trace"), "rb") as f0, \
