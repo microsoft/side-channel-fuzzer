@@ -244,20 +244,6 @@ class Config:
     If set, the report will only include lines of code that are not in this list.
     This is useful for filtering out known leaks or false positives. """
 
-    # ==============================================================================================
-    # Coverage-related parameters
-    coverage: bool = False
-    _help += """\n\n coverage (True)
-    Flag indicating whether the fuzzer should collect coverage information.
-    If set to True, the fuzzer will execute an additional run in Stage 2 where it will run
-    the target binary with the generated public-private input pairs and collect
-    coverage information. This information will be later used to build a coverage model
-    for the complete fuzzing campaign, and it will be summarized in the final report.
-    """
-
-    llvm_cov_cmd: str = "llvm-cov"
-    llvm_profdata_cmd: str = "llvm-profdata"
-
     def __init__(self, config_yaml: str, stage: TestingStages) -> None:
         if Config.__config_instantiated:
             raise RuntimeError("Config class should be instantiated only once.")
@@ -344,10 +330,6 @@ class Config:
         self.report_verbosity = yaml_data.get("report_verbosity", self.report_verbosity)
         self.report_allowlist = yaml_data.get("report_allowlist", self.report_allowlist)
 
-        self.coverage = yaml_data.get("coverage", self.coverage)
-        self.llvm_cov_cmd = yaml_data.get("llvm_cov_cmd", self.llvm_cov_cmd)
-        self.llvm_profdata_cmd = yaml_data.get("llvm_profdata_cmd", self.llvm_profdata_cmd)
-
         # check for attempts to set internal config variables
         for opt in self._internal_opts:
             if opt in yaml_data:
@@ -367,12 +349,6 @@ class Config:
             raise _ConfigException("afl_seed_dir", "Seed directory is not set.")
         if not pathlib.Path(self.afl_seed_dir).expanduser().is_dir():
             raise _ConfigException("afl_seed_dir", f"{self.afl_seed_dir} does not exist.")
-
-        if self.coverage and not shutil.which(self.llvm_cov_cmd):
-            raise _ConfigException("llvm_cov_cmd", f"command {self.llvm_cov_cmd} not found.")
-        if self.coverage and not shutil.which(self.llvm_profdata_cmd):
-            raise _ConfigException("llvm_profdata_cmd",
-                                   f"command {self.llvm_profdata_cmd} not found.")
 
         if self.num_secrets_per_class < 2:
             raise _ConfigException("num_secrets_per_class",

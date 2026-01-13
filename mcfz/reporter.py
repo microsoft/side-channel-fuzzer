@@ -510,37 +510,6 @@ class _ReportPrinter:
 
 
 # ==================================================================================================
-# Coverage
-# ==================================================================================================
-def _build_cov_report(config: Config, target_binary: str) -> None:
-    """
-    Simple function to invoke llvm-profdata to merge all collected coverage files
-    and then invoke llvm-cov to generate a coverage report.
-    """
-    stage3_wd = config.stage3_wd
-    stage4_wd = config.stage4_wd
-    profdata = config.llvm_profdata_cmd
-    cov = config.llvm_cov_cmd
-
-    # merge all reports
-    profdata_cmd = f"{profdata} merge -sparse {stage3_wd}/*/*.profraw " \
-                   f"-o {os.path.join(stage4_wd, 'merged.profdata')}"
-    run(profdata_cmd, check=True, shell=True)
-
-    # generate the coverage report (txt)
-    cov_cmd = f"{cov} report {target_binary} -instr-profile " \
-              f"{os.path.join(stage4_wd, 'merged.profdata')} > " \
-              f"{os.path.join(stage4_wd, 'coverage_report.txt')}"
-    run(cov_cmd, check=True, shell=True)
-
-    # generate another, more detailed coverage report (html)
-    cov_html_cmd = f"{cov} show {target_binary} -instr-profile " \
-                   f"{os.path.join(stage4_wd, 'merged.profdata')} " \
-                   f"-format html -output-dir {os.path.join(stage4_wd, 'cov_html')}"
-    run(cov_html_cmd, check=True, shell=True)
-
-
-# ==================================================================================================
 # Public interface to the analysis and reporting module
 # ==================================================================================================
 class Reporter:
@@ -570,11 +539,3 @@ class Reporter:
         report_file = os.path.join(self._config.stage4_wd, "fuzzing_report.json")
         printer = _ReportPrinter(target_binary, self._config)
         printer.final_report(self._leakage_map, report_file)
-
-    def process_coverage(self, target_binary: str) -> None:
-        """
-        Process the collected coverage files and merge them into a single file.
-        """
-        if not self._config.coverage:
-            return
-        _build_cov_report(self._config, target_binary)

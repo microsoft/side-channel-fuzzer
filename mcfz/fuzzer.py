@@ -80,10 +80,7 @@ class FuzzerCore:
             Analyze the target binary for software leakage and generate a report.
 
         :param target_binary: Path to the target binary
-        :return: 0 if successful, 1 if error occurs
         """
         reporter = Reporter(self._config)
         reporter.analyze()
         reporter.generate_report(target_binary)
-        reporter.process_coverage(target_binary)
-        return 0
