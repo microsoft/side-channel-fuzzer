@@ -243,21 +243,22 @@ afl_seed_dir: {self.afl_seed_dir}
 
     def test_config_stage_directories(self) -> None:
         # Test different stage directory behaviors
-        # Test stage2 with existing empty directory
+
+        # Test boost with existing empty directory
         os.makedirs(os.path.join(self.working_dir, "stage2"))
 
         with patch("os.path.exists", return_value=True):
             with patch("builtins.open", mock_open(read_data=self.valid_config)):
-                config = Config("config.yaml", "stage2")
+                config = Config("config.yaml", "boost")
                 self.assertEqual(os.listdir(config.stage2_wd), [])
 
         self._reset_config_instantiation()
 
-        # Test pub_gen stage
+        # Test fuzz_gen stage
         # We need a functional os.path.exits here, so we cannot mock it
         # Thus, we will create a temporary file for the config.yaml
         config_file = os.path.join(self.temp_dir, "config.yaml")
         with open(config_file, "w") as f:
             f.write(self.valid_config)
-        config = Config(config_file, "pub_gen")
+        config = Config(config_file, "fuzz_gen")
         self.assertEqual(os.listdir(config.stage1_wd), [])

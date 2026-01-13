@@ -6,11 +6,13 @@ SPDX-License-Identifier: MIT
 """
 
 from enum import Enum
-from typing import Any, Final, List, Literal, Union, cast
+from typing import Any, Final, List, Literal, TypeAlias, Union, cast
 from io import BufferedReader
 import sys
 import os
 
+import numpy as np
+import numpy.typing as npt
 from cffi import FFI
 from typing_extensions import get_args, assert_never
 
@@ -19,15 +21,13 @@ _MarkerType = Literal["T", "D"]
 # ==================================================================================================
 # Trace types
 # ==================================================================================================
-# TODO: autogenerate from trace.hpp
-# NOTE: cffi cannot parse CPP constructs (e.g. enum classes, sdt::array) so we
-#       need to manually adjust some of the fields.
+# NOTE: cffi is too slow for large files, so we have to rely on hardcoded numpy dtypes.
+# TODO: add tests to ensure the numpy dtypes and constants below match trace.hpp
 
 
-class TraceEntryType(Enum):
+class TraceEntryType:
     """
     Enum used for the trace entry type, copied from trace.hpp
-    TODO: Cffi cannot parse enum classes, find a way to autogenerate from the header file
     """
     ENTRY_EOT = 0  # end of trace
     ENTRY_PC = 1
@@ -36,20 +36,36 @@ class TraceEntryType(Enum):
     ENTRY_EXCEPTION = 4
     ENTRY_IND = 5
 
+    @classmethod
+    def to_str(cls, entry_type: int) -> str:
+        """ Convert entry type to string """
+        # pylint: disable=too-many-return-statements
+        if entry_type == cls.ENTRY_EOT:
+            return "EOT"
+        if entry_type == cls.ENTRY_PC:
+            return "PC"
+        if entry_type == cls.ENTRY_READ:
+            return "READ"
+        if entry_type == cls.ENTRY_WRITE:
+            return "WRITE"
+        if entry_type == cls.ENTRY_EXCEPTION:
+            return "EXCEPTION"
+        if entry_type == cls.ENTRY_IND:
+            return "IND"
+        return f"UNKNOWN({entry_type})"
 
-_TRACE_ENTRY_T: Final[str] = "struct trace_entry_t"
-_TRACE_ENTRY_DEF: Final[str] = """
-struct trace_entry_t {
-    // pc for instructions; address for memory accesses; target for indirect calls
-    uint64_t addr;
-    // instruction size for instructions; memory access size for memory accesses
-    uint32_t size;
-    // see trace_entry_type_t
-    uint8_t type;
-    // unused for now
-    uint8_t padding[3]; // NOLINT
-};
-"""
+
+# numpy dtype for trace entries
+TraceEntryDType: Final[np.dtype] = np.dtype([
+    ('addr', np.uint64),  # trace_entry_t.addr in trace.hpp
+    ('size', np.uint32),  # trace_entry_t.size in trace.hpp
+    ('type', np.uint8),   # trace_entry_t.type in trace.hpp
+    ('padding', np.uint8, (3,)),  # trace_entry_t.padding in trace.hpp
+])
+
+# Type alias for arrays of TraceEntryDType
+TraceEntryArray: TypeAlias = npt.NDArray[np.void]
+
 
 # ==================================================================================================
 # Debug Trace types
@@ -160,11 +176,10 @@ class TraceDecoder:
     _debug_trace_entry_size: int
 
     def __init__(self) -> None:
-        self._ffi = FFI()
-        # Parse trace defs
-        self._ffi.cdef(_TRACE_ENTRY_DEF)
-        self._trace_entry_size = self._ffi.sizeof(_TRACE_ENTRY_T)
+        self._marker_size = 8  # 1 byte marker + 7 bytes padding
+        self._trace_entry_size = TraceEntryDType.itemsize
         # Parse debug trace defs
+        self._ffi = FFI()
         self._ffi.cdef(_DEBUG_TRACE_ENTRY_DEF)
         self._debug_trace_entry_size = self._ffi.sizeof(_DEBUG_TRACE_ENTRY_T)
 
@@ -182,42 +197,14 @@ class TraceDecoder:
         f.read(7)  # skip padding bytes
         return cast(_MarkerType, marker)
 
-    def decode_trace_file(self, file: str) -> List[List[Any]]:
+    def decode_trace_file(self, file: str) -> TraceEntryArray:
         """ Read a set of traces from a file. """
-        with open(file, "rb") as f:
-            marker = self.read_trace_marker(f)
-            if marker == "":  # empty file
-                return []
-            assert marker == "T", f"Expected Normal trace (T), got {marker}"
-
-            # Read the traces
-            traces = []
-            eof = False
-            while not eof:
-
-                entries = []
-                while True:
-                    # Read one entry
-                    chunk = f.read(self._trace_entry_size)
-                    if len(chunk) < self._trace_entry_size:
-                        eof = True
-                        break  # no more bytes to read: exit
-
-                    # Decode it
-                    entry = self._decode_trace_entry(chunk)
-                    entries.append(entry)
-
-                    # If we reached EOT, move on to the next trace
-                    if TraceEntryType(entry.type) == TraceEntryType.ENTRY_EOT:
-                        traces.append(entries)
-                        break
-
-                # Check that the last trace ended with an EOT entry or EXCEPTION
-                if eof and len(entries) > 0:
-                    last_entry = entries[-1]
-                    if TraceEntryType(last_entry.type) != TraceEntryType.ENTRY_EOT:
-                        raise ValueError("Trace file does not end with an EOT entry")
-
+        file_size = os.stat(file).st_size
+        num_entries = (file_size - self._marker_size) // self._trace_entry_size
+        if num_entries <= 0:
+            return np.empty((0,), dtype=TraceEntryDType)
+        traces = np.fromfile(file, dtype=TraceEntryDType,
+                             count=num_entries, offset=self._marker_size)
         return traces
 
     def decode_debug_trace_file(self, file: str) -> List[List[Any]]:
@@ -273,17 +260,16 @@ class TraceDecoder:
 
             # Decode based on the type
             if trace_type == "T":
-                entry_sz = self._ffi.sizeof(_TRACE_ENTRY_T)
+                entry_sz = self._trace_entry_size
                 if os.stat(trace_path).st_size < entry_sz:
                     return True
 
                 # Decode last entry
                 f.seek(-entry_sz, os.SEEK_END)
-                last_entry = self._decode_trace_entry(f.read(entry_sz))
+                last_entry = np.frombuffer(f.read(entry_sz), dtype=TraceEntryDType)[0]
 
                 # Check its type
-                last_entry_type = TraceEntryType(last_entry.type)
-                return last_entry_type != TraceEntryType.ENTRY_EOT
+                return bool(last_entry['type'] != TraceEntryType.ENTRY_EOT)
 
             if trace_type == "D":
                 entry_sz = self._ffi.sizeof(_DEBUG_TRACE_ENTRY_T)
@@ -303,22 +289,6 @@ class TraceDecoder:
     # ----------------------------------------------------------------------------------------------
     # Private API
     # ----------------------------------------------------------------------------------------------
-    def _decode_trace_entry(self, chunk: bytes) -> Any:
-        """
-        Decode a single entry from a chunk of bytes
-        """
-        # Decode it with ffi
-        entry: Any = self._ffi.new(_TRACE_ENTRY_T + "*")
-        self._ffi.memmove(entry, chunk, self._trace_entry_size)
-
-        # Check that the entry type is valid
-        try:
-            TraceEntryType(entry.type)
-        except Exception:
-            raise ValueError(f"Error: Unknown trace entry type {str(entry.type)}")
-
-        return entry
-
     def _decode_debug_trace_entry(self, chunk: bytes) -> Any:
         """
         Decode a single debug entry from a chunk of bytes
@@ -354,8 +324,7 @@ def main() -> None:
     if trace_type == "T":
         parsed_traces = decoder.decode_trace_file(sys.argv[1])
     elif trace_type == "D":
-        parsed_traces = decoder.decode_trace_file(sys.argv[1])
-        print(f"Only leakage traces allowed: found {len(parsed_traces)} debug traces instead")
+        print("Only leakage traces allowed: found debug traces instead")
         sys.exit(1)
     else:
         assert_never(trace_type)
@@ -366,15 +335,9 @@ def main() -> None:
         sys.exit(1)
 
     # 3. Print all entries
-    for nt, trace_ in enumerate(parsed_traces):
-        print("-------- TRACE --------")
-        for ne, e in enumerate(trace_):
-            try:
-                # Parse the entry type
-                type_ = TraceEntryType(e.type)
-                print(f"[{type_.name}] {hex(e.addr)}")
-            except Exception:
-                raise ValueError(f"Failed to decode entry {ne} of trace {nt}")
+    for entry in parsed_traces:
+        type_name = TraceEntryType.to_str(entry['type'])
+        print(f"[{type_name}] {hex(entry['addr'])}")
 
 
 if __name__ == '__main__':

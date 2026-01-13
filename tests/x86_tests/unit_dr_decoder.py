@@ -28,27 +28,27 @@ TEST_TRACE: List[Dict[str, Any]] = [
     {
         "addr": 0x0,
         "size": 8,
-        "type": TraceEntryType.ENTRY_PC.value
+        "type": TraceEntryType.ENTRY_PC
     },
     {
         "addr": 0xdeadbeef,
         "size": 4,
-        "type": TraceEntryType.ENTRY_READ.value
+        "type": TraceEntryType.ENTRY_READ
     },
     {
         "addr": 0xcafecafe,
         "size": 8,
-        "type": TraceEntryType.ENTRY_WRITE.value
+        "type": TraceEntryType.ENTRY_WRITE
     },
     {
         "addr": 11,
         "size": 0,
-        "type": TraceEntryType.ENTRY_EXCEPTION.value
+        "type": TraceEntryType.ENTRY_EXCEPTION
     },
     {
         "addr": 0x0,
         "size": 0x0,
-        "type": TraceEntryType.ENTRY_EOT.value
+        "type": TraceEntryType.ENTRY_EOT
     },
 ]
 # Format string to parse a trace entry
@@ -150,9 +150,9 @@ class DRTraceDecodeTest(unittest.TestCase):
     # --------------------------------------------------------------------------
     # Helpers
     # --------------------------------------------------------------------------
-    def _find_entry_of_type(self, t: TraceEntryType) -> dict[str, Any]:
+    def _find_entry_of_type(self, t: int) -> dict[str, Any]:
         for e in TEST_TRACE:
-            if e["type"] == t.value:
+            if e["type"] == t:
                 return e
 
         raise ValueError(f"No entry for type {t}")
@@ -161,9 +161,9 @@ class DRTraceDecodeTest(unittest.TestCase):
         return struct.pack(TRACE_FMT, entry["addr"], entry["size"], entry["type"])
 
     def _check_trace_equivalence(self, expected: dict[str, Any], decoded: Any) -> None:
-        self.assertEqual(expected["addr"], decoded.addr)
-        self.assertEqual(expected["size"], decoded.size)
-        self.assertEqual(expected["type"], TraceEntryType(decoded.type).value)
+        self.assertEqual(expected["addr"], decoded['addr'])
+        self.assertEqual(expected["size"], decoded['size'])
+        self.assertEqual(expected["type"], decoded['type'])
 
     # --------------------------------------------------------------------------
     # Test cases
@@ -185,9 +185,9 @@ class DRTraceDecodeTest(unittest.TestCase):
             f.close()
             # Decode the file
             parsed_traces = decoder.decode_trace_file(f.name)
-            self.assertEqual(len(parsed_traces), 1)
+            self.assertEqual(len(parsed_traces), len(TEST_TRACE))
             # Check decoded entries
-            for idx, decoded in enumerate(parsed_traces[0]):
+            for idx, decoded in enumerate(parsed_traces):
                 self._check_trace_equivalence(TEST_TRACE[idx], decoded)
 
     def test_is_corrupted(self) -> None:
@@ -207,14 +207,14 @@ class DRTraceDecodeTest(unittest.TestCase):
             with NamedTemporaryFile("wb", delete=False) as f:
                 # Write encoded entries to file
                 f.write(marker + t[0])
+                f.close()
 
-            # Decode the file
+            # Check if the file is corrupted
+            is_corrupted = decoder.is_trace_corrupted(f.name)
             if t[1]:
-                with self.assertRaises(ValueError):
-                    decoder.decode_trace_file(f.name)
+                self.assertTrue(is_corrupted)
             else:
-                parsed_traces = decoder.decode_trace_file(f.name)
-                self.assertEqual(len(parsed_traces), 1)
+                self.assertFalse(is_corrupted)
 
             os.remove(f.name)
 
@@ -367,6 +367,7 @@ class DRDebugTraceDecodeTest(unittest.TestCase):
             with NamedTemporaryFile("wb", delete=False) as f:
                 # Write encoded entries to file
                 f.write(marker + t[0])
+                f.close()
 
             # Decode the file
             if t[1]:

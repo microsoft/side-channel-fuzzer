@@ -344,35 +344,35 @@ class _TraceReader:
         :return: list of contract traces
         """
         traces: List[CTrace] = []
+        entry_list: List[CTraceEntry] = []
 
         # iterate over the binary trace and parse the entries
-        raw_traces: List[_RawTrace] = self._decoder.decode_trace_file(trace_path)
-        for raw_trace in raw_traces:
-            converted = self._raw_to_ctrace(raw_trace)
-            if converted:
-                traces.append(converted)
+        raw_trace: np.ndarray = self._decoder.decode_trace_file(trace_path)
+        for entry in raw_trace:
+            type_ = entry['type']
+            if type_ == TraceEntryType.ENTRY_EOT:
+                # end of current trace; convert and store it
+                ctrace = CTrace(entry_list)
+                traces.append(ctrace)
+                entry_list = []
+                continue
+
+            if type_ in (TraceEntryType.ENTRY_READ, TraceEntryType.ENTRY_WRITE):
+                val = self._layout.data_addr_to_offset(int(entry['addr']))
+                entry_list.append(CTraceEntry(type_="mem", value=val))
+            elif type_ == TraceEntryType.ENTRY_PC:
+                val = self._layout.code_addr_to_offset(int(entry['addr']))
+                entry_list.append(CTraceEntry(type_="pc", value=val))
+            elif type_ == TraceEntryType.ENTRY_IND:
+                val = self._layout.code_addr_to_offset(int(entry['addr']))
+                entry_list.append(CTraceEntry(type_="ind", value=val))
+
+        assert len(entry_list) == 0, \
+            "Last trace in the trace file is not terminated properly"
 
         # trim non relevant entries
         traces = self._trim_traces(traces)
-
         return traces
-
-    def _raw_to_ctrace(self, raw_trace: _RawTrace) -> CTrace:
-        trace: List[CTraceEntry] = []
-
-        for entry in raw_trace:
-            type_ = TraceEntryType(entry.type)
-            if type_ in (TraceEntryType.ENTRY_READ, TraceEntryType.ENTRY_WRITE):
-                val = self._layout.data_addr_to_offset(entry.addr)
-                trace.append(CTraceEntry(type_="mem", value=val))
-            elif type_ == TraceEntryType.ENTRY_PC:
-                val = self._layout.code_addr_to_offset(entry.addr)
-                trace.append(CTraceEntry(type_="pc", value=val))
-            elif type_ == TraceEntryType.ENTRY_IND:
-                val = self._layout.code_addr_to_offset(entry.addr)
-                trace.append(CTraceEntry(type_="ind", value=val))
-
-        return CTrace(trace)
 
     def _trim_traces(self, traces: List[CTrace]) -> List[CTrace]:
         """

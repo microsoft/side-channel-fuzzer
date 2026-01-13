@@ -7,20 +7,21 @@ SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Iterator, NewType, Literal, \
-    Final, Union, Any
+    Final, Union, Any, TypeAlias, cast
 
 import os
 import json
 from copy import deepcopy
-from subprocess import run
+import numpy as np
 from elftools.elf.elffile import ELFFile  # type: ignore
 from typing_extensions import assert_never
 from tqdm import tqdm
 
-from rvzr.model_dynamorio.trace_decoder import TraceDecoder, TraceEntryType
+from rvzr.model_dynamorio.trace_decoder import TraceDecoder, TraceEntryType, TraceEntryArray
 
 if TYPE_CHECKING:
     from .config import Config, ReportVerbosity
+
 
 # ==================================================================================================
 # Local type definitions
@@ -37,18 +38,24 @@ LeakType = Literal['I', 'D']
     'D' for data leaks (e.g., secret dependent memory access).
 """
 
-TraceLine = NewType('TraceLine', int)
-""" Line number in the trace file, used to locate the leak in the original trace file. """
+TraceEntryId = NewType('TraceEntryId', int)
+""" Entry ID in the original (raw) trace file, used to locate the leak. """
 
-LeakyInstr = Tuple[PC, LeakType, TraceLine, TraceLine]
-""" A tuple representing a leaky instruction:
-    * First element is the program counter (PC) of the instruction,
-    * Second element is the line number in the trace file where
-        the instruction was found,
-    * Third element is the line number in the reference trace file
-        (000.trace, which is the same for all leaks),
-    * Fourth element is the type of the leak (see LeakType).
+LeakyInstrDType: Final[np.dtype] = np.dtype([
+    ('pc', np.uint64),
+    ('leak_type', 'U1'),  # 'I' or 'D' as single Unicode character
+    ('target_trace_entry_id', np.int64),
+    ('ref_trace_entry_id', np.int64),
+])
+""" Numpy dtype for a leaky instruction:
+    * pc: the program counter (PC) of the instruction,
+    * leak_type: the type of the leak ('I' or 'D'),
+    * target_trace_entry_id: entry ID in the target trace file,
+    * ref_trace_entry_id: entry ID in the reference trace file.
 """
+
+LeakyInstrArray: TypeAlias = np.ndarray
+""" Array of leaky instructions with dtype LeakyInstrDType. """
 
 LinesInTracePair = NewType('LinesInTracePair', str)
 """ A string representing a location of a leak in a trace pair.
@@ -120,19 +127,13 @@ LeakageLineMap = Union[
 # ==================================================================================================
 # Classes representing parsed traces and their elements
 # ==================================================================================================
-class _TracedInstruction:
-    pc: Final[PC]
-    mem_accesses: List[int]
-    lit: Final[TraceLine]
-
-    def __init__(self, pc: int, lit: int) -> None:
-        self.pc = PC(pc)
-        self.mem_accesses = []
-        self.lit = TraceLine(lit)
-
-    def __eq__(self, value: object) -> bool:
-        assert isinstance(value, _TracedInstruction)
-        return self.pc == value.pc and self.mem_accesses == value.mem_accesses
+TracedInstructionDType: Final[np.dtype] = np.dtype([
+    ('pc', np.uint64),  # PC of the instruction
+    ('mem_accesses_offset', np.int64),  # Offset in the mem_accesses array
+    ('num_mem_accesses', np.int64),  # Number of memory accesses
+    ('org_trace_entry_id', np.int64),  # Entry ID in the original (raw) trace
+])
+TracedInstruction: TypeAlias = np.void
 
 
 class _Trace:
@@ -142,22 +143,53 @@ class _Trace:
     """
     file_name: Final[TraceFileName]
 
-    def __init__(self, file_name: str) -> None:
+    def __init__(self, file_name: str, raw_trace: TraceEntryArray) -> None:
         self.file_name = TraceFileName(file_name)
-        self.instructions: List[_TracedInstruction] = []
+
+        # Count the number of instructions and mem. accesses to identify array sizes
+        counts = np.bincount(raw_trace['type'], minlength=6)
+        num_instructions = counts[TraceEntryType.ENTRY_PC]
+        num_mem_accesses = counts[TraceEntryType.ENTRY_READ] + \
+            counts[TraceEntryType.ENTRY_WRITE] + counts[TraceEntryType.ENTRY_IND]
+
+        # Pre-allocate arrays for instructions and mem. accesses
+        self.instructions = np.zeros(num_instructions, dtype=TracedInstructionDType)
+        self.mem_accesses = np.zeros(num_mem_accesses, dtype=np.uint64)
+
+        # Fill in the arrays using vectorized numpy operations
+        is_pc = raw_trace['type'] == TraceEntryType.ENTRY_PC
+        is_mem = ((raw_trace['type'] == TraceEntryType.ENTRY_READ)
+                  | (raw_trace['type'] == TraceEntryType.ENTRY_WRITE)
+                  | (raw_trace['type'] == TraceEntryType.ENTRY_IND))
+
+        # Get indices where PCs and mem accesses occur in the raw trace
+        pc_indices = np.flatnonzero(is_pc)
+        mem_indices = np.flatnonzero(is_mem)
+
+        # Extract instruction PCs and memory accesses directly using boolean indexing
+        self.instructions['pc'] = raw_trace['addr'][is_pc]
+        self.instructions['org_trace_entry_id'] = pc_indices
+        self.mem_accesses = raw_trace['addr'][is_mem]
+
+        # For each PC, find how many mem accesses came before it using searchsorted
+        self.instructions['mem_accesses_offset'] = np.searchsorted(mem_indices, pc_indices)
+
+        # num_mem_accesses = next_offset - current_offset
+        next_offsets = np.concatenate([
+            self.instructions['mem_accesses_offset'][1:],
+            [len(self.mem_accesses)]
+        ])
+        self.instructions['num_mem_accesses'] = next_offsets - \
+            self.instructions['mem_accesses_offset']
 
     def __len__(self) -> int:
         return len(self.instructions)
 
-    def __iter__(self) -> Iterator[_TracedInstruction]:
+    def __iter__(self) -> Iterator[np.void]:
         return iter(self.instructions)
 
-    def __getitem__(self, item: int) -> _TracedInstruction:
-        return self.instructions[item]
-
-    def append(self, instruction: _TracedInstruction) -> None:
-        """ Append a new instruction to the trace. """
-        self.instructions.append(instruction)
+    def __getitem__(self, item: int) -> np.void:
+        return cast(np.void, self.instructions[item])
 
 
 # ==================================================================================================
@@ -178,33 +210,7 @@ class _Analyser:
         Analyse all leaks stored in the given directory after a completed fuzzing campaign.
         """
         leakage_map: LeakageMap = {'I': {}, 'D': {}}
-        input_groups = os.listdir(stage3_dir)
-
-        # Iterate over all input groups
-        # (i.e., groups of traces collected from the same public input)
-        inputs: Dict[str, List[str]] = {}
-        for input_group in input_groups:
-            input_group_dir = os.path.join(stage3_dir, input_group)
-
-            # Get a reference trace for the given group; we will use it to check that
-            # all other traces are the same
-            reference_trace_file = os.path.join(input_group_dir, "000.trace")
-            if not os.path.exists(reference_trace_file):
-                # If the reference trace does not exist, skip this group
-                continue
-            inputs[reference_trace_file] = []
-
-            # Compare the reference trace with all other traces in the group
-            for trace_file in os.listdir(input_group_dir):
-                # skip non-trace files and the reference trace itself
-                if not trace_file.endswith(".trace"):
-                    continue
-                if trace_file == "000.trace":
-                    continue
-
-                # parse the trace file and extract a list of leaky instructions
-                trace_file = os.path.join(input_group_dir, trace_file)
-                inputs[reference_trace_file].append(trace_file)
+        inputs = self._collect_inputs_to_process(stage3_dir)
 
         # Initialize a progress bar to track the progress of the analysis
         progress_bar = tqdm(
@@ -222,7 +228,7 @@ class _Analyser:
                 leaky_instructions = self._identify_leaks(reference_trace, trace)
 
                 # nothing to do if there are no leaky instructions
-                if not leaky_instructions:
+                if leaky_instructions.size == 0:
                     continue
 
                 # add the leaky instructions to the global map
@@ -231,96 +237,171 @@ class _Analyser:
         progress_bar.close()
         return leakage_map
 
+    def _collect_inputs_to_process(self, stage3_dir: str) -> Dict[str, List[str]]:
+        inputs: Dict[str, List[str]] = {}
+        input_groups = os.listdir(stage3_dir)
+        for input_group in input_groups:
+            input_group_dir = os.path.join(stage3_dir, input_group)
+
+            # Get a reference trace for the given group; we will use it to check that
+            # all other traces are the same
+            reference_trace_file = os.path.join(input_group_dir, "000.trace")
+            if not os.path.exists(reference_trace_file):
+                # If the reference trace does not exist, skip this group
+                continue
+            inputs[reference_trace_file] = []
+
+            # Compare the reference trace with all other traces in the group
+            for trace_file in os.listdir(input_group_dir):
+                # skip non-trace files, the reference trace itself, and the determinism check traces
+                if not trace_file.endswith(".trace"):
+                    continue
+                if "determinism_check_" in trace_file:
+                    continue
+                trace_file = os.path.join(input_group_dir, trace_file)
+                if trace_file == reference_trace_file:
+                    continue
+
+                # parse the trace file and extract a list of leaky instructions
+                inputs[reference_trace_file].append(trace_file)
+        return inputs
+
     def _parse_trace_file(self, trace_file: str) -> _Trace:
-        trace = _Trace(trace_file)
-        raw_traces = self.trace_decoder.decode_trace_file(trace_file)
-
-        for i, entry in enumerate(raw_traces[0]):
-            type_ = TraceEntryType(entry.type)
-            if type_ == TraceEntryType.ENTRY_PC:
-                trace.append(_TracedInstruction(entry.addr, i + 1))
-            elif type_ in (TraceEntryType.ENTRY_READ, TraceEntryType.ENTRY_WRITE,
-                           TraceEntryType.ENTRY_IND):
-                trace[-1].mem_accesses.append(entry.addr)
-
+        raw_trace = self.trace_decoder.decode_trace_file(trace_file)
+        trace = _Trace(trace_file, raw_trace)
         return trace
 
-    def _identify_leaks(self, ref_trace: _Trace, target_trace: _Trace) -> List[LeakyInstr]:
+    def _identify_leaks(self, ref_trace: _Trace, target_trace: _Trace) -> LeakyInstrArray:
         """
-        Check the given set of contract traces for violations of the non-interference property
-        and return a list of addresses of instructions that violate the property (i.e., are leaky).
+        Check traces for violations of the non-interference property.
 
-        The function walks through the two traces in lockstep, comparing each instruction.
-        At each step, three options are possible:
-            1. If the PC of the instruction and their memory accesses match,
-               then the instruction is not leaky. Move to the next instruction.
-            2. If the PC of the instruction matches, but their memory accesses differ,
-               then the instruction has a D-type leak. Record it and move to the next instruction.
-            3. If the PC of the instruction differs, then the instruction has an I-type leak.
-               Record the previous instruction as a leak and rewind to the merge point.
-               FIXME: the rewind is not implemented yet; instead, the function terminates after
-               the first I-type leak is found.
+        Compares two execution traces and identifies:
+        - I-type leaks: PC divergence (secret-dependent control flow)
+        - D-type leaks: Memory access divergence (secret-dependent data access)
 
-        :param ref_trace: Reference trace to compare against
-        :param trace: Trace to check for leaks
-        :return: List of addresses of leaky instructions
+        FIXME: Rewind to merge point not implemented; stops at first I-type leak.
         """
-        if ref_trace == target_trace:
-            return []
+        end_id = min(len(ref_trace), len(target_trace))
+        if end_id == 0:
+            return np.array([], dtype=LeakyInstrDType)
 
-        # Initialize the variables to track the leaky instructions and the current entry
-        leaky_instructions: List[LeakyInstr] = []
-        curr_ref_entry: _TracedInstruction
-        curr_tgt_entry: _TracedInstruction
-        prev_entry: Optional[_TracedInstruction] = None
-        entry_id: int = 0
-        end_id: int = min(len(ref_trace), len(target_trace))
+        ref_instr = ref_trace.instructions[:end_id]
+        tgt_instr = target_trace.instructions[:end_id]
 
-        # Iterate through the traces until the end of the shorter trace
-        while entry_id < end_id:
-            curr_ref_entry = ref_trace[entry_id]
-            curr_tgt_entry = target_trace[entry_id]
+        # Detect I-type leak (PC divergence)
+        i_leak, analysis_end = self._find_i_type_leak(ref_instr, tgt_instr, end_id)
+        if analysis_end == 0:
+            return i_leak
 
-            # I-type leak: the PC of the instruction differs
-            if curr_ref_entry.pc != curr_tgt_entry.pc:
-                # Record the previous instruction as a leak
-                if prev_entry is not None:
-                    leak: LeakyInstr = (prev_entry.pc, 'I', prev_entry.lit, prev_entry.lit)
-                    leaky_instructions.append(leak)
-                # Rewind to the merge point
-                # FIXME: the rewind is not implemented yet; instead, we terminate
-                return leaky_instructions
+        # Detect D-type leaks (memory access divergence)
+        d_leaks = self._find_d_type_leaks(
+            ref_trace, target_trace,
+            ref_instr[:analysis_end], tgt_instr[:analysis_end]
+        )
 
-            # D-type leak: the PC of the instruction matches, but memory accesses differ
-            if curr_ref_entry.mem_accesses != curr_tgt_entry.mem_accesses:
-                # Record the current instruction as a leak
-                leak = (curr_tgt_entry.pc, 'D', curr_tgt_entry.lit, curr_ref_entry.lit)
-                leaky_instructions.append(leak)
+        return self._combine_arrays(d_leaks, i_leak)
 
-            # Move to the next instruction
-            prev_entry = curr_ref_entry
-            entry_id += 1
+    def _find_i_type_leak(
+        self,
+        ref_instr: np.ndarray,
+        tgt_instr: np.ndarray,
+        end_id: int
+    ) -> Tuple[LeakyInstrArray, int]:
+        """Find first I-type leak (PC divergence) and return analysis boundary."""
+        pc_mismatch = ref_instr['pc'] != tgt_instr['pc']
+        if not pc_mismatch.any():
+            return np.array([], dtype=LeakyInstrDType), end_id
 
-        return leaky_instructions
+        first_diverge = int(np.argmax(pc_mismatch))
+        if first_diverge == 0:
+            return np.array([], dtype=LeakyInstrDType), 0  # Can't blame previous instruction
 
-    def _update_global_map(self, leakage_map: LeakageMap, leaky_instructions: List[LeakyInstr],
+        # The instruction before divergence caused the branch
+        prev = ref_instr[first_diverge - 1]
+        leak = np.array([(
+            prev['pc'], 'I', prev['org_trace_entry_id'], prev['org_trace_entry_id']
+        )], dtype=LeakyInstrDType)
+        return leak, first_diverge
+
+    def _find_d_type_leaks(
+        self,
+        ref_trace: _Trace,
+        target_trace: _Trace,
+        ref_instr: np.ndarray,
+        tgt_instr: np.ndarray
+    ) -> LeakyInstrArray:
+        # Find indices of instructions with memory access differences
+        # This can be done fast using numpy bulk operations if the memory access structures match
+        fast_path_possible = (
+            np.array_equal(ref_instr['mem_accesses_offset'], tgt_instr['mem_accesses_offset'])
+            and np.array_equal(ref_instr['num_mem_accesses'], tgt_instr['num_mem_accesses'])
+        )
+        if fast_path_possible:
+            indices = self._find_d_leaks_bulk(ref_trace, target_trace, ref_instr)
+        else:
+            print("WARNING: slow path for D-leak detection not implemented\nSkipping")
+            return np.array([], dtype=LeakyInstrDType)
+        if len(indices) == 0:
+            return np.array([], dtype=LeakyInstrDType)
+
+        # Build LeakyInstrArray for D-type leaks from instruction indices
+        leaks = np.empty(len(indices), dtype=LeakyInstrDType)
+        leaks['pc'] = tgt_instr['pc'][indices]
+        leaks['leak_type'] = 'D'
+        leaks['target_trace_entry_id'] = tgt_instr['org_trace_entry_id'][indices]
+        leaks['ref_trace_entry_id'] = ref_instr['org_trace_entry_id'][indices]
+        return leaks
+
+    def _find_d_leaks_bulk(
+        self,
+        ref_trace: _Trace,
+        target_trace: _Trace,
+        ref_instr: np.ndarray
+    ) -> np.ndarray:
+        """Find D-leaks via bulk memory comparison (same structure fast path)."""
+        mem_end = ref_instr[-1]['mem_accesses_offset'] + ref_instr[-1]['num_mem_accesses']
+        mem_diff = ref_trace.mem_accesses[:mem_end] != target_trace.mem_accesses[:mem_end]
+
+        if not mem_diff.any():
+            return np.array([], dtype=np.intp)
+
+        # Map differing memory indices back to instruction indices via searchsorted
+        diff_indices = np.flatnonzero(mem_diff)
+        instr_boundaries = ref_instr['mem_accesses_offset'] + ref_instr['num_mem_accesses']
+        leak_indices = np.unique(np.searchsorted(instr_boundaries, diff_indices, side='right'))
+
+        # Filter to valid range with non-zero memory accesses
+        valid = (leak_indices < len(ref_instr)) & (ref_instr['num_mem_accesses'][leak_indices] > 0)
+        return leak_indices[valid]
+
+    @staticmethod
+    def _combine_arrays(*arrays: LeakyInstrArray) -> LeakyInstrArray:
+        """Concatenate non-empty arrays."""
+        non_empty = [a for a in arrays if len(a) > 0]
+        if not non_empty:
+            return np.array([], dtype=LeakyInstrDType)
+        return np.concatenate(non_empty) if len(non_empty) > 1 else non_empty[0]
+
+    def _update_global_map(self, leakage_map: LeakageMap, leaky_instructions: LeakyInstrArray,
                            source: str) -> None:
         """
         Update the global leakage map with the given address and trace file.
         """
         for leaky_instr in leaky_instructions:
-            # Unpack the leaky instruction tuple
-            per_type_map = leakage_map[leaky_instr[1]]
-            pc = leaky_instr[0]
-            reference_lit = leaky_instr[2]
-            target_lit = leaky_instr[3]
+            # Unpack the leaky instruction from numpy structured array
+            leak_type: LeakType = leaky_instr['leak_type']
+            pc = PC(int(leaky_instr['pc']))
+            ref_entry_id = int(leaky_instr['ref_trace_entry_id'])
+            tgt_entry_id = int(leaky_instr['target_trace_entry_id'])
+
+            per_type_map = leakage_map[leak_type]
 
             # If the PC is not in the map, create a new entry
             if pc not in per_type_map:
                 per_type_map[pc] = []
 
             # Create a new leakage location and append it to the map
-            leakage_location = LinesInTracePair(f"{source}:{target_lit}:{reference_lit}")
+            leakage_location = LinesInTracePair(f"{source}:{tgt_entry_id}:{ref_entry_id}")
             per_type_map[pc].append(leakage_location)
 
 
@@ -350,9 +431,11 @@ class _ReportPrinter:
 
     def final_report(self, leakage_map: LeakageMap, report_file: str) -> None:
         """ Print the global map of leaks to the trace log """
-        leakage_line_map = self._group_by_code_line(leakage_map, self._config.report_verbosity)
-        leakage_line_map = self._filter_allowlist(leakage_line_map)
-        self._write_report(report_file, leakage_line_map)
+        verbosity: ReportVerbosity
+        for verbosity in (1, 2, 3):  # type: ignore[assignment]
+            leakage_line_map = self._group_by_code_line(leakage_map, verbosity)
+            leakage_line_map = self._filter_allowlist(leakage_line_map)
+            self._write_report(f"{report_file}.vrb{verbosity}.json", leakage_line_map)
 
     def _write_report(self, report_file: str, leakage_line_map: LeakageLineMap) -> None:
         """
@@ -477,6 +560,7 @@ class _ReportPrinter:
         return filtered_leakage_line_map
 
     def _decode_addr(self, address: int) -> CodeLine:
+        address = address - 0x7ffff20b5000
         # Go over all the line programs in the DWARF information, looking for
         # one that describes the given address.
         for CU in self.dwarf_info.iter_CUs():
