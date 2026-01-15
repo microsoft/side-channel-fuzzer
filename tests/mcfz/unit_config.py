@@ -105,6 +105,7 @@ afl_seed_dir: {self.afl_seed_dir}
                 self.assertTrue(os.path.exists(config.stage1_wd))
                 self.assertTrue(os.path.exists(config.stage2_wd))
                 self.assertTrue(os.path.exists(config.stage3_wd))
+                self.assertTrue(os.path.exists(config.stage4_wd))
 
     def test_config_nonexistent_working_dir(self) -> None:
         # Test that nonexistent working directory raises exception
@@ -138,7 +139,7 @@ afl_seed_dir: {self.afl_seed_dir}
             with patch("builtins.open", mock_open(read_data=config_data)):
                 Config("config.yaml", "fuzz")
                 # Check that the working directory is empty
-                self.assertEqual(len(os.listdir(self.working_dir)), 3)  # Only stage dirs
+                self.assertEqual(len(os.listdir(self.working_dir)), 4)  # Only stage dirs
 
         output = mock_stdout.getvalue()
         self.assertIn("removing", output)

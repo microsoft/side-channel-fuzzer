@@ -39,7 +39,7 @@ class FuzzerCore:
         print("\n")  # Print a newline for better readability in the console output
         self.boost()
         self.trace(cmd)
-        self.report(cmd[0])
+        self.report()
 
     def fuzz_gen(self, cmd: List[str], target_cov: int, timeout_s: int) -> None:
         """
@@ -74,7 +74,7 @@ class FuzzerCore:
         tracer = Tracer(self._config)
         tracer.collect_traces(cmd)
 
-    def report(self, target_binary: str) -> None:
+    def report(self) -> None:
         """
         Fuzzing Stage 4:
             Analyze the target binary for software leakage and generate a report.
@@ -83,4 +83,4 @@ class FuzzerCore:
         """
         reporter = Reporter(self._config)
         reporter.analyze()
-        reporter.generate_report(target_binary)
+        reporter.generate_report()

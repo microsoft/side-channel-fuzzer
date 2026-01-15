@@ -47,6 +47,7 @@ class Tracer:
             f"-c {config.model_root}/libdr_model.so " \
             f"--tracer {config.contract_observation_clause} " \
             f"--speculator {config.contract_execution_clause} " \
+            f"--store-mappings {config.stage3_wd}/mappings.txt " \
             "--instrumented-func start_driver --trace-output {trace_file} -- {cmd}"
 
     def collect_traces(self, cmd: List[str]) -> int:
@@ -58,6 +59,14 @@ class Tracer:
                         and private (@#) inputs
         :return: 0 if successful, 1 if error occurs
         """
+        # Check if the stage2 working directory exists and contains inputs
+        if not os.path.isdir(self._config.stage2_wd):
+            raise FileNotFoundError(
+                f"Stage 2 working directory '{self._config.stage2_wd}' does not exist.")
+        if not os.listdir(self._config.stage2_wd):
+            raise FileNotFoundError(
+                f"Stage 2 working directory '{self._config.stage2_wd}' is empty.")
+
         # Check if the traces are deterministic; abort if they are not
         if not self._check_determinism(self._config.stage2_wd, cmd):
             self._log.error("The target binary produces non-deterministic traces. Tracing aborted.")
@@ -199,6 +208,7 @@ class Tracer:
                 self._execute(expanded_cmd, output_base)
             except (InstrException, ProgramException):
                 # if the target binary throws an exception, skip this input group
+                print(f"[Determinism check] skipping input causing exception: {ref_input}")
                 continue
             found = True
             break

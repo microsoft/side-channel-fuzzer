@@ -16,6 +16,7 @@
 # - `bugprone-easily-swappable-parameters`: DR has many C APIs, and this check causes many false positives
 # - `performance-enum-size`: The enum size in the backend is often dictated by the serialization formats, and it causes false positives on this check
 # - `cppcoreguidelines-avoid-magic-numbers`: Duplicate of readability-magic-numbers; excluded for consistency
+# - `cppcoreguidelines-avoid-non-const-global-variables`: Globals have to be used to share state between DR instrumentation and runtime
 Checks: >
     -*,
     bugprone-*,
@@ -41,7 +42,8 @@ Checks: >
     -readability-convert-member-functions-to-static,
     -bugprone-easily-swappable-parameters,
     -performance-enum-size,
-    -cppcoreguidelines-avoid-magic-numbers
+    -cppcoreguidelines-avoid-magic-numbers,
+    -cppcoreguidelines-avoid-non-const-global-variables
 
 # Turn all the warnings from the checks above into errors.
 WarningsAsErrors: "*"

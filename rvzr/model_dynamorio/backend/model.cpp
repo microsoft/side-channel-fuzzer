@@ -12,10 +12,13 @@
 // SPDX-License-Identifier: MIT
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <dr_api.h> // NOLINT
 #include <dr_defines.h>
@@ -155,8 +158,54 @@ class InstrumentationStateMachine
 /// @brief State machine instance
 /// @note We have to use a global pointer since it is the only way to make it accessible from
 ///       DynamoRIO callbacks. This is the reason for NOLINT as well.
-/// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static std::unique_ptr<InstrumentationStateMachine> instrumentation_state_machine = nullptr;
+
+// =================================================================================================
+// Memory layout tracking
+// =================================================================================================
+class MemoryLayout
+{
+  public:
+    MemoryLayout(std::string mappings_file_) : mappings_file(std::move(mappings_file_))
+    {
+        // Ensure the file is empty at the beginning
+        std::ofstream stream;
+        stream.open(mappings_file, std::ios::out | std::ios::trunc);
+        stream.close();
+    }
+    ~MemoryLayout() = default;
+    MemoryLayout(const MemoryLayout &) = delete;
+    MemoryLayout &operator=(const MemoryLayout &) = delete;
+    MemoryLayout(MemoryLayout &&) = delete;
+    MemoryLayout &operator=(MemoryLayout &&) = delete;
+
+    /// @brief Records the mapping of a module.
+    void record_module_mapping(const char *module_name, app_pc start_address)
+    {
+        module_mappings.emplace_back(module_name, reinterpret_cast<std::uintptr_t>(start_address));
+    }
+
+    /// @brief Store the recorded module mappings to file.
+    void store_mappings() const
+    {
+        std::ofstream stream;
+        stream.open(mappings_file, std::ios::out);
+        for (const auto &mapping : module_mappings) {
+            stream << mapping.first << " 0x" << std::hex << mapping.second << std::dec << "\n";
+        }
+        stream.close();
+    }
+
+  private:
+    /// @brief Storage for module mappings when --store-mappings is enabled.
+    /// @note Stores pairs of (module_name, start_address).
+    std::vector<std::pair<std::string, std::uintptr_t>> module_mappings;
+    /// @brief Output file path for module mappings. Empty if not enabled.
+    std::string mappings_file;
+};
+
+/// @brief Global instance of MemoryLayout to manage memory layout information during tracing.
+static std::unique_ptr<MemoryLayout> memory_layout = nullptr;
 
 // =================================================================================================
 // Event callbacks
@@ -173,6 +222,11 @@ static std::unique_ptr<InstrumentationStateMachine> instrumentation_state_machin
 /// @return void
 static void event_module_load(void * /*drcontext*/, const module_data_t *module_, bool /*loaded*/)
 {
+    // Record module mapping if store-mappings is enabled
+    if (memory_layout != nullptr) {
+        memory_layout->record_module_mapping(module_->full_path, module_->start);
+    }
+
     size_t offset = 0;
     const char *symbol = instrumentation_state_machine->name.c_str();
     const drsym_error_t sym_res =
@@ -273,6 +327,11 @@ static void event_exit()
     // Make sure we've sent all the collected data
     fflush(stdout);
 
+    // Write module mappings to file if enabled
+    if (memory_layout != nullptr) {
+        memory_layout->store_mappings();
+    }
+
     // Delete the dispatcher
     glob_dispatcher.reset();
 
@@ -371,6 +430,12 @@ DR_EXPORT void dr_client_main(client_id_t /* client_id */, int argc, const char 
     // Set the target function
     dr_model::instrumentation_state_machine =
         std::make_unique<dr_model::InstrumentationStateMachine>(parsed_args.instrumented_func);
+
+    // Set up memory layout tracking if --store-mappings is enabled
+    if (not parsed_args.mappings_file.empty()) {
+        dr_model::memory_layout =
+            std::make_unique<dr_model::MemoryLayout>(parsed_args.mappings_file);
+    }
 
     // Initialize the DR model
     dr_model::dr_model_init();

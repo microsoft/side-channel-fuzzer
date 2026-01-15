@@ -112,6 +112,13 @@ const droption_t<bool> op_list_speculators(DROPTION_SCOPE_CLIENT,
                         "list-speculators", false,
                         "List all available speculators (aka execution clauses).",
                         "List all available speculators (aka execution clauses).");
+
+// Module Mapping Output
+const droption_t<string> op_store_mappings(DROPTION_SCOPE_CLIENT,
+                        "store-mappings", "",
+                        "File to store loaded module addresses.",
+                        "File to store loaded module addresses. "
+                        "When set, records start addresses of all loaded modules and saves them on exit.");
 // clang-format on
 } // namespace
 
@@ -160,6 +167,7 @@ void parse_cli(int argc, const char **argv, DR_PARAM_OUT cli_args_t &parsed_args
     parsed_args.taint_output = op_taint_output.get_value();
     parsed_args.list_tracers = op_list_tracers.get_value();
     parsed_args.list_speculators = op_list_speculators.get_value();
+    parsed_args.mappings_file = op_store_mappings.get_value();
     uint64_t poison_value = op_poison_value.get_value();
     if (poison_value == 0) {
         parsed_args.poison_value = {};

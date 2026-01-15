@@ -8,7 +8,6 @@ SPDX-License-Identifier: MIT
 from __future__ import annotations
 
 from typing import Any
-import os
 from argparse import ArgumentParser
 
 from typing_extensions import get_args
@@ -103,14 +102,8 @@ def _parse_args() -> Any:  # pylint: disable=r0915
 
     # ==============================================================================================
     # Stage 4: Analysis of traces and reporting of leaks
-    report = subparsers.add_parser('report', add_help=True, parents=[common_parser])
-    report.add_argument(
-        "-b",
-        "--target-binary",
-        type=str,
-        required=True,
-        help="Path to the target binary to be fuzzed (e.g., '/usr/bin/openssl')",
-    )
+    _ = subparsers.add_parser('report', add_help=True, parents=[common_parser])
+    # no arguments for now
 
     args = parser.parse_args()
 
@@ -128,11 +121,7 @@ def _validate_args(args: Any) -> bool:
     :param args: parsed CLI arguments
     :return: True if paths are valid, False otherwise
     """
-    if args.subparser_name == 'report':
-        # check if target_binary exists
-        if not args.target_binary or not os.path.exists(args.target_binary):
-            print(f"ERROR: Target binary '{args.target_binary}' not found")
-            return False
+    # placeholder for future validations
 
     return True
 
@@ -177,7 +166,7 @@ def main() -> int:
         return 0
 
     if args.subparser_name == 'report':
-        fuzzer.report(target_binary=args.target_binary)
+        fuzzer.report()
         return 0
 
     if args.subparser_name == 'fuzz':

@@ -34,6 +34,7 @@ struct cli_args_t {
     bool list_tracers;
     bool list_speculators;
     std::optional<uint64_t> poison_value;
+    std::string mappings_file;
 };
 
 /// @brief Parse the command line arguments
