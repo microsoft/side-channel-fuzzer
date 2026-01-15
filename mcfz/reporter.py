@@ -6,8 +6,10 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Iterator, NewType, Literal, \
+from typing import (
+    TYPE_CHECKING, List, Tuple, Optional, Dict, Iterator, NewType, Literal,
     Final, Union, Any, TypeAlias, cast
+)
 
 import os
 import json
@@ -214,7 +216,7 @@ class _Analyser:
 
         # Initialize a progress bar to track the progress of the analysis
         progress_bar = tqdm(
-            total=sum(len(traces) for ref_file, traces in inputs.items()),
+            total=sum(len(traces) for traces in inputs.values()),
             colour='green',
         )
 
@@ -301,13 +303,9 @@ class _Analyser:
 
         return self._combine_arrays(d_leaks, i_leak)
 
-    def _find_i_type_leak(
-        self,
-        ref_instr: np.ndarray,
-        tgt_instr: np.ndarray,
-        end_id: int
-    ) -> Tuple[LeakyInstrArray, int]:
-        """Find first I-type leak (PC divergence) and return analysis boundary."""
+    def _find_i_type_leak(self, ref_instr: np.ndarray, tgt_instr: np.ndarray,
+                          end_id: int) -> Tuple[LeakyInstrArray, int]:
+        """ Find first I-type leak (PC divergence) and return analysis boundary. """
         pc_mismatch = ref_instr['pc'] != tgt_instr['pc']
         if not pc_mismatch.any():
             return np.array([], dtype=LeakyInstrDType), end_id
@@ -323,13 +321,9 @@ class _Analyser:
         )], dtype=LeakyInstrDType)
         return leak, first_diverge
 
-    def _find_d_type_leaks(
-        self,
-        ref_trace: _Trace,
-        target_trace: _Trace,
-        ref_instr: np.ndarray,
-        tgt_instr: np.ndarray
-    ) -> LeakyInstrArray:
+    def _find_d_type_leaks(self, ref_trace: _Trace, target_trace: _Trace, ref_instr: np.ndarray,
+                           tgt_instr: np.ndarray) -> LeakyInstrArray:
+        """ Find all D-type leaks (memory access divergence) in the given pair of traces. """
         # Find indices of instructions with memory access differences
         # This can be done fast using numpy bulk operations if the memory access structures match
         fast_path_possible = (
@@ -352,13 +346,9 @@ class _Analyser:
         leaks['ref_trace_entry_id'] = ref_instr['org_trace_entry_id'][indices]
         return leaks
 
-    def _find_d_leaks_bulk(
-        self,
-        ref_trace: _Trace,
-        target_trace: _Trace,
-        ref_instr: np.ndarray
-    ) -> np.ndarray:
-        """Find D-leaks via bulk memory comparison (same structure fast path)."""
+    def _find_d_leaks_bulk(self, ref_trace: _Trace, target_trace: _Trace,
+                           ref_instr: np.ndarray) -> np.ndarray:
+        """Find D-leaks via bulk memory comparison (same structure fast path)"""
         mem_end = ref_instr[-1]['mem_accesses_offset'] + ref_instr[-1]['num_mem_accesses']
         mem_diff = ref_trace.mem_accesses[:mem_end] != target_trace.mem_accesses[:mem_end]
 
@@ -396,20 +386,14 @@ class _Analyser:
 
             per_type_map = leakage_map[leak_type]
 
-            # If the PC is not in the map, create a new entry
-            if pc not in per_type_map:
-                per_type_map[pc] = []
-
             # Create a new leakage location and append it to the map
             leakage_location = LinesInTracePair(f"{source}:{tgt_entry_id}:{ref_entry_id}")
-            per_type_map[pc].append(leakage_location)
+            per_type_map.setdefault(pc, []).append(leakage_location)
 
 
 # ==================================================================================================
 # Reporting of the analysis results
 # ==================================================================================================
-
-
 class _HexEncoder(json.JSONEncoder):
 
     def encode(self, o: Any) -> str:
@@ -431,8 +415,8 @@ class _ReportPrinter:
 
     def final_report(self, leakage_map: LeakageMap, report_file: str) -> None:
         """ Print the global map of leaks to the trace log """
-        verbosity: ReportVerbosity
-        for verbosity in (1, 2, 3):  # type: ignore[assignment]
+        all_levels: List[ReportVerbosity] = [1, 2, 3]
+        for verbosity in all_levels:
             leakage_line_map = self._group_by_code_line(leakage_map, verbosity)
             leakage_line_map = self._filter_allowlist(leakage_line_map)
             self._write_report(f"{report_file}.vrb{verbosity}.json", leakage_line_map)
@@ -481,54 +465,46 @@ class _ReportPrinter:
             return self._group_by_code_line_vrb3(leakage_map)
         assert_never(verbosity)
 
+    def _iter_leaks_with_code_lines(
+        self, leakage_map: LeakageMap
+    ) -> Iterator[Tuple[LeakType, CodeLine, PC, List[LinesInTracePair]]]:
+        """Yield (leak_type, code_line, pc, trace_locations) for each leak in the map."""
+        for leak_type in leakage_map:
+            per_type_map = leakage_map[leak_type]
+            for pc in per_type_map:
+                source_code_line = self._decode_addr(pc)
+                yield leak_type, source_code_line, pc, per_type_map[pc]
+
     def _group_by_code_line_vrb3(self, leakage_map: LeakageMap) -> LeakageLineMapVrb3:
         leakage_line_map: LeakageLineMapVrb3 = {'I': {}, 'D': {}}
-        for type_ in leakage_map:
-            per_type_map = leakage_map[type_]
-            for pc in per_type_map:
-                # get the source code line for the instruction address
-                source_code_line = self._decode_addr(pc)
-
-                # create a new entry in the leakage line map if it does not exist
-                if source_code_line not in leakage_line_map[type_]:
-                    leakage_line_map[type_][source_code_line] = {}
-
-                # create a new entry for the PC if it does not exist
-                if pc not in leakage_line_map[type_][source_code_line]:
-                    leakage_line_map[type_][source_code_line][pc] = []
-
-                # append the trace locations to the map
-                leakage_line_map[type_][source_code_line][pc].extend(per_type_map[pc])
-
+        for leak_type, code_line, pc, locations in self._iter_leaks_with_code_lines(leakage_map):
+            per_line_map = leakage_line_map[leak_type].setdefault(code_line, {})
+            per_line_map.setdefault(pc, []).extend(locations)
+        # Sort all trace location lists
+        for per_type in leakage_line_map.values():
+            for per_line in per_type.values():
+                for loc_list in per_line.values():
+                    loc_list.sort()
         return leakage_line_map
 
     def _group_by_code_line_vrb2(self, leakage_map: LeakageMap) -> LeakageLineMapVrb2:
         leakage_line_map: LeakageLineMapVrb2 = {'I': {}, 'D': {}}
-        for type_ in leakage_map:
-            per_type_map = leakage_map[type_]
-            for pc in per_type_map:
-                # get the source code line for the instruction address
-                source_code_line = self._decode_addr(pc)
-
-                # create a new entry in the leakage line map if it does not exist
-                if source_code_line not in leakage_line_map[type_]:
-                    leakage_line_map[type_][source_code_line] = []
-
-                # append the PC to the map
-                leakage_line_map[type_][source_code_line].append(pc)
+        for leak_type, code_line, pc, _ in self._iter_leaks_with_code_lines(leakage_map):
+            leakage_line_map[leak_type].setdefault(code_line, []).append(pc)
+        # Sort all PC lists
+        for per_type in leakage_line_map.values():
+            for pc_list in per_type.values():
+                pc_list.sort()
         return leakage_line_map
 
     def _group_by_code_line_vrb1(self, leakage_map: LeakageMap) -> LeakageLineMapVrb1:
         leakage_line_map: LeakageLineMapVrb1 = {'I': [], 'D': []}
-        for type_ in leakage_map:
-            per_type_map = leakage_map[type_]
-            for pc in per_type_map:
-                # get the source code line for the instruction address
-                source_code_line = self._decode_addr(pc)
-
-                # append the source code line to the map if it does not exist
-                if source_code_line not in leakage_line_map[type_]:
-                    leakage_line_map[type_].append(source_code_line)
+        for leak_type, code_line, _, _ in self._iter_leaks_with_code_lines(leakage_map):
+            if code_line not in leakage_line_map[leak_type]:
+                leakage_line_map[leak_type].append(code_line)
+        # Sort code line lists
+        for code_line_list in leakage_line_map.values():
+            code_line_list.sort()
         return leakage_line_map
 
     def _filter_allowlist(self, leakage_line_map: LeakageLineMap) -> LeakageLineMap:

@@ -24,7 +24,7 @@ class Boost:
         self._config = config
         self._boosting_factor = config.num_secrets_per_class
 
-    def _generate_from_reference(self, wd: str, reference_input: str) -> int:
+    def _generate_from_reference(self, wd: str, reference_input: str) -> None:
         """
         Given a reference input, generate more inputs that will contain the same public data,
         but the secret (private) data will be randomly generated
@@ -74,8 +74,6 @@ class Boost:
             with open(dest_path, 'wb') as dest_file:
                 dest_file.write(config_data + priv_data + pub_data)
 
-        return 0
-
     def generate(self) -> None:
         """
         Generate public-equivalent variants for each reference input generated during fuzzing.
@@ -97,10 +95,8 @@ class Boost:
             os.makedirs(dest_dir, exist_ok=True)
 
             # Try generating more public-equivalent inputs from the reference input
-            if self._generate_from_reference(dest_dir, ref_input_path) == 0:
-                continue
-
-            # If we failed, remove the directory
-            os.rmdir(dest_dir)
-
-        return
+            try:
+                self._generate_from_reference(dest_dir, ref_input_path)
+            except ValueError as ve:
+                print(f"[Boosting] Skipping input '{ref_input}': {ve}")
+                os.rmdir(dest_dir)

@@ -31,7 +31,7 @@ class FuzzGen:
         self._afl_bin = os.path.join(config.afl_root, "afl-fuzz")
         self._libcompcov = os.path.join(config.afl_root, "libcompcov.so")
 
-    def generate(self, cmd: List[str], target_cov: int, timeout_s: int) -> int:
+    def generate(self, cmd: List[str], target_cov: int, timeout_s: int) -> None:
         """
         Generate diverse inputs for the target binary invoked with the given command.
         The generation continues until either the target coverage is achieved or
@@ -42,9 +42,9 @@ class FuzzGen:
         :param timeout_s: Timeout for the fuzzing process
         :return: 0 if the target coverage or timeout is reached, 1 if error occurs
         """
-        return self._start_afl_fuzz(cmd, target_cov, timeout_s)
+        self._start_afl_fuzz(cmd, target_cov, timeout_s)
 
-    def _start_afl_fuzz(self, cmd: List[str], _: int, timeout_s: int) -> int:
+    def _start_afl_fuzz(self, cmd: List[str], _: int, timeout_s: int) -> None:
         """
         Starts the AFL++ fuzzing process.
         """
@@ -74,11 +74,9 @@ class FuzzGen:
             pass
         except subprocess.CalledProcessError as e:
             print(f"[AFL ERROR]: {e}")
-            return 1
+            exit(1)
         finally:
             # Workaround: AFL++ corrupts the terminal output under some environments;
             # Force cursor restoration to mitigate this issue.
             sys.stdout.write('\033[?25h')  # ANSI escape to show cursor
             sys.stdout.flush()
-
-        return 0

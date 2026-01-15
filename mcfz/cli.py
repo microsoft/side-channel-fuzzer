@@ -52,13 +52,6 @@ def _parse_args() -> Any:  # pylint: disable=r0915
         default=10,
         help="Fuzzing timeout, in seconds (default: 10)",
     )
-    all_phases.add_argument(
-        "-n",
-        "--num-sec-inputs",
-        type=int,
-        default=10,
-        help="Number of variants to generate per fuzzed input (default: 10)",
-    )
 
     # everything after '--' is saved into 'target_cmd' argument
     all_phases.add_argument(
