@@ -105,5 +105,5 @@ In addition, several significant enhancements have been made:
 
 See git history for changes in version 1.3.2 and earlier.
 
-[1.3.3]: https://github.com/microsoft/sca-fuzzer/compare/v1.3.2...v1.3.3
-[1.3.2]: https://github.com/microsoft/sca-fuzzer/releases/tag/v1.3.2
+[1.3.3]: https://github.com/microsoft/side-channel-fuzzer/compare/v1.3.2...v1.3.3
+[1.3.2]: https://github.com/microsoft/side-channel-fuzzer/releases/tag/v1.3.2

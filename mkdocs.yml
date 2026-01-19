@@ -1,12 +1,12 @@
 ---
 site_name: Revizor
-site_url: https://github.com/microsoft/sca-fuzzer
+site_url: https://github.com/microsoft/side-channel-fuzzer
 site_author: Microsoft
 site_description: A security-oriented tool for testing CPUs and detecting microarchitectural leaks like Spectre and Meltdown
 copyright: 'Copyright &copy; 2025 Microsoft'
 
-repo_name: microsoft/sca-fuzzer
-repo_url: https://github.com/microsoft/sca-fuzzer
+repo_name: microsoft/side-channel-fuzzer
+repo_url: https://github.com/microsoft/side-channel-fuzzer
 
 docs_dir: docs
 

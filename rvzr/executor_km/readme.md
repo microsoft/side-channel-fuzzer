@@ -1,6 +1,6 @@
 # Install
 
-See https://microsoft.github.io/sca-fuzzer/quick-start/ or `README.md` in the project root.
+See https://microsoft.github.io/side-channel-fuzzer/quick-start/ or `README.md` in the project root.
 
 # Using the executor
 

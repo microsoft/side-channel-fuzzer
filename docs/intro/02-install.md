@@ -40,10 +40,10 @@ In addition to the Python package, you will need to build and install the execut
 sudo apt-get install linux-headers-$(uname -r) linux-headers-generic
 
 # get the source code
-git clone https://github.com/microsoft/sca-fuzzer.git
+git clone https://github.com/microsoft/side-channel-fuzzer.git
 
 # build executor
-cd sca-fuzzer/rvzr/executor_km
+cd side-channel-fuzzer/rvzr/executor_km
 make uninstall  # the command will give an error message, but it's ok!
 make clean
 make
@@ -92,7 +92,7 @@ Filtering: OK
 ```
 
 If you see any other output, check if the previous steps were executed correctly.
-If you still have issues, please [open an issue](https://github.com/microsoft/sca-fuzzer/issues).
+If you still have issues, please [open an issue](https://github.com/microsoft/side-channel-fuzzer/issues).
 
 
 ### 7. (Optional) System Configuration

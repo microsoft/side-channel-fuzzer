@@ -247,7 +247,7 @@ class Executor(ABC):
         # Initialize the kernel module
         if not _is_kernel_module_installed():
             print("x86 executor: kernel module not installed\n\n"
-                  "Go to https://microsoft.github.io/sca-fuzzer/quick-start/ for "
+                  "Go to https://microsoft.github.io/side-channel-fuzzer/quick-start/ for "
                   "installation instructions.")
             sys.exit(1)
         _configure_kernel_module()

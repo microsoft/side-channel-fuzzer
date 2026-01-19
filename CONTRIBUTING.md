@@ -18,4 +18,4 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Contribution Guidelines
 
-Please refer to the [Guide to Contributing](https://microsoft.github.io/sca-fuzzer/internals/contributing/overview/) for an overview of how to contribute.
+Please refer to the [Guide to Contributing](https://microsoft.github.io/side-channel-fuzzer/internals/contributing/overview/) for an overview of how to contribute.

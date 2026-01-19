@@ -182,7 +182,7 @@ class DynamoRIOModel(Model):
             if '/dev/null' not in output:
                 raise FileNotFoundError("DynamoRIO backend is not installed\n\n\n"
                                         "Please follow the instructions in "
-                                        "https://microsoft.github.io/sca-fuzzer/quick-start/")
+                                        "https://microsoft.github.io/side-channel-fuzzer/quick-start/")
             cls._installation_checked = True
 
     def _trace_test_case_common(self, inputs: List[InputData], nesting: int,

@@ -100,9 +100,9 @@ h2 > strong {
     </p>
 
 
-    [GitHub](https://github.com/microsoft/sca-fuzzer){ .md-button }
+    [GitHub](https://github.com/microsoft/side-channel-fuzzer){ .md-button }
     [Contributing](internals/contributing/overview.md){ .md-button }
-    [Bug Reports](https://github.com/microsoft/sca-fuzzer/issues){ .md-button }
+    [Bug Reports](https://github.com/microsoft/side-channel-fuzzer/issues){ .md-button }
     [Explore Docs](structure.md){ .md-button }
 
 
@@ -116,7 +116,7 @@ h2 > strong {
     </p>
 
     [Zulip Community](https://rvzr.zulipchat.com/){ .md-button }
-    [GitHub Discussions](https://github.com/microsoft/sca-fuzzer/discussions){ .md-button }
+    [GitHub Discussions](https://github.com/microsoft/side-channel-fuzzer/discussions){ .md-button }
 
 </div>
 

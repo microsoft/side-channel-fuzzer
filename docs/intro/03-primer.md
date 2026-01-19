@@ -374,7 +374,7 @@ contract counterexample. This process is called
 [*Model-based Relational Testing*](../glossary.md#model-based-relational-testing-mrt), and it is
 detailed further in the [Architecture Overview](../internals/architecture/overview.md).
 
-This approach works well in practice because any given hardware optimization can typically be triggered by many different programs, and we need to find only one instance to detect a violation. Evidence of this is the [list of trophies](https://microsoft.github.io/sca-fuzzer/) that Revizor has already amassed.
+This approach works well in practice because any given hardware optimization can typically be triggered by many different programs, and we need to find only one instance to detect a violation. Evidence of this is the [list of trophies](https://microsoft.github.io/side-channel-fuzzer/) that Revizor has already amassed.
 
 The second issue we encountered is nondeterminism. As mentioned earlier, hardware traces can be non-deterministic due to various factors like interrupts or other programs running on the machine. To handle this, we use statistical methods: Revizor collects hardware traces for each program-input pair multiple times and then compares their distributions. If the distributions of the traces are statistically similar, Revizor considers the traces to be equivalent. This approach helps us account for noise in the hardware traces while still making reliable decisions about contract compliance.
 

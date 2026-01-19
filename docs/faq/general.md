@@ -40,7 +40,7 @@
 
 #### Do I need a specific Linux distribution/version? {#specific-linux-distro}
 
-:    No, Revizor should work on any reasonably recent Linux. If you encounter issues, that's most likely a bug that we would like to hear about. Please report any problems on our [GitHub Issues page](https://github.com/microsoft/sca-fuzzer/issues).
+:    No, Revizor should work on any reasonably recent Linux. If you encounter issues, that's most likely a bug that we would like to hear about. Please report any problems on our [GitHub Issues page](https://github.com/microsoft/side-channel-fuzzer/issues).
 
 #### Does Revizor require root or administrator privileges? {#requires-root}
 

@@ -34,10 +34,10 @@ dependencies = [
 maintainers = [{name = "Oleksii Oleksenko", email = ""}]
 
 [project.urls]
-"Homepage" = "https://microsoft.github.io/sca-fuzzer/"
-"Source code" = "https://github.com/microsoft/sca-fuzzer"
-"Bug Tracker" = "https://github.com/microsoft/sca-fuzzer/issues"
-"Changelog" = "https://github.com/microsoft/sca-fuzzer/releases"
+"Homepage" = "https://microsoft.github.io/side-channel-fuzzer/"
+"Source code" = "https://github.com/microsoft/side-channel-fuzzer"
+"Bug Tracker" = "https://github.com/microsoft/side-channel-fuzzer/issues"
+"Changelog" = "https://github.com/microsoft/side-channel-fuzzer/releases"
 
 [tool.hatch.build]
 exclude = [

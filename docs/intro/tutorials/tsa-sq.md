@@ -49,7 +49,7 @@ The template structure follows the typical flow of a microarchitectural side-cha
 
 ![tsa-sq-template.png](../../assets/tsa-sq-template.png)
 
-You can find the complete template in [`template.asm`](https://github.com/microsoft/sca-fuzzer/blob/main/demo/tsa-sq/template.asm).
+You can find the complete template in [`template.asm`](https://github.com/microsoft/side-channel-fuzzer/blob/main/demo/tsa-sq/template.asm).
 
 Let's examine each phase:
 

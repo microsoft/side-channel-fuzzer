@@ -290,5 +290,5 @@ In contrast to the rest of the macros, generation macros are used by the generat
 
 **Examples:**
 
-- [demo/tsa-l1d/template.asm](https://github.com/microsoft/sca-fuzzer/tree/main/demo/tsa-l1d/template.asm) - TSA-L1D attack template with actor transitions
-- [demo/tsa-sq/template.asm](https://github.com/microsoft/sca-fuzzer/tree/main/demo/tsa-sq/template.asm) - TSA-SQ attack template with actor transitions
+- [demo/tsa-l1d/template.asm](https://github.com/microsoft/side-channel-fuzzer/tree/main/demo/tsa-l1d/template.asm) - TSA-L1D attack template with actor transitions
+- [demo/tsa-sq/template.asm](https://github.com/microsoft/side-channel-fuzzer/tree/main/demo/tsa-sq/template.asm) - TSA-SQ attack template with actor transitions
