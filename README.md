@@ -1,9 +1,9 @@
 # Revizor
 
-![GitHub](https://img.shields.io/github/license/microsoft/sca-fuzzer)
+![GitHub](https://img.shields.io/github/license/microsoft/side-channel-fuzzer)
 ![PyPI](https://img.shields.io/pypi/v/revizor-fuzzer)
-![GitHub all releases](https://img.shields.io/github/downloads/microsoft/sca-fuzzer/total)
-![GitHub contributors](https://img.shields.io/github/contributors/microsoft/sca-fuzzer)
+![GitHub all releases](https://img.shields.io/github/downloads/microsoft/side-channel-fuzzer/total)
+![GitHub contributors](https://img.shields.io/github/contributors/microsoft/side-channel-fuzzer)
 <!-- ![PyPI - Downloads](https://img.shields.io/pypi/dm/revizor-fuzzer) -->
 
 Revizor is a security-oriented fuzzer for detecting information leaks in CPUs, such as [Spectre and Meltdown](https://meltdownattack.com/).
@@ -13,17 +13,17 @@ It tests CPUs against [Leakage Contracts](https://arxiv.org/abs/2006.03841) and 
 
 ## Getting Started and Documentation
 
-You can find a quick start guide at [Quick Start](https://microsoft.github.io/sca-fuzzer/quick-start/).
+You can find a quick start guide at [Quick Start](https://microsoft.github.io/side-channel-fuzzer/quick-start/).
 
-For information on how to use Revizor, see [User Documentation](https://microsoft.github.io/sca-fuzzer/user/).
+For information on how to use Revizor, see [User Documentation](https://microsoft.github.io/side-channel-fuzzer/user/).
 
 For information on how to contribute to Revizor, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Need Help with Revizor?
 
-If you find a bug in Revizor, don't hesitate to [open an issue](https://github.com/microsoft/sca-fuzzer/issues).
+If you find a bug in Revizor, don't hesitate to [open an issue](https://github.com/microsoft/side-channel-fuzzer/issues).
 
-If something is confusing or you need help in using Revizor, we have a [discussion page](https://github.com/microsoft/sca-fuzzer/discussions).
+If something is confusing or you need help in using Revizor, we have a [discussion page](https://github.com/microsoft/side-channel-fuzzer/discussions).
 
 ## Citing Revizor
 

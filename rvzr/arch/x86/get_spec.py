@@ -1,5 +1,5 @@
 """
-File: A script that downloads the x86 instruction set from the SCA-Fuzzer repository
+File: A script that downloads the x86 instruction set from the Side Channel Fuzzer repository
       and parses it into a JSON file that can be used by the generator.
 
 Copyright (C) Microsoft Corporation
@@ -216,7 +216,7 @@ class _XMLInstructionSpec:
 
     def __str__(self) -> str:
         return f"{self.name} {self.is_control_flow} {self.category} " \
-               f"{len(self.operands)} {len(self.implicit_operands)}"
+            f"{len(self.operands)} {len(self.implicit_operands)}"
 
     def to_json(self) -> str:
         """ Converts the instruction to a JSON string """
@@ -541,7 +541,8 @@ class Downloader:
         print("> Downloading complete instruction spec...")
         subprocess.run(
             "curl -L -o x86_instructions.xml "
-            "https://github.com/microsoft/sca-fuzzer/releases/download/v1.3.0/x86_instructions.xml",
+            "https://github.com/microsoft/side-channel-fuzzer/releases/download/"
+            "v1.3.0/x86_instructions.xml",
             shell=True,
             check=True)
 

@@ -2,7 +2,7 @@
 
 Below is a list of the available configuration options for Revizor, which are passed down to Revizor via a config file.
 
-For an example of how to write the config file, see [demo/big-fuzz.yaml](https://github.com/microsoft/sca-fuzzer/tree/main/demo/big-fuzz.yaml).
+For an example of how to write the config file, see [demo/big-fuzz.yaml](https://github.com/microsoft/side-channel-fuzzer/tree/main/demo/big-fuzz.yaml).
 
 
 ## <a name="fuzzer"></a> Fuzzing Configuration
@@ -914,5 +914,5 @@ The following options are available for each actor:
 ## What's Next?
 
 - [Command Line Interface](cli.md) - CLI options and modes
-- [demo/big-fuzz.yaml](https://github.com/microsoft/sca-fuzzer/tree/main/demo/big-fuzz.yaml) - Comprehensive example configuration
-- [demo/](https://github.com/microsoft/sca-fuzzer/tree/main/demo/) - Example configurations for various scenarios
+- [demo/big-fuzz.yaml](https://github.com/microsoft/side-channel-fuzzer/tree/main/demo/big-fuzz.yaml) - Comprehensive example configuration
+- [demo/](https://github.com/microsoft/side-channel-fuzzer/tree/main/demo/) - Example configurations for various scenarios

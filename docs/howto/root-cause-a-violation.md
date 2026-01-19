@@ -61,7 +61,7 @@ The minimizer goes through the pair of inputs that trigger the violation - input
 
 The interpretation of these results is case-specific, but generally, the values with `+` or `=` are those that create conditions for leakage, and the values with `^` are the addresses whose value leaks.
 
-In this example, the minimizer found that this test case leaks one byte at address `0x2028` (used to initialize RDI). The minimizer also found that the address `0x240` must contain specific non-zero values that must be the same in both inputs. This address in the input is used to initialize the corresponding offset in the sandbox of actor 0. See [Sandbox Memory Layout](https://microsoft.github.io/sca-fuzzer/user/sandbox/) for more details about register and memory initialization.
+In this example, the minimizer found that this test case leaks one byte at address `0x2028` (used to initialize RDI). The minimizer also found that the address `0x240` must contain specific non-zero values that must be the same in both inputs. This address in the input is used to initialize the corresponding offset in the sandbox of actor 0. See [Sandbox Memory Layout](https://microsoft.github.io/side-channel-fuzzer/user/sandbox/) for more details about register and memory initialization.
 
 !!! tip "Minimizer Behavior"
     Ideally, the minimizer should be able to reduce the leakage to a single byte. If more then a couple bytes leak, it typically indicates that the violation is non-deterministic, and it might be a good idea to re-run the program minimizer or to change the configuration to increase the number of attempts/increase the noise threshold. If *no* bytes leak, this is a certain sign that something went wrong; re-run the minimizer.
@@ -91,7 +91,7 @@ This pass with attempt to insert an `LFENCE` after every instruction in the prog
 In the resulting file (`fenced.asm`) the region *without* fences is the one that causes the violation. The remaining instructions are just setting up the data for the violation, and are likely irrelevant.
 
 !!! warning "Unexpected Fence Insertion Results"
-    If an `LFENCE` is inserted after *every* instruction in the test case and the violation still occurs, this is most likely due to a bug in the model or the executor. If you are using a custom model, consider checking the model for correctness. If you haven't made changes to the Revizor source code, please, open an issue in the [bug tracker](https://github.com/microsoft/sca-fuzzer/issues).
+    If an `LFENCE` is inserted after *every* instruction in the test case and the violation still occurs, this is most likely due to a bug in the model or the executor. If you are using a custom model, consider checking the model for correctness. If you haven't made changes to the Revizor source code, please, open an issue in the [bug tracker](https://github.com/microsoft/side-channel-fuzzer/issues).
 
 ## Map Hardware Traces to Minimized Program and Data
 

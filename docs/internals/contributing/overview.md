@@ -8,14 +8,14 @@ Revizor is an open-source project, and we welcome contributions of all kinds. Yo
 
 Here are some ways you can help:
 
-* :fontawesome-solid-bug: Report Issues: The easiest way to contribute is by reporting issues you encounter while using Revizor. Try following the introductory [guides and tutorials](../../intro/start-here.md), and if you find any issues, bugs, or unclear documentation, please report them on our [GitHub Issues page](https://github.com/microsoft/sca-fuzzer/issues).
+* :fontawesome-solid-bug: Report Issues: The easiest way to contribute is by reporting issues you encounter while using Revizor. Try following the introductory [guides and tutorials](../../intro/start-here.md), and if you find any issues, bugs, or unclear documentation, please report them on our [GitHub Issues page](https://github.com/microsoft/side-channel-fuzzer/issues).
 * :fontawesome-solid-pencil: Improve Documentation: You can also contribute by improving the documentation. If you find any gaps, outdated information -- even typos -- feel free to submit a pull request with your improvements.
-* :fontawesome-solid-code: Code Contributions: If you're interested in coding, you can contribute new features, fix bugs, or enhance existing functionality. Check out the [issue tracker](https://github.com/microsoft/sca-fuzzer/issues) for open issues and feature requests.
+* :fontawesome-solid-code: Code Contributions: If you're interested in coding, you can contribute new features, fix bugs, or enhance existing functionality. Check out the [issue tracker](https://github.com/microsoft/side-channel-fuzzer/issues) for open issues and feature requests.
 * :fontawesome-solid-lightbulb: New Features: Finally, if you have expertise in hardware security, fuzzing, or related areas, consider contributing new features and enhancements to Revizor (see [ideas for contributions](#ideas-for-contributions) if you need inspiration).
 
 ## Reporting Bugs and Issues
 
-To report a bug or an issue, please use the [GitHub Issues page](https://github.com/microsoft/sca-fuzzer/issues).
+To report a bug or an issue, please use the [GitHub Issues page](https://github.com/microsoft/side-channel-fuzzer/issues).
 
 If you're reporting a simple bug, it is sufficient to provide a small description of the problem and the environment in which it occurred (Revizor version, target architecture, OS, etc.).
 
@@ -105,7 +105,7 @@ Ideas include:
 * Implement ability to control the frequency of certain instruction types in generated programs
 * Implement mutation-based generation strategies that modify existing test cases to explore new behaviors
 
-If you decide to work on any of these or have your own ideas, please discuss them with us first by reaching out on [GitHub Discussions](https://github.com/microsoft/sca-fuzzer/discussions) or opening a draft pull request. This way we can ensure that your efforts align with the project's goals and avoid duplication of work.
+If you decide to work on any of these or have your own ideas, please discuss them with us first by reaching out on [GitHub Discussions](https://github.com/microsoft/side-channel-fuzzer/discussions) or opening a draft pull request. This way we can ensure that your efforts align with the project's goals and avoid duplication of work.
 
 ---
 

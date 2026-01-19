@@ -19,9 +19,9 @@ Are you new to Revizor? Start here:
 Stuck? Need clarification? Here's where to get help.
 
 * [FAQ](faq/general.md) - What is Revizor? How does it work? What's a contract?
-* [GitHub Discussions](https://github.com/microsoft/sca-fuzzer/discussions) - Ask questions, share experiences, discuss ideas
-* [GitHub Issues](https://github.com/microsoft/sca-fuzzer/issues) - Report bugs or request features
-* [Contributing Guide](https://github.com/microsoft/sca-fuzzer/blob/main/CONTRIBUTING.md) - Help improve Revizor
+* [GitHub Discussions](https://github.com/microsoft/side-channel-fuzzer/discussions) - Ask questions, share experiences, discuss ideas
+* [GitHub Issues](https://github.com/microsoft/side-channel-fuzzer/issues) - Report bugs or request features
+* [Contributing Guide](https://github.com/microsoft/side-channel-fuzzer/blob/main/CONTRIBUTING.md) - Help improve Revizor
 * [Zulip Chat](https://rvzr.zulipchat.com/) - Real-time community support
 
 ---

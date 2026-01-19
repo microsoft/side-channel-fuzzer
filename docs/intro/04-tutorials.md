@@ -8,8 +8,8 @@ This is a starting point for a tutorial series that will teach you how to use Re
     Before proceeding with this tutorial, ensure that you have completed the installation steps outlined in the [Installation Guide](02-install.md).
 
 !!! question "Need Help?"
-    - **Questions about the tutorial?** Check the [FAQ](../faq/general.md) or open a [GitHub discussion](https://github.com/microsoft/sca-fuzzer/discussions)
-    - **Found a bug?** Report it in [GitHub issues](https://github.com/microsoft/sca-fuzzer/issues)
+    - **Questions about the tutorial?** Check the [FAQ](../faq/general.md) or open a [GitHub discussion](https://github.com/microsoft/side-channel-fuzzer/discussions)
+    - **Found a bug?** Report it in [GitHub issues](https://github.com/microsoft/side-channel-fuzzer/issues)
 
 ### Let's get started!
 

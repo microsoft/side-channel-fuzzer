@@ -272,7 +272,7 @@ function arm_only() {
 
 @test "Feature: VMX/SVM" {
     x86_only
-    amd_only  # see https://github.com/microsoft/sca-fuzzer/issues/122
+    amd_only  # see https://github.com/microsoft/side-channel-fuzzer/issues/122
     if cat /proc/cpuinfo | grep -e "vmx" -e "svm" >/dev/null; then
         echo "1" >/sys/rvzr_executor/enable_hpa_gpa_collisions
         assert_no_violation "$fuzz_opt -t $ASM_DIR/vm_switch.asm -c $CONF_DIR/vm-switch.yaml -i 20"
