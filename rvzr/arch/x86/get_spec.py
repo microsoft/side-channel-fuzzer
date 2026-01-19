@@ -216,7 +216,7 @@ class _XMLInstructionSpec:
 
     def __str__(self) -> str:
         return f"{self.name} {self.is_control_flow} {self.category} " \
-               f"{len(self.operands)} {len(self.implicit_operands)}"
+            f"{len(self.operands)} {len(self.implicit_operands)}"
 
     def to_json(self) -> str:
         """ Converts the instruction to a JSON string """
@@ -541,7 +541,8 @@ class Downloader:
         print("> Downloading complete instruction spec...")
         subprocess.run(
             "curl -L -o x86_instructions.xml "
-            "https://github.com/microsoft/side-channel-fuzzer/releases/download/v1.3.0/x86_instructions.xml",
+            "https://github.com/microsoft/side-channel-fuzzer/releases/download/"
+            "v1.3.0/x86_instructions.xml",
             shell=True,
             check=True)
 
