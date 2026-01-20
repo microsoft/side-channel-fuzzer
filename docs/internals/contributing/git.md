@@ -61,18 +61,11 @@ If you need to use a different type, please discuss it with a maintainer.
 
 We practice the [git workflow](https://git-scm.com/docs/gitworkflows), with a few modifications.
 
-![branching workflow](../../assets/branches.png)
-
 We use the following branches for graduation:
 
 * `main`: The latest release. This branch should always be stable, and it is the last branch to receive changes.
 * `main-fixes`: Commits that go in the next maintenance release. This branch is created from the last release branch.
 * `dev`: The development branch. This branch is the first to receive changes.
-
-Commits should be merged upwards:
-
-* `dev` -> `pre-release` -> `main`
-* In case of hot fixes, `main-fixes` -> `main` AND `main-fixes` -> `pre-release`
 
 For working on unstable code (e.g., progress on features or bug fixes), use either forks or feature branches.
 Use forks if you are the only one working on the feature, and use a pull request to merge the changes back into the main repository.
@@ -80,3 +73,107 @@ Use a feature branch if multiple people are working on the feature, in which cas
 
 The only exception is the `gh-pages` branch, which is used for the project's website.
 This branch is used by automated tools and should never be used for development.
+
+## Typical Workflows
+
+![branching workflow](../../assets/branches.png)
+
+### Feature Development
+
+```
+# Start new feature from dev
+git checkout dev
+git pull
+git checkout -b feature-awesome-thing
+
+# Work on feature, commit frequently
+git add .
+git commit -m "Add feature component"
+
+# Keep feature updated with dev (rebase to keep history clean)
+git fetch origin
+git rebase origin/dev
+
+# Clean up commits before sharing (optional, simplifies PR review)
+git rebase -i origin/dev
+
+# When feature is complete
+git push origin feature-awesome-thing
+
+# Create PR: feature-awesome-thing → dev
+# Configure PR settings: "Squash and merge", assign reviewers, etc.
+# After PR approved and merged, locally:
+git checkout dev
+git pull
+git branch -d feature-awesome-thing
+git push origin --delete feature-awesome-thing
+```
+
+### Hotfix
+
+```
+# Start hotfix from main-fixes
+git checkout main-fixes
+git pull
+git checkout -b hotfix-critical-bug
+
+# Work on hotfix, commit frequently
+git add .
+git commit -m "Fix critical bug"
+
+# When hotfix is complete
+git push origin hotfix-critical-bug
+
+# Create PR: hotfix-critical-bug → main-fixes
+# Configure PR settings: "Squash and merge", assign reviewers, etc.
+# After PR merged:
+git checkout main-fixes
+git pull
+git branch -d hotfix-critical-bug
+git push origin --delete hotfix-critical-bug
+```
+
+### Hotfix Release: main-fixes → main
+
+```
+# Rebase main-fixes into main (we always ensure a linear history on main and main-fixes)
+git checkout main
+git pull
+git rebase main-fixes
+git tag -a vX.Y.Z -m "Release vX.Y.Z"  # Update version tag
+git push origin main --tags
+
+# Re-synchronize dev with main
+git checkout dev
+git pull
+git merge --no-ff main
+```
+
+### Minor/Major Release: dev → release-X.Y.Z → main
+
+When a release is fully prepared on dev:
+
+```
+# Create a release branch from dev
+git checkout dev
+git checkout -b release-X.Y.Z
+
+# After final touches (version bumps, changelog updates, etc.):
+git commit -am "Prepare release vX.Y.Z"
+
+# Merge release branch into main
+git checkout main
+git merge --no-ff release-X.Y.Z -m "Release vX.Y.Z"
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin main --tags
+
+# Sync release back to dev
+git checkout dev
+git rebase release-X.Y.Z
+git push origin dev
+
+# Delete release branch
+git branch -d release-X.Y.Z
+git push origin --delete release-X.Y.Z
+```
+
