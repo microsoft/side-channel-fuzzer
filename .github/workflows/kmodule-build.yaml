@@ -17,6 +17,8 @@ on:
 
 jobs:
   km_build:
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
