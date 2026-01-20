@@ -2170,6 +2170,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#typical-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typical Workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2843,23 +2854,105 @@
 If you need to use a different type, please discuss it with a maintainer.</p>
 <h2 id="git-branches">Git Branches</h2>
 <p>We practice the <a href="https://git-scm.com/docs/gitworkflows">git workflow</a>, with a few modifications.</p>
-<p><img alt="branching workflow" src="../../../assets/branches.png" /></p>
 <p>We use the following branches for graduation:</p>
 <ul>
 <li><code>main</code>: The latest release. This branch should always be stable, and it is the last branch to receive changes.</li>
 <li><code>main-fixes</code>: Commits that go in the next maintenance release. This branch is created from the last release branch.</li>
 <li><code>dev</code>: The development branch. This branch is the first to receive changes.</li>
 </ul>
-<p>Commits should be merged upwards:</p>
-<ul>
-<li><code>dev</code> -&gt; <code>pre-release</code> -&gt; <code>main</code></li>
-<li>In case of hot fixes, <code>main-fixes</code> -&gt; <code>main</code> AND <code>main-fixes</code> -&gt; <code>pre-release</code></li>
-</ul>
 <p>For working on unstable code (e.g., progress on features or bug fixes), use either forks or feature branches.
 Use forks if you are the only one working on the feature, and use a pull request to merge the changes back into the main repository.
 Use a feature branch if multiple people are working on the feature, in which case name the branch <code>feature-&lt;name&gt;</code> or <code>bugfix-&lt;name&gt;</code>, and make sure to branch from the <code>dev</code> branch.</p>
 <p>The only exception is the <code>gh-pages</code> branch, which is used for the project's website.
 This branch is used by automated tools and should never be used for development.</p>
+<h2 id="typical-workflows">Typical Workflows</h2>
+<p><img alt="branching workflow" src="../../../assets/branches.png" /></p>
+<h3 id="feature-development">Feature Development</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># Start new feature from dev
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git checkout dev
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>git pull
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>git checkout -b feature-awesome-thing
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a># Work on feature, commit frequently
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>git add .
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>git commit -m &quot;Add feature component&quot;
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a># Keep feature updated with dev (rebase to keep history clean)
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>git fetch origin
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>git rebase origin/dev
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a># Clean up commits before sharing (optional, simplifies PR review)
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>git rebase -i origin/dev
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a># When feature is complete
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>git push origin feature-awesome-thing
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a># Create PR: feature-awesome-thing → dev
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a># Configure PR settings: &quot;Squash and merge&quot;, assign reviewers, etc.
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a># After PR approved and merged, locally:
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>git checkout dev
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>git pull
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>git branch -d feature-awesome-thing
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>git push origin --delete feature-awesome-thing
+</code></pre></div>
+<h3 id="hotfix">Hotfix</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a># Start hotfix from main-fixes
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>git checkout main-fixes
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>git pull
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>git checkout -b hotfix-critical-bug
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a># Work on hotfix, commit frequently
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>git add .
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>git commit -m &quot;Fix critical bug&quot;
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a># When hotfix is complete
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>git push origin hotfix-critical-bug
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a># Create PR: hotfix-critical-bug → main-fixes
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a># Configure PR settings: &quot;Squash and merge&quot;, assign reviewers, etc.
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a># After PR merged:
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>git checkout main-fixes
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>git pull
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>git branch -d hotfix-critical-bug
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>git push origin --delete hotfix-critical-bug
+</code></pre></div>
+<h3 id="hotfix-release-main-fixes-main">Hotfix Release: main-fixes → main</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a># Rebase main-fixes into main (we always ensure a linear history on main and main-fixes)
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>git checkout main
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>git pull
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>git rebase main-fixes
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>git tag -a vX.Y.Z -m &quot;Release vX.Y.Z&quot;  # Update version tag
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>git push origin main --tags
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a># Re-synchronize dev with main
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>git checkout dev
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>git pull
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>git merge --no-ff main
+</code></pre></div>
+<h3 id="minormajor-release-dev-release-xyz-main">Minor/Major Release: dev → release-X.Y.Z → main</h3>
+<p>When a release is fully prepared on dev:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a># Create a release branch from dev
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>git checkout dev
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>git checkout -b release-X.Y.Z
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a># After final touches (version bumps, changelog updates, etc.):
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>git commit -am &quot;Prepare release vX.Y.Z&quot;
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a># Merge release branch into main
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>git checkout main
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>git merge --no-ff release-X.Y.Z -m &quot;Release vX.Y.Z&quot;
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>git tag -a vX.Y.Z -m &quot;Release vX.Y.Z&quot;
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>git push origin main --tags
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a># Sync release back to dev
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>git checkout dev
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>git rebase release-X.Y.Z
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>git push origin dev
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a># Delete release branch
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>git branch -d release-X.Y.Z
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>git push origin --delete release-X.Y.Z
+</code></pre></div>
 
 
 

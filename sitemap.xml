@@ -2,234 +2,234 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/glossary/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/structure/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/faq/general/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/howto/ask-a-question/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/howto/choose-contract/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/howto/design-campaign/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/howto/interpret-results/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/howto/minimize/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/howto/root-cause-a-violation/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/howto/use-macros/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/howto/use-templates/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/code-structure/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/architecture/analysis/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/architecture/code/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/architecture/data/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/architecture/exec/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/architecture/fuzz/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/architecture/isa/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/architecture/logging/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/architecture/mini/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/architecture/model/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/architecture/overview/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/contributing/code-style/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/contributing/general/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/contributing/git/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/contributing/overview/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/model-backends/model-dr/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/internals/model-backends/model-unicorn/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/01-overview/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/02-install/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/03-primer/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/04-tutorials/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/start-here/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/tutorials/01-first-fuzz/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/tutorials/02-first-vuln/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/tutorials/03-faults/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/tutorials/04-isolation/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/tutorials/05-extending/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/intro/tutorials/tsa-sq/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/artifact-file-formats/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/binary-formats/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/cli/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/config/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/macros/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/minimization-passes/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/modes/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/papers/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/registers/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/runtime-statistic/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/ref/sandbox/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/topics/actors/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/topics/contracts/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/topics/models/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/topics/test-case-generation/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
     <url>
          <loc>https://github.com/microsoft/side-channel-fuzzer/topics/trace-analysis/</loc>
-         <lastmod>2026-01-19</lastmod>
+         <lastmod>2026-01-20</lastmod>
     </url>
 </urlset>
