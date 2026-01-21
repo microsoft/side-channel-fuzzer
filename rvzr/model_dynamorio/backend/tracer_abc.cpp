@@ -96,7 +96,7 @@ void TracerABC::observe_exception(dr_siginfo_t *siginfo) const
     }
 
     trace.push_back({.addr = (pc_t)siginfo->access_address,
-                     .size = (uint32_t)siginfo->sig,
+                     .size = (uint16_t)siginfo->sig,
                      .type = trace_entry_type_t::ENTRY_EXCEPTION});
 }
 
@@ -118,7 +118,7 @@ void TracerABC::record_mem_access(bool is_write, void *address, uint64_t size)
 
     const trace_entry_t entry = {
         .addr = reinterpret_cast<uint64_t>(address),
-        .size = (uint32_t)size,
+        .size = (uint16_t)size,
         .type = (is_write) ? trace_entry_type_t::ENTRY_WRITE : trace_entry_type_t::ENTRY_READ,
     };
     trace.push_back(entry);

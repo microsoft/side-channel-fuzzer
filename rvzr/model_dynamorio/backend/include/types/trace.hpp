@@ -45,11 +45,9 @@ struct trace_entry_t {
     // pc for instructions; address for memory accesses; target for indirect calls
     uint64_t addr;
     // instruction size for instructions; memory access size for memory accesses
-    uint32_t size;
+    uint16_t size;
     // see trace_entry_type_t
     trace_entry_type_t type;
-    // unused for now
-    uint8_t padding[3]; // NOLINT
 
     /// @brief Declare a marker to identify traces of this type
     static constexpr char marker = 'T';
@@ -83,4 +81,4 @@ struct trace_entry_t {
 
         out << "\n";
     }
-};
+} __attribute__((packed));

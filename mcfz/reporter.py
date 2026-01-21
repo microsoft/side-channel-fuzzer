@@ -416,7 +416,11 @@ class _Analyser:
             ref_instr[:analysis_end], tgt_instr[:analysis_end]
         )
 
-        return self._combine_arrays(d_leaks, i_leak)
+        # Combine I-type and D-type leaks
+        non_empty = [a for a in [d_leaks, i_leak] if len(a) > 0]
+        if not non_empty:
+            return np.array([], dtype=LeakyInstrDType)
+        return np.concatenate(non_empty) if len(non_empty) > 1 else non_empty[0]
 
     def _find_i_type_leak(self, ref_instr: np.ndarray, tgt_instr: np.ndarray,
                           end_id: int) -> Tuple[LeakyInstrArray, int]:
@@ -478,14 +482,6 @@ class _Analyser:
         # Filter to valid range with non-zero memory accesses
         valid = (leak_indices < len(ref_instr)) & (ref_instr['num_mem_accesses'][leak_indices] > 0)
         return leak_indices[valid]
-
-    @staticmethod
-    def _combine_arrays(*arrays: LeakyInstrArray) -> LeakyInstrArray:
-        """Concatenate non-empty arrays."""
-        non_empty = [a for a in arrays if len(a) > 0]
-        if not non_empty:
-            return np.array([], dtype=LeakyInstrDType)
-        return np.concatenate(non_empty) if len(non_empty) > 1 else non_empty[0]
 
     def _update_global_map(self, leakage_map: LeakageMap, leaky_instructions: LeakyInstrArray,
                            source: str) -> None:

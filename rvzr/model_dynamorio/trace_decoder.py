@@ -29,6 +29,7 @@ class TraceEntryType:
     """
     Enum used for the trace entry type, copied from trace.hpp
     """
+    # NOTE: the constants below must match trace_entry_type_t in trace.hpp
     ENTRY_EOT = 0  # end of trace
     ENTRY_PC = 1
     ENTRY_READ = 2
@@ -57,10 +58,9 @@ class TraceEntryType:
 
 # numpy dtype for trace entries
 TraceEntryDType: Final[np.dtype] = np.dtype([
-    ('addr', np.uint64),  # trace_entry_t.addr in trace.hpp
-    ('size', np.uint32),  # trace_entry_t.size in trace.hpp
-    ('type', np.uint8),   # trace_entry_t.type in trace.hpp
-    ('padding', np.uint8, (3,)),  # trace_entry_t.padding in trace.hpp
+    ('addr', np.uint64),   # trace_entry_t.addr in trace.hpp
+    ('size', np.uint16),       # trace_entry_t.size in trace.hpp
+    ('type', np.uint8),        # trace_entry_t.type in trace.hpp
 ])
 
 # Type alias for arrays of TraceEntryDType
