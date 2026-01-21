@@ -65,9 +65,8 @@ class Logger
     void log_eot();
 
   private:
-    static constexpr const unsigned buf_sz = 8 * 1024;
     /// @param the actual log, implemented as a file-backed buffer
-    FileBackedBuf<debug_trace_entry_t, buf_sz> log;
+    FileBackedBuf<debug_trace_entry_t> log;
     /// @param verbosity level of the logger
     const log_level_t log_level;
     /// @param current nesting level of speculation

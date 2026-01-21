@@ -39,9 +39,8 @@ class TracerABC
     TracerABC(TracerABC &&) = delete;
     TracerABC &operator=(TracerABC &&) = delete;
 
-    static constexpr const unsigned buf_sz = 8 * 1024;
     /// @param  Buffer containing collected trace entries
-    mutable FileBackedBuf<trace_entry_t, buf_sz> trace;
+    mutable FileBackedBuf<trace_entry_t> trace;
 
     // ---------------------------------------------------------------------------------------------
     // Public Methods
