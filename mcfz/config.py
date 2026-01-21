@@ -73,18 +73,7 @@ class _WorkingDirManager:
             return
 
         # Identify the target directory for the given stage
-        if stage == "fuzz":
-            stage_dir = self.config.working_dir
-        elif stage == "fuzz_gen":
-            stage_dir = self.config.stage1_wd
-        elif stage == "boost":
-            stage_dir = self.config.stage2_wd
-        elif stage == "trace":
-            stage_dir = self.config.stage3_wd
-        elif stage == "report":
-            stage_dir = self.config.stage4_wd
-        else:
-            assert_never(stage)
+        stage_dir: str = self._get_stage_dir(stage)
 
         # Stage directory does not exist? Create it
         if not os.path.exists(stage_dir):
@@ -141,6 +130,20 @@ class _WorkingDirManager:
             os.makedirs(self.config.stage3_wd, exist_ok=True)
             os.makedirs(self.config.stage4_wd, exist_ok=True)
 
+    def _get_stage_dir(self, stage: TestingStages) -> str:
+        if stage == "fuzz":
+            assert self.config.working_dir is not None
+            return self.config.working_dir
+        if stage == "fuzz_gen":
+            return self.config.stage1_wd
+        if stage == "boost":
+            return self.config.stage2_wd
+        if stage == "trace":
+            return self.config.stage3_wd
+        if stage == "report":
+            return self.config.stage4_wd
+        assert_never(stage)
+
 
 # ==================================================================================================
 # Main Configuration Class
@@ -158,7 +161,7 @@ class Config:
     __config_instantiated: bool = False
     """ Class-local flag that allows us to detect attempts to instantiate Config more than once. """
 
-    _internal_opts: Final[List[str]] = ["stage1_wd", "stage2_wd", "stage3_wd"]
+    _internal_opts: Final[List[str]] = ["stage1_wd", "stage2_wd", "stage3_wd", "stage4_wd"]
     _help: str = ""
 
     # ==============================================================================================
