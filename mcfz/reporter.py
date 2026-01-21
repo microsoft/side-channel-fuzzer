@@ -16,7 +16,7 @@ import os
 import json
 from copy import deepcopy
 import numpy as np
-from elftools.elf.elffile import ELFFile  # type: ignore
+from elftools.elf.elffile import ELFFile, ELFError  # type: ignore
 from elftools.dwarf.dwarfinfo import DWARFInfo  # type: ignore
 from typing_extensions import assert_never
 from tqdm import tqdm
@@ -186,7 +186,7 @@ class _ModulesInfo:
                 return None
             try:
                 info: DWARFInfo = elf.get_dwarf_info()
-            except Exception:
+            except ELFError:
                 print("[Reporter] WARNING: Failed to load DWARF info from", module_name)
                 return None
 
