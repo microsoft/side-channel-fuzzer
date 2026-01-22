@@ -116,6 +116,16 @@ class Tracer:
 
             progress_bar.update()
 
+            # If configured, discard collected traces in the group if all of them are identical
+            traced_discarded = False
+            if self._config.discard_non_leaky_traces:
+                ref_trace = trace_files[0]
+                for trace_file in trace_files[1:]:
+                    if not self._traces_are_identical(ref_trace, trace_file):
+                        break
+                else:
+                    self._discard_group_traces(trace_files)
+                    traced_discarded = True
         progress_bar.close()
         return 0
 
@@ -231,6 +241,32 @@ class Tracer:
             trace_0_content = f0.read()
             trace_1_content = f1.read()
         if trace_0_content != trace_1_content:
+            self._log.error(
+                "The target binary produces non-deterministic traces. Tracing aborted.\n"
+                f"    Reproduce with input: {ref_input}\n")
             return False
 
+        # delete the traces if no issue was found
+        os.remove(os.path.join(output_dir, "determinism_check_0.trace"))
+        os.remove(os.path.join(output_dir, "determinism_check_1.trace"))
         return True
+
+    def _traces_are_identical(self, trace1: FileName, trace2: FileName) -> bool:
+        """ Check if two trace files are identical. """
+        # use diff tool as it is extremely fast for this purpose
+        diff_cmd = f"diff -q {trace1} {trace2}"
+        result = subprocess.run(diff_cmd, shell=True, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        return result.returncode == 0
+
+    def _discard_group_traces(self, trace_files: List[FileName]) -> None:
+        """ Discard all traces in the given list of trace files. """
+        # All traces are identical; discard them
+        for trace_file in trace_files:
+            os.remove(trace_file)
+        # leave a marker file to indicate that the traces were collected successfully
+        # but discarded due to lack of leakage
+        base = self._get_output_path(trace_files[0])
+        dir_name = os.path.dirname(base)
+        with open(f"{dir_name}/noleak", "w") as no_leak_f:
+            no_leak_f.write("")

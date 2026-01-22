@@ -201,7 +201,7 @@ class Config:
     _help += """\n\n contract_execution_clause (seq)"""
 
     # ==============================================================================================
-    # Generation parameters
+    # Boosting parameters
     num_secrets_per_class: int = 2
     _help += """\n\n num_secrets_per_class (2)
     Number of public-equivalent inputs to be generated per original randomly-generated input.
@@ -210,16 +210,21 @@ class Config:
     but the secret values differ. """
 
     # ==============================================================================================
-    # DR backend parameters
+    # Tracing parameters
     model_root: str = "~/.local/dynamorio/"
     _help += """\n\n model_root (~/.local/dynamorio/)
     Path to the directory containing the installation of the leakage model. """
+
+    discard_non_leaky_traces: bool = True
+    _help += """\n\n discard_non_leaky_traces (True)
+    When enabled, discards traces from input groups where all inputs produce identical results,
+    indicating no observable leakage. """
 
     # ==============================================================================================
     # AFL++ parameters
     afl_root: str = "~/.local/afl/"
     _help += """\n\n afl_root (~/.local/afl/)
-    th to the directory containing the installation of AFL++. """
+    Path to the directory containing the installation of AFL++. """
 
     afl_seed_dir: Optional[str] = None
     _help += """\n\n afl_seed_dir (None)
