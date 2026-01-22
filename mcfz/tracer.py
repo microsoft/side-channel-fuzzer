@@ -5,7 +5,7 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, Final, Optional
+from typing import TYPE_CHECKING, List, Final, Optional, Dict
 
 import os
 import subprocess
@@ -13,9 +13,15 @@ from tqdm import tqdm
 
 from rvzr.model_dynamorio.trace_decoder import TraceDecoder
 from .logger import Logger
+from .util.compressor import Compressor
 
 if TYPE_CHECKING:
     from .config import Config
+
+DirName = str
+FileName = str
+FilePath = str
+InputGroups = Dict[DirName, List[FileName]]
 
 
 class ProgramException(Exception):
@@ -41,6 +47,7 @@ class Tracer:
 
     def __init__(self, config: Config) -> None:
         self._log = Logger("Tracer")
+        self._compressor = Compressor(config)
 
         self._config = config
         self._drrun_cmd = f"{config.model_root}/drrun " \
@@ -55,8 +62,7 @@ class Tracer:
         Iterate over all previously-generated public-private input pairs and collect contract traces
         for each pair.
 
-        :param cmd: Command to run the target binary, with placeholders for public (@@)
-                        and private (@#) inputs
+        :param cmd: Command to run the target binary, with placeholder @@ for input files
         :return: 0 if successful, 1 if error occurs
         """
         # Check if the stage2 working directory exists and contains inputs
@@ -69,9 +75,20 @@ class Tracer:
 
         # Check if the traces are deterministic; abort if they are not
         if not self._check_determinism(self._config.stage2_wd, cmd):
-            self._log.error("The target binary produces non-deterministic traces. Tracing aborted.")
             return 1
 
+        input_groups = self._get_input_groups()
+        self._process_inputs(input_groups, cmd)
+
+        return 0
+
+    def _get_input_groups(self) -> InputGroups:
+        """
+        Build a todo-list for the tracer - a map of all input groups that need to be processed,
+        as well as the valid inputs in each group.
+
+        :return: Map of input groups
+        """
         # Get a list of input groups
         input_group_dirs = []
         for input_group in os.listdir(self._config.stage2_wd):
@@ -80,41 +97,66 @@ class Tracer:
                 continue
             input_group_dirs.append(input_group_dir)
 
-        # Iterate over all input groups and collect traces
-        inputs: List[str] = []
+        # Iterate over all input groups and build a map of inputs to be traced
+        input_groups: Dict[str, List[str]] = {}
         for input_group_dir in input_group_dirs:
-            # Get a list of all inputs
+            input_groups[input_group_dir] = []
+
+            # Get a list of all inputs in this group
+            inputs_found = False
             for input_name in os.listdir(input_group_dir):
                 if ".bin" not in input_name:
                     continue
-                input_path = os.path.join(input_group_dir, input_name)
-                inputs.append(input_path)
+                inputs_found = True
+                input_groups[input_group_dir].append(input_name)
 
+            # Skip this input group if no inputs were found
+            if not inputs_found:
+                del input_groups[input_group_dir]
+
+        return input_groups
+
+    def _process_inputs(self, input_groups: InputGroups, cmd: List[str]) -> None:
+        """
+        Process a list of input files by executing the target binary on each input
+        and collecting the corresponding traces.
+
+        :param input_groups: Map of input groups to process
+        :param cmd: Command to run the target binary, with placeholder @@ for input files
+        :return: None
+        """
         # Initialize a progress bar to track the progress of the tracing process
-        progress_bar = tqdm(total=len(inputs))
+        n_inputs = sum(len(v) for v in input_groups.values())
+        progress_bar = tqdm(total=n_inputs)
 
-        # Process each pair
-        for input_ in inputs:
-            # Expand the command with the public and private inputs
-            expanded_cmd = self._expand_target_cmd(cmd, input_)
+        # Process all inputs
+        for input_group_dir, input_files in input_groups.items():
+            trace_files = []
+            for input_name in input_files:
+                input_path = os.path.join(input_group_dir, input_name)
 
-            # Get the output path in stage3_wd
-            output_base = self._get_output_path(input_)
+                # Expand the command with the public and private inputs
+                expanded_cmd = self._expand_cmd(cmd, input_path)
 
-            # Execute the target binary and collect traces
-            try:
-                self._execute(expanded_cmd, output_base)
-            except InstrException:
-                # Mark this test as failed by creating a .failed file
-                with open(f"{output_base}.failed", "w") as failed_log:
-                    failed_log.close()
-            # NOTE: we intentionally ignore all other types of errors in the target program,
-            # as many files generated by AFL++ are invalid, which leads to errors during execution;
-            # this is expected and does not affect the correctness of the fuzzing process
-            except ProgramException:
-                continue
+                # Get the destination path for the trace in stage3_wd
+                output_base = self._get_output_path(input_path)
 
-            progress_bar.update()
+                # Execute the target binary and collect traces
+                try:
+                    self._collect_trace(expanded_cmd, output_base)
+                except InstrException:
+                    # Mark this test as failed by creating a .failed file
+                    with open(f"{output_base}.failed", "w") as failed_log:
+                        failed_log.close()
+                # NOTE: we intentionally ignore all other types of errors in the target program,
+                # as many files generated by AFL++ are invalid which leads to errors during
+                # execution;
+                # this is expected and does not affect the correctness of the fuzzing process
+                except ProgramException:
+                    continue
+
+                trace_files.append(f"{output_base}.trace")
+                progress_bar.update()
 
             # If configured, discard collected traces in the group if all of them are identical
             traced_discarded = False
@@ -126,8 +168,14 @@ class Tracer:
                 else:
                     self._discard_group_traces(trace_files)
                     traced_discarded = True
+
+            # If configured, compress all collected traces in this input group
+            if self._config.compression_tool != "none" and not traced_discarded:
+                for trace_file in trace_files:
+                    self._compressor.compress(trace_file)
+
+        # We're done; close the progress bar
         progress_bar.close()
-        return 0
 
     def _get_output_path(self, input_path: str) -> str:
         """
@@ -150,7 +198,7 @@ class Tracer:
         base = output_path.rstrip(".bin")
         return base
 
-    def _expand_target_cmd(self, cmd: List[str], input_: str) -> str:
+    def _expand_cmd(self, cmd: List[str], input_: str) -> str:
         """
         Replace the placeholders in the command with the actual public and private inputs.
         """
@@ -159,7 +207,7 @@ class Tracer:
         expanded_str = " ".join(expanded_cmd)
         return expanded_str
 
-    def _execute(self, expanded_str: str, output_base: str) -> None:
+    def _collect_trace(self, expanded_str: str, output_base: FilePath) -> None:
         """
         Execute the target binary on the leakage model with the given public and private inputs.
 
@@ -186,7 +234,7 @@ class Tracer:
         if error:
             raise error
 
-    def _check_determinism(self, wd: str, cmd: List[str]) -> bool:
+    def _check_determinism(self, wd: DirName, cmd: List[str]) -> bool:
         """
         Check if the traces are deterministic by running the target binary multiple times
         with the same inputs and comparing the outputs.
@@ -212,10 +260,10 @@ class Tracer:
                 continue
 
             # try running the target binary with the reference input
-            expanded_cmd = self._expand_target_cmd(cmd, ref_input)
+            expanded_cmd = self._expand_cmd(cmd, ref_input)
             output_base = self._get_output_path(ref_input)
             try:
-                self._execute(expanded_cmd, output_base)
+                self._collect_trace(expanded_cmd, output_base)
             except (InstrException, ProgramException):
                 # if the target binary throws an exception, skip this input group
                 print(f"[Determinism check] skipping input causing exception: {ref_input}")
@@ -233,7 +281,7 @@ class Tracer:
 
         for i in [0, 1]:
             output_base = os.path.join(output_dir, f"determinism_check_{i}")
-            self._execute(expanded_cmd, output_base)
+            self._collect_trace(expanded_cmd, output_base)
 
         # compare the traces
         with open(os.path.join(output_dir, "determinism_check_0.trace"), "rb") as f0, \

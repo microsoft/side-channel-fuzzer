@@ -22,6 +22,7 @@ from typing_extensions import assert_never
 from tqdm import tqdm
 
 from rvzr.model_dynamorio.trace_decoder import TraceDecoder, TraceEntryType, TraceEntryArray
+from .util.compressor import Compressor
 
 if TYPE_CHECKING:
     from .config import Config, ReportVerbosity
@@ -126,6 +127,11 @@ LeakageLineMap = Union[
     LeakageLineMapVrb2,
     LeakageLineMapVrb1,
 ]
+
+
+DirName = str
+FileName = str
+WorkDirMap = Dict[DirName, List[FileName]]
 
 
 @dataclass
@@ -319,15 +325,16 @@ class _Analyser:
     """
     trace_decoder: TraceDecoder
 
-    def __init__(self) -> None:
+    def __init__(self, config: Config) -> None:
         self.trace_decoder = TraceDecoder()
+        self._compressor = Compressor(config)
 
     def build_leakage_map(self, stage3_dir: str) -> LeakageMap:
         """
         Analyse all leaks stored in the given directory after a completed fuzzing campaign.
         """
         leakage_map: LeakageMap = {'I': {}, 'D': {}}
-        inputs = self._collect_inputs_to_process(stage3_dir)
+        inputs = self._build_directory_map(stage3_dir)
 
         # Initialize a progress bar to track the progress of the analysis
         progress_bar = tqdm(
@@ -336,7 +343,8 @@ class _Analyser:
         )
 
         # Collect traces for each pair and check for leaks
-        for reference_trace_file, trace_files in inputs.items():
+        for subdir, trace_files in inputs.items():
+            reference_trace_file = self._find_reference_trace(trace_files)
             reference_trace = self._parse_trace_file(reference_trace_file)
 
             for trace_file in trace_files:
@@ -354,39 +362,59 @@ class _Analyser:
         progress_bar.close()
         return leakage_map
 
-    def _collect_inputs_to_process(self, stage3_dir: str) -> Dict[str, List[str]]:
-        inputs: Dict[str, List[str]] = {}
-        input_groups = os.listdir(stage3_dir)
-        for input_group in input_groups:
-            input_group_dir = os.path.join(stage3_dir, input_group)
-
-            # Get a reference trace for the given group; we will use it to check that
-            # all other traces are the same
-            reference_trace_file = os.path.join(input_group_dir, "000.trace")
-            if not os.path.exists(reference_trace_file):
-                # If the reference trace does not exist, skip this group
+    def _build_directory_map(self, stage3_dir: str) -> WorkDirMap:
+        """
+        Build a map of the working directory that will serve as a todo-list for the analysis.
+        This map contains - as keys - all subdirectories in the Stage3 directory that contain
+        trace files. The value for each key is a list of trace files in that subdirectory. The
+        trace files are produced during the tracing stage, and may or may not be compressed.
+        """
+        dir_map: WorkDirMap = {}
+        subdirs = os.listdir(stage3_dir)
+        for subdir in subdirs:
+            subdir_full = os.path.join(stage3_dir, subdir)
+            if not os.path.isdir(subdir_full):
                 continue
-            inputs[reference_trace_file] = []
 
-            # Compare the reference trace with all other traces in the group
-            for trace_file in os.listdir(input_group_dir):
-                # skip non-trace files, the reference trace itself, and the determinism check traces
-                if not trace_file.endswith(".trace"):
+            file_list = []
+            for file_ in os.listdir(subdir_full):
+                # check if the file is a trace file
+                # skip all those that are not
+                if not file_.endswith(".trace") and \
+                   not file_.endswith(".trace.gz") and \
+                   not file_.endswith(".trace.bz2"):
                     continue
-                if "determinism_check_" in trace_file:
-                    continue
-                trace_file = os.path.join(input_group_dir, trace_file)
-                if trace_file == reference_trace_file:
-                    continue
+                trace_path = os.path.join(subdir_full, file_)
+                file_list.append(trace_path)
+            if file_list:
+                dir_map[subdir_full] = file_list
+        return dir_map
 
-                # parse the trace file and extract a list of leaky instructions
-                inputs[reference_trace_file].append(trace_file)
-        return inputs
+    def _find_reference_trace(self, trace_files: List[FileName]) -> FileName:
+        """ Find the reference trace file (000.trace) in the given list of trace files. """
+        # Normally the reference trace is the first in the list, but we check to be sure
+        for trace_file in trace_files:
+            if os.path.basename(trace_file).startswith("000.trace"):
+                return trace_file
+        raise ValueError("Reference trace file (000.trace) not found in the given list.")
 
     def _parse_trace_file(self, trace_file: str) -> _Trace:
-        raw_trace = self.trace_decoder.decode_trace_file(trace_file)
-        trace = _Trace(trace_file, raw_trace)
-        return trace
+        # If the file is not compressed, parse it directly
+        if trace_file.endswith(".trace"):
+            raw_trace = self.trace_decoder.decode_trace_file(trace_file)
+            trace = _Trace(trace_file, raw_trace)
+            return trace
+
+        # If the file is compressed, decompress and parse it
+        if trace_file.endswith(".gz") or trace_file.endswith(".bz2"):
+            self._compressor.decompress_universal(trace_file, keep=True)
+            decompressed_file = trace_file.rsplit('.', 1)[0]
+            raw_trace = self.trace_decoder.decode_trace_file(decompressed_file)
+            trace = _Trace(trace_file, raw_trace)
+            os.remove(decompressed_file)
+            return trace
+
+        raise ValueError(f"Unsupported trace file format: {trace_file}")
 
     def _identify_leaks(self, ref_trace: _Trace, target_trace: _Trace) -> LeakyInstrArray:
         """
@@ -678,7 +706,7 @@ class Reporter:
             raise FileNotFoundError(
                 f"Stage 3 working directory '{self._config.stage3_wd}' is empty.")
 
-        analyser = _Analyser()
+        analyser = _Analyser(self._config)
         self._leakage_map = analyser.build_leakage_map(self._config.stage3_wd)
 
     def generate_report(self) -> None:

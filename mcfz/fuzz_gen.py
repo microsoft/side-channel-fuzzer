@@ -56,6 +56,7 @@ class FuzzGen:
         env["AFL_PRELOAD"] = self._libcompcov
         env["AFL_KEEP_TRACES"] = "1"
         env["AFL_SKIP_CPUFREQ"] = "1"
+        env["AFL_QUIET"] = "1" if self._config.afl_quiet else "0"
 
         afl_flags = [
             "-V",

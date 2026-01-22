@@ -220,6 +220,11 @@ class Config:
     When enabled, discards traces from input groups where all inputs produce identical results,
     indicating no observable leakage. """
 
+    compression_tool: str = "bzip2"
+    _help += """\n\n compression_tool (gzip)
+    Tool used to compress the collected traces.\n
+    Options: gzip, bzip2, none. """
+
     # ==============================================================================================
     # AFL++ parameters
     afl_root: str = "~/.local/afl/"
@@ -233,6 +238,10 @@ class Config:
     afl_exec_timeout_ms: int = 100
     _help += """\n\n afl_exec_timeout_ms (100)
     Timeout for AFL++ execution, in milliseconds. """
+
+    afl_quiet: bool = True
+    _help += """\n\n afl_quiet (True)
+    Flag indicating whether AFL++ should run in quiet mode. """
 
     # afl_qemu_mode: bool = False
     # """ Flag indicating whether AFL++ should be run in QEMU mode. """
@@ -318,6 +327,10 @@ class Config:
         if not self.model_root.startswith("/"):
             self.model_root = str(pathlib.Path(self.model_root).expanduser())
 
+        self.discard_non_leaky_traces = yaml_data.get("discard_non_leaky_traces",
+                                                      self.discard_non_leaky_traces)
+        self.compression_tool = yaml_data.get("compression_tool", self.compression_tool)
+
         self.afl_root = yaml_data.get("afl_root", self.afl_root)
         if not self.afl_root.startswith("/"):
             self.afl_root = str(pathlib.Path(self.afl_root).expanduser())
@@ -327,6 +340,7 @@ class Config:
             self.afl_seed_dir = str(pathlib.Path(self.afl_seed_dir).expanduser())
 
         self.afl_exec_timeout_ms = yaml_data.get("afl_exec_timeout_ms", self.afl_exec_timeout_ms)
+        self.afl_quiet = yaml_data.get("afl_quiet", self.afl_quiet)
 
         self.contract_observation_clause = yaml_data.get("contract_observation_clause",
                                                          self.contract_observation_clause)
@@ -366,3 +380,9 @@ class Config:
         if self.num_secrets_per_class > 10:
             print("[WARNING] num_secrets_per_class is set to a high value;"
                   " this may lead to very long fuzzing times.")
+
+        if self.compression_tool not in ["gzip", "bzip2", "none"]:
+            raise _ConfigException(
+                "compression_tool",
+                "compression_tool must be one of: gzip, bzip2, none."
+            )
