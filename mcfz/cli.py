@@ -51,7 +51,12 @@ def _parse_args() -> Any:  # pylint: disable=r0915
         default=10,
         help="Fuzzing timeout, in seconds (default: 10)",
     )
-
+    all_phases.add_argument(
+        "--native-bin",
+        type=str,
+        required=True,
+        help="Path to a native binary; to be used on the tracing stage instead of the AFL build.",
+    )
     # everything after '--' is saved into 'target_cmd' argument
     all_phases.add_argument(
         "target_cmd",
@@ -172,6 +177,7 @@ def main() -> int:
     if args.subparser_name == 'fuzz':
         fuzzer.all(
             cmd=args.target_cmd,
+            native_bin=args.native_bin,
             target_cov=0,  # TODO: will be replaced with args.target_cov when implemented
             timeout_s=args.timeout,
         )
