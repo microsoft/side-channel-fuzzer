@@ -203,6 +203,63 @@ class TestConfig(unittest.TestCase):
                 with self.assertRaises(_ConfigException):
                     Config("config.yaml", "fuzz")
 
+    def _populate_stage_dirs(self) -> Dict[str, str]:
+        """Create the stage3/stage4 directories with one leftover file each, as they would look
+        after a previous run. Returns the paths of the leftover files."""
+        leftovers = {}
+        for stage in ("stage3", "stage4"):
+            stage_dir = os.path.join(self.working_dir, stage)
+            os.makedirs(stage_dir)
+            leftover = os.path.join(stage_dir, "leftover")
+            with open(leftover, "w") as f:
+                f.write("stale")
+            leftovers[stage] = leftover
+        return leftovers
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_pipelined_trace_resets_stage4(self, _: StringIO) -> None:
+        # In pipelined mode the tracer also writes leak files into stage4, so the trace stage
+        # owns that directory too: stale results from a previous run must not survive into
+        # the new report
+        leftovers = self._populate_stage_dirs()
+        config_data = self._make_config(
+            force_working_dir_overwrite=True, pipeline_trace_and_detect=True)
+
+        with patch("os.path.exists", return_value=True):
+            with patch("builtins.open", mock_open(read_data=config_data)):
+                Config("config.yaml", "trace")
+
+        self.assertFalse(os.path.exists(leftovers["stage3"]))
+        self.assertFalse(os.path.exists(leftovers["stage4"]))
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_pipelined_report_preserves_stage4(self, _: StringIO) -> None:
+        # In pipelined mode the leaks were already detected during tracing, so the report stage
+        # owns no directory of its own and must preserve the leak files it is about to merge
+        leftovers = self._populate_stage_dirs()
+        config_data = self._make_config(
+            force_working_dir_overwrite=True, pipeline_trace_and_detect=True)
+
+        with patch("os.path.exists", return_value=True):
+            with patch("builtins.open", mock_open(read_data=config_data)):
+                Config("config.yaml", "report")
+
+        self.assertTrue(os.path.exists(leftovers["stage4"]))
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_sequential_report_resets_stage4(self, _: StringIO) -> None:
+        # Without pipelining, the report stage produces the leak files itself and therefore
+        # still owns - and resets - the stage4 directory
+        leftovers = self._populate_stage_dirs()
+        config_data = self._make_config(force_working_dir_overwrite=True)
+
+        with patch("os.path.exists", return_value=True):
+            with patch("builtins.open", mock_open(read_data=config_data)):
+                Config("config.yaml", "report")
+
+        self.assertFalse(os.path.exists(leftovers["stage4"]))
+        self.assertTrue(os.path.exists(leftovers["stage3"]))
+
     def test_config_invalid_model_root(self) -> None:
         # Test that invalid model_root raises exception
         config_data = self._make_config(model_root="/nonexistent/model")

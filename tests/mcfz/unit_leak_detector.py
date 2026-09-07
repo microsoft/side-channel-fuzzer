@@ -23,6 +23,11 @@ ENTRY_PC = 1
 ENTRY_READ = 2
 ENTRY_WRITE = 3
 
+# Size of a single leak record, mirroring the packed leak_t struct in
+# rvzr/model_dynamorio/leak_detector/leak.h (pc:u64, type:u8, spec_level:u8, ref_idx:u64,
+# tgt_idx:u64)
+LEAK_RECORD_SIZE = 26
+
 # A trace entry is (addr, size, spec_level, type).
 TraceEntry = Tuple[int, int, int, int]
 
@@ -42,6 +47,7 @@ def _make_min_config(stage3_wd: str, stage4_wd: str, model_root: str) -> Config:
     config.num_workers_detector = 1
     config.keep_stage4_files = False
     config.compression_tool = "none"
+    config.pipeline_trace_and_detect = False
     return config
 
 
@@ -221,6 +227,99 @@ class TestBuildLeakageMap(unittest.TestCase):
 
         self.assertEqual(result["seq"], {})
         self.assertEqual(result["cond"], {})
+
+
+@unittest.skipUnless((_BIN_DIR / "leak_detector").is_file() and (_BIN_DIR / "merger").is_file(),
+                     "C++ leak detector binaries not built "
+                     "(run `make -C rvzr/model_dynamorio leak-detector`)")
+class TestPipelinedDetection(unittest.TestCase):
+    """ Tests for the interface used when tracing and leak detection are pipelined: leaks are
+    detected one group at a time, and the results are merged into a report while detection of
+    the remaining groups is still in progress. """
+
+    def setUp(self) -> None:
+        self._temp_dir = tempfile.mkdtemp()
+        self._stage3_wd = os.path.join(self._temp_dir, "stage3")
+        self._stage4_wd = os.path.join(self._temp_dir, "stage4")
+        self._group_dir = os.path.join(self._stage3_wd, "grp")
+        os.makedirs(self._group_dir)
+        os.makedirs(self._stage4_wd)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self._temp_dir, ignore_errors=True)
+
+    def _detect(self, reference: List[TraceEntry], target: List[TraceEntry]) -> Config:
+        """ Detect leaks in a single group of traces, as the tracer does in pipelined mode. """
+        traces = [os.path.join(self._group_dir, name) for name in ("000.trace", "001.trace")]
+        _write_trace(traces[0], reference)
+        _write_trace(traces[1], target)
+        config = _make_min_config(self._stage3_wd, self._stage4_wd, str(_BIN_DIR))
+        LeakDetector(config).detect_group(traces)
+        return config
+
+    def _leaks_file(self) -> str:
+        return os.path.join(self._stage4_wd, "grp", "001.leaks")
+
+    def test_merge_without_cleanup_preserves_leaks_files(self) -> None:
+        # An intermediate merge must leave the .leaks files in place, as detection of the
+        # remaining groups is still in progress and the final merge needs them
+        reference = [(0x1000, 1, 0, ENTRY_PC), (0x2000, 1, 0, ENTRY_PC), (0x3000, 1, 0, ENTRY_PC),
+                     (0, 0, 0, ENTRY_EOT)]
+        target = [(0x1000, 1, 0, ENTRY_PC), (0x2000, 1, 0, ENTRY_PC), (0x4000, 1, 0, ENTRY_PC),
+                  (0, 0, 0, ENTRY_EOT)]
+        config = self._detect(reference, target)
+
+        result = LeakDetector(config).merge(cleanup=False)
+
+        self.assertIn(PC(0x2000), result["seq"]["I"])
+        self.assertTrue(os.path.isfile(self._leaks_file()))
+
+    def test_merge_with_cleanup_removes_leaks_files(self) -> None:
+        # The final merge reports the same leaks, but reclaims the disk space
+        reference = [(0x1000, 1, 0, ENTRY_PC), (0x2000, 1, 0, ENTRY_PC), (0x3000, 1, 0, ENTRY_PC),
+                     (0, 0, 0, ENTRY_EOT)]
+        target = [(0x1000, 1, 0, ENTRY_PC), (0x2000, 1, 0, ENTRY_PC), (0x4000, 1, 0, ENTRY_PC),
+                  (0, 0, 0, ENTRY_EOT)]
+        config = self._detect(reference, target)
+
+        result = LeakDetector(config).merge()
+
+        self.assertIn(PC(0x2000), result["seq"]["I"])
+        self.assertFalse(os.path.exists(self._leaks_file()))
+
+    def test_merge_tolerates_partially_written_leaks_file(self) -> None:
+        # An intermediate merge may read a .leaks file that a worker is still writing. Since the
+        # records are appended one at a time, such a file must be read as a valid prefix: here,
+        # the first of the two leaks is reported and the truncated second one is dropped
+        reference = [(0x1000, 1, 0, ENTRY_PC), (0xAAAA, 8, 0, ENTRY_READ), (0x2000, 1, 0, ENTRY_PC),
+                     (0xCCCC, 8, 0, ENTRY_READ), (0x3000, 1, 0, ENTRY_PC), (0, 0, 0, ENTRY_EOT)]
+        target = [(0x1000, 1, 0, ENTRY_PC), (0xBBBB, 8, 0, ENTRY_READ), (0x2000, 1, 0, ENTRY_PC),
+                  (0xDDDD, 8, 0, ENTRY_READ), (0x3000, 1, 0, ENTRY_PC), (0, 0, 0, ENTRY_EOT)]
+        config = self._detect(reference, target)
+        self.assertEqual(os.path.getsize(self._leaks_file()), 2 * LEAK_RECORD_SIZE)
+
+        # Simulate a file caught mid-write, with the second record only partially flushed
+        os.truncate(self._leaks_file(), LEAK_RECORD_SIZE + 5)
+        result = LeakDetector(config).merge(cleanup=False)
+
+        self.assertEqual(list(result["seq"]["D"].keys()), [PC(0x1000)])
+
+    def test_report_merges_instead_of_redetecting(self) -> None:
+        # With pipelining enabled, `report` must merge the leaks that tracing already detected
+        # rather than running the detector again. Overwriting the target trace with a copy of the
+        # reference proves that no detection takes place: a re-run would compare two identical
+        # traces and find no leak at all.
+        reference = [(0x1000, 1, 0, ENTRY_PC), (0x2000, 1, 0, ENTRY_PC), (0x3000, 1, 0, ENTRY_PC),
+                     (0, 0, 0, ENTRY_EOT)]
+        target = [(0x1000, 1, 0, ENTRY_PC), (0x2000, 1, 0, ENTRY_PC), (0x4000, 1, 0, ENTRY_PC),
+                  (0, 0, 0, ENTRY_EOT)]
+        config = self._detect(reference, target)
+        config.pipeline_trace_and_detect = True
+        _write_trace(os.path.join(self._group_dir, "001.trace"), reference)
+
+        result = LeakDetector(config).build_leakage_map(self._stage3_wd, 0)
+
+        self.assertIn(PC(0x2000), result["seq"]["I"])
 
 
 if __name__ == "__main__":

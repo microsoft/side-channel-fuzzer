@@ -5,13 +5,14 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, Final, Dict, Tuple
+from typing import TYPE_CHECKING, Callable, List, Final, Dict, Optional, Tuple
 
 import os
 import subprocess
 from pathlib import Path
 
 from rvzr.model_dynamorio.trace_decoder import TraceDecoder
+from .leak_detector import LeakDetector
 from .util.logger import Logger
 from .util.compressor import Compressor
 from .util.worker_pool import send_to_worker_pool
@@ -54,6 +55,10 @@ class Tracer:
         self._log = Logger("Tracer")
         self._compressor = Compressor(config)
 
+        # In pipelined mode, each group of traces is analysed for leaks as soon as it has been
+        # collected, so the tracer needs its own leak detector
+        self._detector = LeakDetector(config) if config.pipeline_trace_and_detect else None
+
         self._config = config
         cmd = f"{config.model_root}/drrun " \
             f"-c {config.model_root}/libdr_model.so " \
@@ -68,11 +73,13 @@ class Tracer:
         cmd += "{mappings_flag} --trace-output {trace_file} -- {cmd}"
         self._drrun_cmd = cmd
 
-    def collect_traces(self) -> int:
+    def collect_traces(self, on_group_done: Optional[Callable[[], None]] = None) -> int:
         """
         Iterate over all previously-generated public-private input pairs and collect contract traces
         for each pair.
 
+        :param on_group_done: Callback invoked in the parent process every time an input group has
+               been fully processed
         :return: 0 if successful, 1 if error occurs
         """
         # Check if the stage2 working directory exists and contains inputs
@@ -91,11 +98,14 @@ class Tracer:
 
         # Initialize a progress bar to track the progress of the tracing process
         n_inputs = sum(len(v) for v in input_map.values())
-        progress_bar = console.progress_bar(total=n_inputs, desc="Tracing inputs")
+        desc = "Tracing & analyzing" if self._detector is not None else "Tracing inputs"
+        progress_bar = console.progress_bar(total=n_inputs, desc=desc)
 
         # Process all inputs using a worker pool
         def on_complete(n_processed: int) -> None:
             progress_bar.update(n=n_processed)
+            if on_group_done is not None:
+                on_group_done()
 
         send_to_worker_pool(
             task=self._process_group,
@@ -171,8 +181,13 @@ class Tracer:
         if self._config.discard_non_leaky_traces and trace_files:
             traces_discarded = self._discard_if_not_leaky(trace_files)
 
-        # If configured, compress all collected traces in this input group
         if not traces_discarded:
+            # If the tracing and detection stages are pipelined, analyse the traces right away,
+            # while they are still uncompressed
+            if self._detector is not None:
+                self._detector.detect_group(trace_files)
+
+            # If configured, compress all collected traces in this input group
             self._compressor.compress_file_list(trace_files)
 
         return len(input_files)

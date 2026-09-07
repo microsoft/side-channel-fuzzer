@@ -208,6 +208,13 @@ class LeakDetector:
     def build_leakage_map(self, stage3_dir: str, num_groups: int) -> LeakageMap:
         """
         Analyse all traces in stage3_dir with the C++ leak detector.
+
+        When the tracing and leak detection stages are pipelined, the traces have already been
+        analysed by the tracer, and this method only merges the resulting leak files.
+        """
+        if self._config.pipeline_trace_and_detect:
+            return self.merge()
+
         if not os.path.isdir(self._config.stage3_wd):
             raise FileNotFoundError(
                 f"Stage 3 working directory '{self._config.stage3_wd}' does not exist.")
@@ -256,6 +263,9 @@ class LeakDetector:
         This method is safe to call while leak detection is still in progress: `.leaks` files are
         written append-only in fixed-size records, so a file that is being written is read as a
         valid prefix. A report produced this way may therefore be incomplete, but never corrupt.
+
+        :param cleanup: Whether to remove the individual `.leaks` directories after merging;
+               must be False while leak detection is still in progress
         :return: Map of all leaks found so far
         """
         # Merge all .leaks files into a single report
@@ -275,7 +285,7 @@ class LeakDetector:
                 f.write(path + "\n")
 
         # Remove individual .leaks folders to save disk space
-        if not self._config.keep_stage4_files:
+        if cleanup and not self._config.keep_stage4_files:
             for item in output_dir.iterdir():
                 if item.is_dir():
                     shutil.rmtree(item)
