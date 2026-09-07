@@ -354,6 +354,36 @@ class Driller:
         assert config.bin_native is not None  # enforced by config validation
         self._target_bin = config.bin_native
         self._template_cmd = [config.bin_native if s == "@#" else s for s in config.template_cmd]
+        self._ignored_funcs: List[str] = self._load_ignored_funcs()
+
+    def _load_ignored_funcs(self) -> List[str]:
+        """ Load the ignored function symbols from the tracing ignorelist, if configured """
+        path = self._config.tracing_ignorelist
+        if not path or not os.path.exists(path):
+            return []
+        with open(path, 'r') as f:
+            return [line.strip() for line in f if line.strip()]
+
+    def _ignored_caller_condition(self, bp_num: int) -> Optional[str]:
+        """
+        Build a gdb ``condition`` command that makes breakpoint ``bp_num`` fire only when the leak
+        instruction is reached *outside* any ignored function.
+
+        Instrumentation is paused inside ignored functions, so the trace omits the occurrences
+        that run there and the trace-derived ``pc_occurrence`` counts only non-ignored
+        occurrences. gdb, however, replays the full execution including the ignored occurrences
+        (which run first). Without this filter gdb would stop on an ignored-context occurrence and
+        print a backtrace that misleadingly implicates an ignored function. gdb evaluates a
+        breakpoint's condition before its ignore count, so condition-false (ignored) crossings are
+        not counted, keeping gdb's occurrence index aligned with the trace's.
+
+        :param bp_num: The gdb breakpoint number to attach the condition to
+        :return: The ``condition`` command, or ``None`` when no functions are ignored
+        """
+        if not self._ignored_funcs:
+            return None
+        pattern = "^(" + "|".join(re.escape(fn) for fn in self._ignored_funcs) + ")$"
+        return f'condition {bp_num} !$_any_caller_matches("{pattern}", 64)'
 
     def drill_down(self, pc: int) -> None:
         """
@@ -380,15 +410,11 @@ class Driller:
         # The decompressed trace is no longer needed once speculation windows are known
         self._cleanup_trace_tmp()
 
-        # Gather the list of ignored functions
-        ignored_funcs = None
-        if self._config.tracing_ignorelist and os.path.exists(self._config.tracing_ignorelist):
-            with open(self._config.tracing_ignorelist, 'r') as f:
-                ignored_funcs = [line.strip() for line in f if line.strip()]
-
         # Build the GDB command
         leak_info.build_gdb_cmd(
-            fast=self._fast, single_step=self._single_step, ignored_funcs=ignored_funcs)
+            fast=self._fast,
+            single_step=self._single_step,
+            ignored_funcs=self._ignored_funcs or None)
 
         # Capture the leak instruction's disassembly and source context
         leak_info.report.location_text = self._capture_static_context(leak_info)
@@ -608,9 +634,11 @@ class Driller:
                     "this leak occurs under speculation.")
 
         ref_input = os.path.join(self._output_dir, "000.bin")
-        ref_state = self._capture_leak_state(ref_input, leak_info)
-        tgt_state = self._capture_leak_state(str(leak_info.input_path), leak_info)
+        ref_state, ref_out = self._capture_leak_state(ref_input, leak_info)
+        tgt_state, tgt_out = self._capture_leak_state(str(leak_info.input_path), leak_info)
         if ref_state is None or tgt_state is None:
+            if self._inferior_exited(ref_out) or self._inferior_exited(tgt_out):
+                return self._stale_address_message(leak_info, "Execution diff")
             return "  Execution diff unavailable (could not capture state under gdb)."
 
         return self._render_exec_diff(ref_state, tgt_state, leak_info)
@@ -625,8 +653,45 @@ class Driller:
         result = run(gdb_cmd, stdout=PIPE, stderr=PIPE, text=True, check=False)
         return result.stdout
 
-    def _capture_leak_state(self, input_path: str, leak_info: _LeakInfo) -> Optional[_RunState]:
-        """ Run one input under gdb to the leak instruction and capture its execution state """
+    @staticmethod
+    def _inferior_exited(gdb_output: str) -> bool:
+        """
+        Report whether the gdb output shows the program running to completion.
+
+        A clean exit means gdb never stopped at the staged breakpoints, so no state could be
+        captured. This is the signature of a stale (e.g. post-recompilation) leak address.
+        """
+        return "exited normally" in gdb_output or "exited with code" in gdb_output
+
+    def _stale_address_message(self, leak_info: _LeakInfo, feature: str) -> str:
+        """
+        Build an explanatory message for the case where the program never reached the leak
+        instruction under gdb, so ``feature`` (e.g. "Execution diff") could not be captured.
+
+        :param leak_info: Information about the leak being investigated
+        :param feature: Human-readable name of the report section that is unavailable
+        :return: A rendered explanation of the likely address mismatch
+        """
+        win = leak_info.spec_windows[-1]
+        lines = [
+            f"  {feature} unavailable: the program ran to completion without ever stopping at the",
+            "  leak instruction. gdb placed a breakpoint at the recorded address",
+            f"  {win.pc_gdb:#x} (trace pc {leak_info.org_pc:#x}), but execution never reached it.",
+            "", "  Possible reason: the binary was recompiled or otherwise changed",
+            "  since the trace was recorded, leading to a stale leak address.",
+            "  Re-run the fuzzer or patch the PC manually."
+        ]
+        return "\n".join(console.paint(line, console.DIM) for line in lines)
+
+    def _capture_leak_state(self, input_path: str,
+                            leak_info: _LeakInfo) -> Tuple[Optional[_RunState], str]:
+        """
+        Run one input under gdb to the leak instruction and capture its execution state.
+
+        :return: The parsed state (``None`` on failure) together with the raw gdb output, so the
+            caller can tell a genuine capture failure apart from the program never reaching the
+            leak instruction.
+        """
         win = leak_info.spec_windows[-1]
         target_args = leak_info.driver_cmd(input_path)
 
@@ -638,6 +703,9 @@ class Driller:
             'run',
             f'break *{win.pc_gdb:#x}',
         ]
+        ignored_cond = self._ignored_caller_condition(2)
+        if ignored_cond is not None:
+            ex_cmds.append(ignored_cond)
         if win.pc_occurrence > 0:
             ex_cmds.append(f'ignore 2 {win.pc_occurrence}')
         ex_cmds += [
@@ -651,7 +719,8 @@ class Driller:
             r'printf "__MCFZ_NEXTPC__ %#lx\n", (unsigned long)$pc',
         ]
 
-        return self._parse_leak_state(self._run_gdb(ex_cmds, target_args))
+        output = self._run_gdb(ex_cmds, target_args)
+        return self._parse_leak_state(output), output
 
     @staticmethod
     def _parse_leak_state(output: str) -> Optional[_RunState]:
@@ -847,6 +916,9 @@ class Driller:
             'run',
             f'break *{win.pc_gdb:#x}',
         ]
+        ignored_cond = self._ignored_caller_condition(2)
+        if ignored_cond is not None:
+            ex_cmds.append(ignored_cond)
         if win.pc_occurrence > 0:
             ex_cmds.append(f'ignore 2 {win.pc_occurrence}')
         ex_cmds += [
@@ -856,8 +928,11 @@ class Driller:
             r'printf "__MCFZ_END__\n"',
         ]
 
-        frames = self._parse_backtrace(self._run_gdb(ex_cmds, target_args))
+        output = self._run_gdb(ex_cmds, target_args)
+        frames = self._parse_backtrace(output)
         if not frames:
+            if self._inferior_exited(output):
+                return self._stale_address_message(leak_info, "Backtrace")
             return "  Backtrace unavailable (could not capture call stack under gdb)."
 
         if is_spec:
