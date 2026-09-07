@@ -55,7 +55,7 @@ def _write_trace(path: str, entries: List[TraceEntry]) -> None:
         f.write(data)
 
 
-class TestLeakDetectorInit(unittest.TestCase):
+class TestLeakDetectorValidation(unittest.TestCase):
 
     def setUp(self) -> None:
         self._temp_dir = tempfile.mkdtemp()
@@ -74,17 +74,16 @@ class TestLeakDetectorInit(unittest.TestCase):
     def test_missing_stage3_dir(self) -> None:
         # stage3_wd was never created
         with self.assertRaises(FileNotFoundError):
-            LeakDetector(self._config())
+            LeakDetector(self._config()).build_leakage_map(self._stage3_wd, 0)
 
     def test_empty_stage3_dir(self) -> None:
         os.makedirs(self._stage3_wd)
         with self.assertRaises(FileNotFoundError):
-            LeakDetector(self._config())
+            LeakDetector(self._config()).build_leakage_map(self._stage3_wd, 0)
 
-    def test_valid_stage3_dir(self) -> None:
-        os.makedirs(self._stage3_wd)
-        # A single (arbitrary) entry makes the directory non-empty
-        Path(self._stage3_wd, "placeholder").touch()
+    def test_construction_before_tracing(self) -> None:
+        # Constructing a detector must not require a populated stage3 directory: when tracing and
+        # leak detection are pipelined, the detector is created before any trace is collected
         LeakDetector(self._config())  # must not raise
 
 
