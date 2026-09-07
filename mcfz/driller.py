@@ -541,7 +541,11 @@ class Driller:
 
         # Find the spec level of the target line
         cur_target_id = leak_info.org_trace_line_id
-        cur_spec_level = trace.instructions[at_line(cur_target_id)]['spec_level']
+        target_inst = trace.instructions[at_line(cur_target_id)]
+        assert len(target_inst) == 1 and target_inst['pc'][0] == leak_info.org_pc, \
+            (f"Line {cur_target_id} of {leak_info.trace_path} does not hold the reported leak "
+             f"instruction {leak_info.org_pc:#x}; the report and the trace are out of sync")
+        cur_spec_level = target_inst['spec_level']
 
         # Populate the spec windows info by traversing nested speculation windows backwards
         # until we reach architectural execution
@@ -580,6 +584,9 @@ class Driller:
 
         # Reverse to get the order from outermost (architectural) to innermost speculation window
         spec_windows.reverse()
+        assert (len(spec_windows) == 1) == (leak_info.clause_type == 'seq'), \
+            (f"Found {len(spec_windows)} speculation window(s), which contradicts the reported "
+             f"'{leak_info.clause_type}' clause")
         return spec_windows
 
     def _copy_files(self, leak_info: _LeakInfo) -> None:
