@@ -143,6 +143,23 @@ class TestBuildLeakageMap(unittest.TestCase):
         self.assertEqual(result["seq"]["D"], {})
         self.assertEqual(result["cond"], {})
 
+    def test_i_leak_with_shifted_target_index(self) -> None:
+        # The reference trace contains a speculative instruction (PC 0x9000, spec_level 1) that the
+        # target trace does not, so the same architectural instruction sits at different indices in
+        # the two traces. The witness must report the index within the target trace it names
+        # (`line`), and the reference index separately (`ref_line`).
+        reference = [(0x1000, 1, 0, ENTRY_PC), (0x9000, 1, 1, ENTRY_PC), (0x2000, 1, 0, ENTRY_PC),
+                     (0x3000, 1, 0, ENTRY_PC), (0, 0, 0, ENTRY_EOT)]
+        target = [(0x1000, 1, 0, ENTRY_PC), (0x2000, 1, 0, ENTRY_PC), (0x4000, 1, 0, ENTRY_PC),
+                  (0, 0, 0, ENTRY_EOT)]
+
+        result = self._run(reference, target)
+
+        self.assertIn(PC(0x2000), result["seq"]["I"])
+        witness = result["seq"]["I"][PC(0x2000)][0]
+        self.assertTrue(witness["trace"].endswith("001.trace"))
+        self.assertEqual((witness["line"], witness["ref_line"]), (1, 2))
+
     def test_d_leak(self) -> None:
         # Same PCs, but the first instruction reads different addresses.
         reference = [(0x1000, 1, 0, ENTRY_PC), (0xAAAA, 8, 0, ENTRY_READ), (0x2000, 1, 0, ENTRY_PC),

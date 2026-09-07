@@ -20,8 +20,9 @@ namespace fs = std::filesystem;
 using spec_level_t = uint8_t;
 
 /// @brief A single trace-pair location where a leak was observed. The field names mirror the
-/// Python `Witness` type so the emitted JSON maps directly onto it. `line`/`ref_line` carry the
-/// reference/target trace indices, respectively.
+/// Python `Witness` type so the emitted JSON maps directly onto it. `trace` names the target
+/// trace, `line` is the index of the leak within it, and `ref_line` the matching index in the
+/// reference trace.
 struct witness_t {
     std::string trace;
     uint64_t line;
@@ -156,9 +157,11 @@ int main(int argc, char *argv[])
             // Read a single .leaks file and add all leaks to the map
             leak_t leak{};
             while (f.read(reinterpret_cast<char *>(&leak), sizeof(leak_t))) {
-                witness_t witness{.trace = file_entry.path().string(),
-                                  .line = leak.ref_idx,
-                                  .ref_line = leak.tgt_idx};
+                witness_t witness{
+                    .trace = file_entry.path().string(),
+                    .line = leak.tgt_idx,
+                    .ref_line = leak.ref_idx,
+                };
                 leak_map[leak.spec_level][leak.type][leak.pc].push_back(std::move(witness));
             }
         }
