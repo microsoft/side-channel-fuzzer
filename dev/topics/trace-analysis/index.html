@@ -3052,7 +3052,7 @@ information leakage.</p>
 <p>Suppose we test only two of the inputs from the previous example, but the second
 measurement produces a slightly different hardware trace due to noise:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>I0: CTrace=A, HTrace=X
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>I1: CTrace=A, HTrace=X&#39;
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>I1: CTrace=A, HTrace=X'
 </code></pre></div>
 <p>The resulting analysis will produce a false violation:</p>
 <ul>
@@ -3073,8 +3073,8 @@ determines if two samples are drawn from the same distribution.</p>
 <p>To implement this, we modify the measurement process: instead of collecting one hardware trace
 per input, Revizor collects <strong>multiple samples</strong> per input. Each <code>HTrace</code> object contains an
 array of measurement samples. For example, with sample size N=10:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>I0: CTrace=A, HTrace=[X, X, X&#39;, X, X, X&#39;, X, X, X, X]
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>I1: CTrace=A, HTrace=[X, X&#39;, X, X, X, X, X&#39;, X, X, X]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>I0: CTrace=A, HTrace=[X, X, X', X, X, X', X, X, X, X]
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>I1: CTrace=A, HTrace=[X, X', X, X, X, X, X', X, X, X]
 </code></pre></div>
 <p>Now we must compare <strong>distributions</strong> rather than individual values, and the question becomes: "Are these two samples drawn from the same distribution?"</p>
 <h3 id="chi-squared-test-for-categorical-data">Chi-Squared Test for Categorical Data</h3>
@@ -3099,15 +3099,15 @@ distribution (no violation).</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">No violation</label><label for="__tabbed_5_2">Real violation</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>I0: CTrace=A, HTrace=[X(8 times), X&#39;(2 times)]
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>I1: CTrace=A, HTrace=[X(7 times), X&#39;(3 times)]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>I0: CTrace=A, HTrace=[X(8 times), X'(2 times)]
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>I1: CTrace=A, HTrace=[X(7 times), X'(3 times)]
 </code></pre></div>
 <p>The distributions are similar (mostly X with some noise X'). χ² test will show they're
 equivalent:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>obs₁(X) = 8, obs₁(X&#39;) = 2
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>obs₂(X) = 7, obs₂(X&#39;) = 3
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>obs₁(X) = 8, obs₁(X') = 2
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>obs₂(X) = 7, obs₂(X') = 3
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>expected(X) = (8 + 7) / 2 = 7.5
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>expected(X&#39;) = (2 + 3) / 2 = 2.5
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>expected(X') = (2 + 3) / 2 = 2.5
 <a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>χ² = (8 - 7.5)²/7.5 + (2 - 2.5)²/2.5 + (7 - 7.5)²/7.5 + (3 - 2.5)²/2.5
 <a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>   = 0.2666
 <a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>χ²/N = 0.2666/10 = 0.02666
@@ -3115,14 +3115,14 @@ equivalent:</p>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>I0: CTrace=A, HTrace=[X(5 times), X&#39;(1 time), Y(4 times)]
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>I1: CTrace=A, HTrace=[X(5 times), X&#39;(1 time), Z(4 times)]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>I0: CTrace=A, HTrace=[X(5 times), X'(1 time), Y(4 times)]
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>I1: CTrace=A, HTrace=[X(5 times), X'(1 time), Z(4 times)]
 </code></pre></div>
 <p>The distributions are clearly different (X vs Y). χ² test will reject equivalence → violation:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>obs₁(X) = 5, obs₁(X&#39;) = 1, obs₁(Y) = 4
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>obs₂(X) = 5, obs₂(X&#39;) = 1, obs₂(Z) = 4
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>obs₁(X) = 5, obs₁(X') = 1, obs₁(Y) = 4
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>obs₂(X) = 5, obs₂(X') = 1, obs₂(Z) = 4
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>expected(X) = (5 + 5) / 2 = 5
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>expected(X&#39;) = (1 + 1) / 2 = 1
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>expected(X') = (1 + 1) / 2 = 1
 <a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>expected(Y) = (4 + 0) / 2 = 2
 <a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>expected(Z) = (0 + 4) / 2 = 2
 <a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>χ² = (5 - 5)²/5 + (1 - 1)²/1 + (4 - 2)²/2 + (0 - 2)²/2
@@ -3146,8 +3146,8 @@ sizes.</p>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="k">if</span> <span class="n">violation</span> <span class="n">detected</span><span class="p">:</span>
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>        <span class="k">continue</span>
 <a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>        <span class="k">return</span> <span class="s2">&quot;no violation&quot;</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="k">return</span> <span class="s2">&quot;violation detected&quot;</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>        <span class="k">return</span> <span class="s2">"no violation"</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="k">return</span> <span class="s2">"violation detected"</span>
 </code></pre></div>
 <p>The exact sample sizes and thresholds are configurable via <a href="../../ref/config/#executor_sample_sizes"><code>executor_sample_sizes</code></a> config parameter.</p>
 <h2 id="whats-next">What's Next?</h2>

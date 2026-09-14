@@ -3050,7 +3050,7 @@ This branch is used by automated tools and should never be used for development.
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a># Work on feature, commit frequently
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>git add .
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>git commit -m &quot;Add feature component&quot;
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>git commit -m "Add feature component"
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a># Keep feature updated with dev (rebase to keep history clean)
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>git fetch origin
@@ -3063,7 +3063,7 @@ This branch is used by automated tools and should never be used for development.
 <a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>git push origin feature-awesome-thing
 <a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
 <a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a># Create PR: feature-awesome-thing → dev
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a># Configure PR settings: &quot;Squash and merge&quot;, assign reviewers, etc.
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a># Configure PR settings: "Squash and merge", assign reviewers, etc.
 <a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a># After PR approved and merged, locally:
 <a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>git checkout dev
 <a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>git pull
@@ -3078,13 +3078,13 @@ This branch is used by automated tools and should never be used for development.
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a># Work on hotfix, commit frequently
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>git add .
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>git commit -m &quot;Fix critical bug&quot;
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>git commit -m "Fix critical bug"
 <a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a># When hotfix is complete
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>git push origin hotfix-critical-bug
 <a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
 <a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a># Create PR: hotfix-critical-bug → main-fixes
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a># Configure PR settings: &quot;Squash and merge&quot;, assign reviewers, etc.
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a># Configure PR settings: "Squash and merge", assign reviewers, etc.
 <a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a># After PR merged:
 <a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>git checkout main-fixes
 <a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>git pull
@@ -3096,7 +3096,7 @@ This branch is used by automated tools and should never be used for development.
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>git checkout main
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>git pull
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>git rebase main-fixes
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>git tag -a vX.Y.Z -m &quot;Release vX.Y.Z&quot;  # Update version tag
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>git tag -a vX.Y.Z -m "Release vX.Y.Z"  # Update version tag
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>git push origin main --tags
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a># Re-synchronize dev with main
@@ -3111,12 +3111,12 @@ This branch is used by automated tools and should never be used for development.
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>git checkout -b release-X.Y.Z
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a># After final touches (version bumps, changelog updates, etc.):
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>git commit -am &quot;Prepare release vX.Y.Z&quot;
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>git commit -am "Prepare release vX.Y.Z"
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a># Merge release branch into main
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>git checkout main
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>git merge --no-ff release-X.Y.Z -m &quot;Release vX.Y.Z&quot;
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>git tag -a vX.Y.Z -m &quot;Release vX.Y.Z&quot;
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>git merge --no-ff release-X.Y.Z -m "Release vX.Y.Z"
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>git tag -a vX.Y.Z -m "Release vX.Y.Z"
 <a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>git push origin main --tags
 <a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
 <a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a># Sync release back to dev

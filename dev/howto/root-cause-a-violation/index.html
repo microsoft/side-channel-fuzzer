@@ -2997,7 +2997,7 @@
 <a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>0x00002000 .....^..
 <a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>0x00002040 ........ ........ ........ ........
 <a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>  &gt; Result: Leaked 1 bytes
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>  &gt; Addresses: [&#39;0x2028&#39;]
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>  &gt; Addresses: ['0x2028']
 </code></pre></div>
 <p>The minimizer goes through the pair of inputs that trigger the violation - inputs #1 and #11 in this case - and tries to minimize the differences between them:</p>
 <ul>
@@ -3101,7 +3101,7 @@
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>0x00002000 .....^..
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>0x00002040 ........ ........ ........ ........
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>  &gt; Result: Leaked 1 bytes
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>  &gt; Addresses: [&#39;0x2028&#39;]
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>  &gt; Addresses: ['0x2028']
 </code></pre></div>
 <p>This summary tells us that <code>rdi</code> has a differing value between inputs #1 and 11. At the same time, the first time <code>rdi</code> is used in the program is at line 15, where it is moved to <code>rcx</code>, and then later used as a part of the address in the memory access at line 17. This would make the speculative memory access at line 17 access different addresses with the two inputs, and would explain the difference between the hardware traces.</p>
 <p>At this point, the hypothesis is more-or-less confirmed, and we can declare that the root cause of the leak was the misprediction of the <code>jbe</code> branch at line 12, which caused the speculative execution of the memory access at line 17, and which in turn leaked the value of <code>rdi</code>.</p>

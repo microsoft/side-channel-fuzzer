@@ -3013,7 +3013,7 @@
 <a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>0x00002000 ====^=..
 <a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>0x00002040 ........ ........ ........ ........
 <a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>  &gt; Result: Leaked 1 bytes
-<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>  &gt; Addresses: [&#39;0x2020&#39;]
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>  &gt; Addresses: ['0x2020']
 </code></pre></div>
 <p>This output shows that the pass successfully minimized most input differences. The byte at address <code>0x2020</code> (marked with <code>^</code>) remains different between the two inputs and likely contributes to the violation. Bytes at addresses <code>0x2000-0x2018</code> and <code>0x2028</code> (marked with <code>=</code>) were already identical.</p>
 <h3 id="comment-pass-output">Comment Pass Output</h3>
