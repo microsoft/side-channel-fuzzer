@@ -12,7 +12,6 @@ import pathlib
 import shutil
 
 import yaml
-from typing_extensions import assert_never
 
 from .util import console
 
@@ -151,22 +150,28 @@ class _WorkingDirManager:
         produce itself: there, `trace` owns the stage4 directory as well, and `report` owns
         nothing, as it merely merges results that already exist.
         """
-        if stage == "fuzz":
-            assert self.config.working_dir is not None
-            return [self.config.working_dir]
-        if stage == "fuzz_gen":
-            return [self.config.stage1_wd]
-        if stage == "boost":
-            return [self.config.stage2_wd]
-        if stage == "trace":
-            if self.config.pipeline_trace_and_detect:
-                return [self.config.stage3_wd, self.config.stage4_wd]
-            return [self.config.stage3_wd]
-        if stage == "report":
-            if self.config.pipeline_trace_and_detect:
-                return []
-            return [self.config.stage4_wd]
-        assert_never(stage)
+        assert self.config.working_dir is not None, \
+            "working_dir must be checked before calling this method."
+
+        stage_dirs: Dict[TestingStages, List[str]] = {
+            "fuzz": [self.config.working_dir],
+            "fuzz_gen": [self.config.stage1_wd],
+            "boost": [self.config.stage2_wd],
+            "trace": [self.config.stage3_wd],
+            "report": [self.config.stage4_wd],
+        }
+
+        # common case
+        owned_dirs = stage_dirs[stage]
+
+        # exception: pipelined trace+detect
+        if self.config.pipeline_trace_and_detect:
+            if stage == "trace":
+                owned_dirs = [self.config.stage3_wd, self.config.stage4_wd]
+            elif stage == "report":
+                owned_dirs = []
+
+        return owned_dirs
 
 
 # ==================================================================================================

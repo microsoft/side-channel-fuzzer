@@ -1,6 +1,7 @@
 """
-File: GDB script generation for leak debugging; builds the gdb command scripts and the tmux
-      launcher used by the driller to open side-by-side debug sessions for a violation.
+File: Interaction with GDB; builds the gdb command scripts and the tmux launcher used by the
+      driller to open side-by-side debug sessions for a violation, runs gdb in batch mode, and
+      parses its output.
 
 Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
@@ -9,76 +10,106 @@ from __future__ import annotations
 
 import os
 
-from typing import Final, List, Optional, TYPE_CHECKING
+from typing import Dict, Final, List, Optional, TYPE_CHECKING
+from subprocess import run, PIPE
 
 if TYPE_CHECKING:
     from ..driller import _LeakInfo
+
+# Sections of gdb output are delimited by marker lines of the form `__MCFZ_<NAME>__`, emitted by
+# `GdbScriptBuilder.begin_section` and read back by `split_sections`.
+_MARKER_PREFIX: Final[str] = "__MCFZ_"
+_MARKER_SUFFIX: Final[str] = "__"
+_END_SECTION: Final[str] = "END"
+
+
+def _marker(name: str) -> str:
+    return f"{_MARKER_PREFIX}{name}{_MARKER_SUFFIX}"
+
+
+def run_batch(builder: GdbScriptBuilder, target_args: List[str]) -> str:
+    """
+    Run gdb in batch mode with the builder's commands and return its stdout
+
+    :param builder: The commands to execute, in order
+    :param target_args: The target invocation to pass to gdb's ``--args``
+    :return: The stdout of the gdb session
+    """
+    gdb_cmd = ['gdb', '--batch', '-nx']
+    for cmd in builder.commands():
+        gdb_cmd += ['-ex', cmd]
+    gdb_cmd += ['--args'] + target_args
+    result = run(gdb_cmd, stdout=PIPE, stderr=PIPE, text=True, check=False)
+    return result.stdout
+
+
+def inferior_exited(output: str) -> bool:
+    """
+    Report whether the gdb output shows the debugged program running to completion.
+
+    A clean exit means gdb never stopped at any of the staged breakpoints, so no state could be
+    captured.
+
+    :param output: The stdout of a gdb session
+    :return: True if the program ran to completion
+    """
+    return "exited normally" in output or "exited with code" in output
+
+
+def split_sections(output: str) -> Dict[str, List[str]]:
+    """
+    Split gdb output into the sections delimited by `GdbScriptBuilder.begin_section`.
+
+    Marker lines and blank lines are dropped; all other lines are returned verbatim, so that
+    indentation-carrying output (e.g. source listings) survives.
+
+    :param output: The stdout of a gdb session
+    :return: A map of section name to the lines gdb printed within that section
+    """
+    sections: Dict[str, List[str]] = {}
+    current: Optional[List[str]] = None
+
+    for line in output.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(_MARKER_PREFIX) and stripped.endswith(_MARKER_SUFFIX):
+            name = stripped[len(_MARKER_PREFIX):-len(_MARKER_SUFFIX)]
+            current = None if name == _END_SECTION else sections.setdefault(name, [])
+        elif current is not None and stripped:
+            current.append(line)
+
+    return sections
+
+
+def parse_value(output: str, name: str) -> Optional[int]:
+    """
+    Read back a hexadecimal value emitted by `GdbScriptBuilder.print_value`
+
+    :param output: The stdout of a gdb session
+    :param name: The name the value was printed under
+    :return: The value, or ``None`` if gdb never printed it
+    """
+    marker = _marker(name)
+    for line in output.splitlines():
+        parts = line.strip().split()
+        if len(parts) >= 2 and parts[0] == marker:
+            try:
+                return int(parts[1], 16)
+            except ValueError:
+                continue
+    return None
 
 
 class GdbScriptBuilder:
     """ Encapsulates GDB command syntax and script generation for leak debugging """
 
-    def __init__(self, ignored_funcs: Optional[List[str]] = None) -> None:
+    def __init__(self) -> None:
         self._commands: List[str] = []
         self._n_break: int = 0
 
-        if ignored_funcs:
-            self._declare_skip_hook()
-            for func in ignored_funcs:
-                self._add_skip_hook(func)
-
-    def _declare_skip_hook(self) -> None:
-        """
-        Define a GDB function to skip the rest of the current function.
-        This makes sure that we don't count hits to breakpoints that happen during ignored
-        functions, otherwise me might be inspecting the wrong execution state.
-        Note that we cannot simply use "skip" since it will continue counting hits to the
-        breakpoint.
-        """
-        disable_output = [
-            "    set logging file /dev/null", "    set logging redirect on",
-            "    set logging enabled on"
-        ]
-        enable_output = ["     set logging enabled off", "     set logging redirect off"]
-
-        # Define `skip_current_func` to simply reach the end of the current function
-        self._commands.extend([
-            "define skip_current_func",
-            *disable_output,
-            "    finish",
-            *enable_output,
-            "end",
-        ])
-        # Hook `skip_current_func` such that all breakpoints are disabled when executed
-        self._commands.extend([
-            "define hook-skip_current_func",
-            "    disable",  # Disable all breakpoints
-            "end",
-            "",
-            "define hookpost-skip_current_func",
-            "    enable",  # Re-enable breakpoints
-            "    continue",
-            "end",
-        ])
-        # Declare a command to skip the given function
-        self._commands.extend([
-            "define skip_function",
-            *disable_output,
-            "    break $arg0",  # Set a breakpoint at the start of the function to skip
-            "    commands",
-            "        silent",
-            "        skip_current_func",  # Skip the function when breakpoint is hit
-            "    end",
-            *enable_output,
-            "end",
-            ""
-        ])
-
-    def _add_skip_hook(self, func_name: str) -> None:
-        """ Add a command to skip the given function by name """
-        if func_name.strip():
-            self._commands.append(f"skip_function {func_name.strip()}")
-            self._n_break += 1
+        # apply default settings that make gdb output easier to parse and more compact
+        self.setting('pagination off')
+        self.setting('width 0')
+        self.setting('disable-randomization on')
 
     def breakpoint(self, pc: int, temporary: bool = False) -> int:
         """ Add a breakpoint at the given PC address and return the breakpoint number """
@@ -88,6 +119,40 @@ class GdbScriptBuilder:
             self._commands.append(f"break *{pc:#x}")
         self._n_break += 1
         return self._n_break
+
+    def breakpoint_at_symbol(self, symbol: str) -> int:
+        """ Add a breakpoint at the given symbol and return the breakpoint number """
+        self._commands.append(f"break {symbol}")
+        self._n_break += 1
+        return self._n_break
+
+    def condition(self, bp_num: int, expr: str) -> None:
+        """ Add a command that makes the given breakpoint fire only when `expr` holds """
+        self._commands.append(f"condition {bp_num} {expr}")
+
+    def setting(self, expr: str) -> None:
+        """ Add a ``set`` command, e.g. ``setting("pagination off")`` """
+        self._commands.append(f"set {expr}")
+
+    def command(self, cmd: str) -> None:
+        """ Add a verbatim gdb command, for commands without a dedicated method """
+        self._commands.append(cmd)
+
+    def comment(self, text: str) -> None:
+        """ Add a comment line; only valid for scripts, not for ``-ex`` invocations """
+        self._commands.append(f"# {text}")
+
+    def begin_section(self, name: str) -> None:
+        """ Add a command that marks the start of a named section in gdb's output """
+        self._commands.append(f'printf "\\n{_marker(name)}\\n"')
+
+    def end_section(self) -> None:
+        """ Add a command that marks the end of the current output section """
+        self.begin_section(_END_SECTION)
+
+    def print_value(self, name: str, expr: str) -> None:
+        """ Add a command that prints the given expression as a named hexadecimal value """
+        self._commands.append(f'printf "{_marker(name)} %#lx\\n", {expr}')
 
     def run(self) -> None:
         """ Add a command to start program execution """
@@ -107,9 +172,6 @@ class GdbScriptBuilder:
 
     def ignore(self, bp_num: int, count: int) -> None:
         """ Add a command to ignore the next `count` hits of the given breakpoint """
-        self._commands.append(
-            f"# Skip {count} earlier hit(s) of breakpoint {bp_num} so execution stops at the")
-        self._commands.append("# occurrence of this PC that actually triggers the leak")
         self._commands.append(f"ignore {bp_num} {count}")
 
     def shell_prompt(self, message: str) -> None:
@@ -126,6 +188,10 @@ class GdbScriptBuilder:
         with open(path, 'w') as f:
             f.write("\n".join(self._commands))
 
+    def commands(self) -> List[str]:
+        """ Return the accumulated GDB commands, for passing to gdb via ``-ex`` """
+        return list(self._commands)
+
     @classmethod
     def create_leak_script(cls,
                            leak_info: _LeakInfo,
@@ -133,7 +199,7 @@ class GdbScriptBuilder:
                            args_cmd: str,
                            fast: bool = False,
                            single_step: bool = False,
-                           ignored_funcs: Optional[List[str]] = None) -> str:
+                           ignored_cond: Optional[str] = None) -> str:
         """
         Create a gdb script that reaches the violation described in leak_info,
         save it to the given path, and return the full gdb command to run it.
@@ -144,10 +210,16 @@ class GdbScriptBuilder:
         :param fast: If True, skip intermediate gdb prompts (architectural and spec window starts)
         :param single_step: If True, drop to interactive gdb at the first speculative instruction,
             with breakpoints set at all remaining points of interest
-        :param ignored_funcs: List of function names to ignore (skip) during debugging
+        :param ignored_cond: gdb condition restricting breakpoint hits to non-ignored contexts
         :return: The full gdb command string (e.g., ``gdb -x script.gdb --args cmd``)
         """
-        builder = cls(ignored_funcs)
+        builder = cls()
+
+        def poi_breakpoint(pc: int) -> int:
+            b_num = builder.breakpoint(pc)
+            if ignored_cond is not None:
+                builder.condition(b_num, ignored_cond)
+            return b_num
 
         for lvl, win in enumerate(leak_info.spec_windows):
             is_first = lvl == 0
@@ -162,7 +234,7 @@ class GdbScriptBuilder:
                 if single_step:
                     # Set breakpoints at all remaining POIs and drop to interactive mode
                     for remaining_win in leak_info.spec_windows[lvl:]:
-                        builder.breakpoint(remaining_win.pc_gdb)
+                        poi_breakpoint(remaining_win.pc_gdb)
                     builder.shell_prompt(
                         f'Entered single-step mode at first speculative instruction '
                         f'(pc: {win.start_pc_gdb:#x}). '
@@ -176,19 +248,22 @@ class GdbScriptBuilder:
                     f'Reached start of spec window (level: {lvl}, pc: {win.start_pc_gdb:#x})')
 
             # Reach target instruction
-            b_num = builder.breakpoint(win.pc_gdb)
+            b_num = poi_breakpoint(win.pc_gdb)
             if win.pc_occurrence > 0:
+                builder.comment(f"Skip {win.pc_occurrence} earlier hit(s) of breakpoint {b_num} "
+                                "so execution stops at the")
+                builder.comment("occurrence of this PC that actually triggers the leak")
                 builder.ignore(b_num, win.pc_occurrence)
             builder.continue_()
 
             msg_template = 'Reached {label} (level: {lvl}, pc: {win:#x})'
             if is_last:
-                label = "leak instruction"
-                builder.shell_message(msg_template.format(label=label, lvl=lvl, win=win.pc_gdb))
+                builder.shell_message(
+                    msg_template.format(label="leak instruction", lvl=lvl, win=win.pc_gdb))
                 continue
 
-            label = "mispredicted instruction"
-            builder.shell_prompt(msg_template.format(label=label, lvl=lvl, win=win.pc_gdb))
+            builder.shell_prompt(
+                msg_template.format(label="mispredicted instruction", lvl=lvl, win=win.pc_gdb))
             builder.delete(b_num)
 
         builder.write(path)
@@ -228,7 +303,7 @@ tmux new-session -s {session_name} \\; \\
               output_dir: str,
               fast: bool = False,
               single_step: bool = False,
-              ignored_funcs: Optional[List[str]] = None) -> str:
+              ignored_cond: Optional[str] = None) -> str:
         """
         Create gdb scripts and a tmux debug launcher for investigating a leak.
 
@@ -239,7 +314,7 @@ tmux new-session -s {session_name} \\; \\
         :param output_dir: Directory to write debug scripts into
         :param fast: If True, skip intermediate gdb prompts
         :param single_step: If True, drop to interactive gdb at first speculative instruction
-        :param ignored_funcs: List of function names to ignore (skip) during debugging
+        :param ignored_cond: gdb condition restricting breakpoint hits to non-ignored contexts
         :return: Path to the generated debug.sh script
         """
 
@@ -251,7 +326,7 @@ tmux new-session -s {session_name} \\; \\
                 " ".join(cmd),
                 fast=fast,
                 single_step=single_step,
-                ignored_funcs=ignored_funcs)
+                ignored_cond=ignored_cond)
 
         ref_gdb_cmd = make_gdb_cmd(os.path.join(output_dir, "000.bin"), "debug_ref.gdb")
         target_gdb_cmd = make_gdb_cmd(str(leak_info.input_path), "debug_target.gdb")

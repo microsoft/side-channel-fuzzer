@@ -219,6 +219,8 @@ function mcfz_unit_test() {
     python3 -m unittest tests.mcfz.unit_reporter -v
     echo "-------------"
     python3 -m unittest tests.mcfz.unit_leak_detector -v
+    echo "-------------"
+    python3 -m unittest tests.mcfz.unit_driller -v
     cd - > /dev/null || exit
 }
 
