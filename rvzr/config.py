@@ -7,7 +7,7 @@ SPDX-License-Identifier: MIT
 import os
 from copy import deepcopy
 from collections import OrderedDict
-from typing import List, Dict, TextIO, Any, TypedDict, Set, Literal
+from typing import Generator, List, Dict, TextIO, Any, TypedDict, Set, Literal
 from types import ModuleType
 
 import yaml
@@ -84,7 +84,7 @@ class IncludeLoader(yaml.SafeLoader):
         with open(filename, 'r') as f:
             return yaml.load(f, IncludeLoader)
 
-    def construct_yaml_map(self, node: yaml.MappingNode) -> Dict[Any, Any]:
+    def construct_yaml_map(self, node: yaml.MappingNode) -> Generator[Dict[Any, Any], None, None]:
         """
         Custom constructor that renames all `file` keys to `file_<unique_id>` to prevent multiple
         include statements from overwriting each other
@@ -93,8 +93,12 @@ class IncludeLoader(yaml.SafeLoader):
             if k.value == 'file':
                 k.value = f'file_{self.file_id_counter}'
                 self.file_id_counter += 1
-        data = self.construct_mapping(node)
-        return data
+
+        # two-phase construction, as expected by PyYAML: the mapping object is yielded before it is
+        # populated, so that recursive references to it can be resolved
+        data: Dict[Any, Any] = {}
+        yield data
+        data.update(self.construct_mapping(node))
 
 
 IncludeLoader.add_constructor('!include', IncludeLoader.include)
