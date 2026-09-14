@@ -62,7 +62,7 @@ class CTrace:
     def __init__(self, trace: List[CTraceEntry]) -> None:
         self._trace = trace
         self._untyped = [entry.value for entry in trace]
-        self._hash = xxhash.xxh64(str(self._untyped), seed=0).intdigest()
+        self._hash = xxhash.xxh64(str(self._untyped).encode(), seed=0).intdigest()
 
     # ==============================================================================================
     # Printers
@@ -219,7 +219,7 @@ class HTrace:
 
         # store and process the samples
         self._raw = htrace_samples
-        self._hash = xxhash.xxh64(str(htrace_samples['trace']), seed=0).intdigest()
+        self._hash = xxhash.xxh64(str(htrace_samples['trace']).encode(), seed=0).intdigest()
         self._is_corrupted_or_ignored = all(x == 0 for x in htrace_samples['trace'])
         self.type_ = type_
 
