@@ -481,6 +481,58 @@ class _SharedX86Model(unittest.TestCase):
         self.assertEqual(ctraces[0].get_untyped(), expected_trace)
 
     @skip_for_backend("dr")
+    def test_ct_cond_bpas(self) -> None:
+        test_case = InstList(
+            [
+                Inst("xor rax, rax", 3, 0, 0),
+                Inst("mov qword ptr [r14], 42", 7, MAIN_OFFSET + 0, TEST_MEM_VALUE_A),
+                Inst("jz .l1", 2, 0, 0),
+                Inst(".l0:", 0, 0, 0),
+                Inst("mov rax, qword ptr [r14]", 3, MAIN_OFFSET + 0, TEST_MEM_VALUE_A),
+                Inst("mov rax, qword ptr [r14 + rax]", 4, MAIN_OFFSET + TEST_MEM_VALUE_A, 0),
+                Inst(".l1:", 0, 0, 0),
+            ],
+            backend=self._backend,
+        )
+        input_ = self._input_builder.get_default_input()
+        ctraces = self._get_trace(
+            exec_clause=["cond", "bpas"],
+            test_case=test_case,
+            input_data=[input_],
+            nesting=2,
+        )
+
+        end = test_case[7]
+        expected_trace: List[int] = []
+        expected_trace.append(test_case[0].pc_offset)
+        expected_trace.append(test_case[1].pc_offset)
+        expected_trace.append(test_case[1].mem_address)
+
+        # the store is bypassed and the branch is mispredicted at the same instruction
+        expected_trace.append(test_case[2].pc_offset)
+        expected_trace.append(test_case[4].pc_offset)
+        expected_trace.append(test_case[4].mem_address)
+        expected_trace.append(test_case[5].pc_offset)
+        expected_trace.append(MAIN_OFFSET + MEM_DEFAULT_VALUE)
+        expected_trace.append(end.pc_offset)
+
+        # after rollback of the misprediction; the store is still bypassed
+        expected_trace.append(end.pc_offset)
+
+        # after rollback of the bypass; the store is visible, the branch is mispredicted again
+        expected_trace.append(test_case[2].pc_offset)
+        expected_trace.append(test_case[4].pc_offset)
+        expected_trace.append(test_case[4].mem_address)
+        expected_trace.append(test_case[5].pc_offset)
+        expected_trace.append(test_case[5].mem_address)
+        expected_trace.append(end.pc_offset)
+
+        # after rollback of the second misprediction
+        expected_trace.append(end.pc_offset)
+
+        self.assertEqual(ctraces[0].get_untyped(), expected_trace)
+
+    @skip_for_backend("dr")
     def test_fault_handling(self) -> None:
         test_case = self._tc_faulty_load()
         input_ = self._input_builder.get_default_input()

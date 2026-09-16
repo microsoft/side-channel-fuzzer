@@ -415,7 +415,10 @@ class X86CondBpasSpeculator(X86CondSpeculator, StoreBpasSpeculator):
     """
 
     def _speculate_mem_access(self, access: int, address: int, size: int, value: int) -> None:
-        super(StoreBpasSpeculator, self)._speculate_mem_access(access, address, size, value)
+        StoreBpasSpeculator._speculate_mem_access(self, access, address, size, value)
 
     def _speculate_instruction(self, address: int, size: int) -> None:
-        super(X86CondSpeculator, self)._speculate_instruction(address, size)
+        # the store bypass belongs to the previous instruction, hence it is applied first;
+        # otherwise, the branch misprediction would corrupt the checkpoint taken by the bypass
+        StoreBpasSpeculator._speculate_instruction(self, address, size)
+        X86CondSpeculator._speculate_instruction(self, address, size)
