@@ -201,6 +201,50 @@ pte_t *get_pte(uint64_t hva)
 // =================================================================================================
 // Manipulation of Host Page Tables
 // =================================================================================================
+/// @brief Make the sandbox code area executable by clearing the no-execute bit in its PTEs.
+/// @details The kernel functions that would normally do this (set_memory_x) are not exported to
+/// modules, and vmap() forces the no-execute bit onto the requested protection flags, so the
+/// executor manipulates the PTEs directly.
+/// @param base_va Base virtual address of the code area
+/// @param n_pages Number of pages in the code area
+/// @return 0 on success, negative errno if a PTE is missing or the update did not take effect
+int set_code_area_executable(uint64_t base_va, size_t n_pages)
+{
+    for (size_t i = 0; i < n_pages; i++) {
+        uint64_t va = base_va + i * PAGE_SIZE;
+        pte_t *ptep = get_pte(va);
+        if (!ptep) {
+            PRINT_ERR("set_code_area_executable: no PTE for code page %zu\n", i);
+            return -ENODEV;
+        }
+
+        pte_t_ *pte = (pte_t_ *)&ptep->pte;
+#if defined(ARCH_X86_64)
+        pte->execute_disable = 0;
+#elif defined(ARCH_ARM)
+        pte->privileged_execute_never = 0;
+#endif
+        // a local invalidation is sufficient because the VA range is freshly allocated, hence no
+        // other CPU can have cached a translation for it
+        native_page_invalidate(va);
+
+        // sanity check: re-read the entry to confirm that the update took effect
+        uint64_t updated = READ_ONCE(ptep->pte);
+        pte_t_ *check = (pte_t_ *)&updated;
+#if defined(ARCH_X86_64)
+        bool executable = !check->execute_disable;
+#elif defined(ARCH_ARM)
+        bool executable = !check->privileged_execute_never;
+#endif
+        if (!executable) {
+            PRINT_ERR("set_code_area_executable: code page %zu (VA 0x%llx) is not executable\n", i,
+                      va);
+            return -ENODEV;
+        }
+    }
+    return 0;
+}
+
 /// @brief Cache the PTE pointers for all sandbox pages.
 /// @param void
 /// @return 0 on success, -1 on failure
@@ -415,6 +459,8 @@ void restore_faulty_page_host_permissions(void)
 }
 
 // =================================================================================================
+// Self-tests
+// =================================================================================================
 /// @brief Verify get_pte() can walk the kernel page tables for a
 /// known-mapped vmalloc VA. Catches a misconfigured kernel pgd base at
 /// module-load time rather than crashing inside get_pte() on the first
@@ -436,6 +482,9 @@ static int self_test_page_walk(void)
     return 0;
 }
 
+// =================================================================================================
+// Constructor/destructor
+// =================================================================================================
 int init_page_table_manager(void)
 {
     int err = init_kernel_pgd_base();

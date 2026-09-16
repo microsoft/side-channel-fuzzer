@@ -7,7 +7,6 @@
 
 #include "actor.h"
 #include "code_loader.h" // loaded_test_case_entry
-#include "main.h"        // set_memory_x, set_memory_nx
 #include "sandbox_manager.h"
 #include "shortcuts.h"
 #include "test_case_parser.h"
@@ -26,7 +25,6 @@ static struct {
 } util_data = {NULL, NULL, NULL, 0};
 
 static void *code = NULL;
-static size_t old_x_size = 0;
 
 /// @brief Free util_data allocation (vmap + physical pages)
 static void safe_free_util_data(void)
@@ -47,11 +45,8 @@ static void safe_free_util_data(void)
 /// @brief Free code allocation (vmalloc)
 static void safe_free_code(void)
 {
-    if (code) {
-        set_memory_nx((unsigned long)code, old_x_size);
-        SAFE_VFREE(code);
-        loaded_test_case_entry = NULL;
-    }
+    SAFE_VFREE(code);
+    loaded_test_case_entry = NULL;
 }
 
 /// @brief Initialize sandbox pointers after allocation
@@ -132,21 +127,32 @@ static int allocate_util_and_data(size_t n_actors)
 
 /// @brief Allocate memory for the Code area of the sandbox
 /// @details
-/// Uses vmalloc (physical continuity not required). Provides 4KB page tables for PTE
-/// manipulation and executable memory support via set_memory_x().
+/// Constraints:
+/// 1. Executable - the area holds the test case, which is executed in place
+/// 2. 4KB Page Tables - Executor must manipulate individual PTEs (impossible with huge pages)
+///
+/// Solution: vmalloc() + clearing the NX bit in the resulting PTEs
+/// - cannot use the direct mapping of the pages: it is non-executable and uses huge pages
+/// - cannot use set_memory_x() to make the area executable: not exported to modules since 5.4
+/// - cannot request an executable mapping from vmap() either: it forces NX onto the requested
+///   protection flags
+///
 /// @param n_actors Number of actors (each gets its own code area)
 /// @return 0 on success, error code on failure
 static int allocate_code(size_t n_actors)
 {
     safe_free_code();
 
-    code = CHECKED_VMALLOC(n_actors * sizeof(actor_code_t));
+    const size_t code_size = n_actors * sizeof(actor_code_t);
+    code = CHECKED_VMALLOC(code_size);
+
+    int err = set_code_area_executable((uint64_t)code, DIV_ROUND_UP(code_size, PAGE_SIZE));
+    if (err) {
+        safe_free_code();
+        return err;
+    }
+
     reset_code_area();
-
-    size_t code_size = n_actors * sizeof(actor_code_t);
-    old_x_size = DIV_ROUND_UP(code_size, PAGE_SIZE);
-    set_memory_x((unsigned long)code, old_x_size);
-
     return 0;
 }
 

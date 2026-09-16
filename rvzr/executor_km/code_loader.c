@@ -51,6 +51,9 @@ int load_sandbox_code(void)
         else
             err |= load_section(section_id);
     }
+
+    // TODO: on arm64, the I-cache is not coherent with the stores above; the code area requires
+    //       cache maintenance (dc cvau; dsb ish; ic ivau; dsb ish; isb) before it is executed
     return err;
 }
 

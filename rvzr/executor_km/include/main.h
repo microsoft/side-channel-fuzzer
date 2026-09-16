@@ -8,7 +8,6 @@
 
 #include <asm/cpu.h>
 #include <linux/types.h>
-#include <linux/version.h>
 
 #include "hardware_desc.h"
 
@@ -40,15 +39,6 @@ extern bool enable_hpa_gpa_collisions;
 #define HPA_GPA_COLLISIONS_DEFAULT false
 extern bool dbg_gpr_mode;
 #define DBG_GPR_MODE_DEFAULT false
-
-// Linux Kernel compatibility
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
-#include <linux/kallsyms.h>
-extern int (*set_memory_x)(unsigned long, int);
-extern int (*set_memory_nx)(unsigned long, int);
-#else
-#include <linux/set_memory.h>
-#endif
 
 extern cpuinfo_t *cpuinfo; // cached result of cpu_data for CPU 0
 

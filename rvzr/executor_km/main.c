@@ -52,22 +52,8 @@
 #endif
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
-#define KPROBE_LOOKUP 1
-#include <linux/kprobes.h>
-static struct kprobe kp = {.symbol_name = "kallsyms_lookup_name"};
-#endif
-
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(4, 12, 0)
 #include <asm/cacheflush.h>
-#endif
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
-#include <linux/kallsyms.h>
-int (*set_memory_x)(unsigned long, int) = 0;
-int (*set_memory_nx)(unsigned long, int) = 0;
-#else
-#include <linux/set_memory.h>
 #endif
 
 // Version-dependent definitions
@@ -565,37 +551,6 @@ static ssize_t dbg_guest_page_tables_show(struct kobject *kobj, struct kobj_attr
 // Initialization and Memory Management
 // =================================================================================================
 
-/// @brief Resolve kernel function symbols that are not exported to modules
-///        on recent kernels.
-/// @param void
-/// @return 0 on success, negative errno on failure
-static inline int _get_required_kernel_functions(void)
-{
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
-#ifdef KPROBE_LOOKUP
-    typedef unsigned long (*kallsyms_lookup_name_t)(const char *name);
-    kallsyms_lookup_name_t kallsyms_lookup_name;
-    register_kprobe(&kp);
-    kallsyms_lookup_name = (kallsyms_lookup_name_t)kp.addr;
-    unregister_kprobe(&kp);
-    if (!kallsyms_lookup_name) {
-        PRINT_ERR("Failed to resolve kallsyms_lookup_name via kprobe\n");
-        return -ENODEV;
-    }
-#endif // KPROBE_LOOKUP
-
-    set_memory_x = (void *)kallsyms_lookup_name("set_memory_x");
-    set_memory_nx = (void *)kallsyms_lookup_name("set_memory_nx");
-    if (!set_memory_x || !set_memory_nx) {
-        PRINT_ERR("Failed to resolve required kernel symbols "
-                  "(set_memory_x=%p, set_memory_nx=%p)\n",
-                  set_memory_x, set_memory_nx);
-        return -ENODEV;
-    }
-#endif // LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
-    return 0;
-}
-
 /// @brief Get a description of the CPU
 /// @param void
 /// @return 0 on success, -1 on failure
@@ -669,13 +624,10 @@ static int __init executor_init(void)
         return -1;
     }
 
-    // Make sure that we have all requirements
-    err = _get_required_kernel_functions();
-    if (err) {
-        return err;
-    }
-
     // Initialize modules
+    // Note: the page table manager must be initialized before the sandbox manager, as the latter
+    //       relies on page table walks to make the sandbox code area executable
+    err |= init_page_table_manager();
     err |= init_measurements();
     err |= init_sandbox_manager();
     err |= init_code_loader();
@@ -683,7 +635,6 @@ static int __init executor_init(void)
     err |= init_input_parser();
     err |= init_test_case_parser();
     err |= init_fault_handler();
-    err |= init_page_table_manager();
     err |= init_perf_counters();
     err |= init_special_register_manager();
 

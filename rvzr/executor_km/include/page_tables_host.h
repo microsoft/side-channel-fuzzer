@@ -25,6 +25,8 @@ extern sandbox_pteps_t *sandbox_pteps;
 
 pte_t *get_pte(uint64_t hva);
 
+int set_code_area_executable(uint64_t base_va, size_t n_pages);
+
 int cache_host_pteps(void);
 int store_orig_host_permissions(void);
 int restore_orig_host_permissions(void);
