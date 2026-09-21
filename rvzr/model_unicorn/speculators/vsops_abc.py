@@ -1,5 +1,5 @@
 """
-File: Collection of unknown value speculation speculators for the Unicorn backend.
+File: Base class for unknown value speculation, implementing VSOps algorithm.
 
 Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
@@ -19,25 +19,26 @@ from copy import copy
 
 from unicorn import UC_MEM_WRITE
 
-from .speculators_basic import FLAGS_CF, FLAGS_PF, FLAGS_AF, FLAGS_ZF, FLAGS_SF, FLAGS_TF, \
+from rvzr.tc_components.instruction import RegisterOp, FlagsOp, MemoryOp, AgenOp
+from .cond import FLAGS_CF, FLAGS_PF, FLAGS_AF, FLAGS_ZF, FLAGS_SF, FLAGS_TF, \
     FLAGS_IF, FLAGS_DF, FLAGS_OF
-from .speculators_fault import FaultSpeculator, X86NonCanonicalAddress
-from ..tc_components.instruction import RegisterOp, FlagsOp, MemoryOp, AgenOp
+from .fault_speculator_abc import FaultSpeculator
 
 if TYPE_CHECKING:
-    from ..tc_components.test_case_data import InputData
-    from ..target_desc import TargetDesc
-    from .model import UnicornModel
-    from .taint_tracker import UnicornTaintTracker
+    from rvzr.tc_components.test_case_data import InputData
+    from rvzr.target_desc import TargetDesc
+    from rvzr.model_unicorn.model import UnicornModel
+    from rvzr.model_unicorn.taint_tracker import UnicornTaintTracker
 
 
-class _TaintedValue(NamedTuple):
+class TaintedValue(NamedTuple):
+    """ A value that is tainted by the input, and the program counter at which it was observed. """
     po: int
     label: int
     value: int
 
 
-Taint = Set[_TaintedValue]
+Taint = Set[TaintedValue]
 
 _FLAG_NAME_TO_BITMASK: Final[Dict[str, int]] = {
     "CF": FLAGS_CF,
@@ -52,7 +53,7 @@ _FLAG_NAME_TO_BITMASK: Final[Dict[str, int]] = {
 }
 
 
-class _VspecBaseSpeculator(FaultSpeculator, ABC):
+class VspecBaseSpeculator(FaultSpeculator, ABC):
     """
     Base class for unknown value speculation, implementing VSOps algorithm.
 
@@ -60,7 +61,7 @@ class _VspecBaseSpeculator(FaultSpeculator, ABC):
     Microarchitectural Leakage of CPU Exceptions" by Hofmann et al.
     """
     _input_hash: int = 0
-    _full_input_taint: _TaintedValue
+    _full_input_taint: TaintedValue
     _reg_taints: Dict[str, Taint]
     """ reg_taints: taints of registers """
     _reg_taints_checkpoints: List[Dict[str, Taint]]
@@ -101,7 +102,7 @@ class _VspecBaseSpeculator(FaultSpeculator, ABC):
         self._whole_memory_tainted_checkpoints = []
         self._curr_dest_regs_sizes = {}
         self._curr_taint = set()
-        self._full_input_taint = _TaintedValue(0, 0, self._input_hash)\
+        self._full_input_taint = TaintedValue(0, 0, self._input_hash)\
 
         raise NotImplementedError("This class and its subclasses are no longer maintained."
                                   "If you need this functionality, please contact the maintainers")
@@ -112,7 +113,7 @@ class _VspecBaseSpeculator(FaultSpeculator, ABC):
         # _load_input interface no longer exists; this functionality should be moved
         #    another method (reset() is a good candidate)
         self._input_hash = hash(input_)
-        self._full_input_taint = _TaintedValue(0, 0, self._input_hash)
+        self._full_input_taint = TaintedValue(0, 0, self._input_hash)
         self._curr_observation = set()
         self._curr_dest_regs = []
         self._curr_dest_regs_sizes = {}
@@ -152,7 +153,7 @@ class _VspecBaseSpeculator(FaultSpeculator, ABC):
                 if reg in {"CF", "PF", "AF", "ZF", "SF", "TF", "IF", "DF", "OF"}:
                     reg_value = int((reg_value & _FLAG_NAME_TO_BITMASK[reg]) != 0)
                 pc = self._model.layout.code_addr_to_offset(self._curr_instruction_addr)
-                reg_values.add(_TaintedValue(pc, reg_id, reg_value))
+                reg_values.add(TaintedValue(pc, reg_id, reg_value))
                 print(f"reg: {reg_id}, value: {reg_value}, pc: {pc}")
 
         return reg_values, reg_values_tainted
@@ -194,19 +195,69 @@ class _VspecBaseSpeculator(FaultSpeculator, ABC):
                     reg_id = self._uc_target_desc.reg_norm_to_constant[reg]
                     reg_value: int = self._emulator.reg_read(reg_id)  # type: ignore
                     pc = self._model.layout.code_addr_to_offset(self._curr_instruction_addr)
-                    new_taint = {_TaintedValue(pc, reg_id, reg_value)} | self._curr_taint
+                    new_taint = {TaintedValue(pc, reg_id, reg_value)} | self._curr_taint
                     self._set_taint(reg, new_taint)
                 # if not, just set current taint as taint of reg
                 else:
                     self._set_taint(reg, self._curr_taint)
 
-    def _get_curr_load_taint(self) -> _TaintedValue:
-        address = self._curr_mem_load[0]
+    def _get_curr_load_address(self) -> int:
+        return self._curr_mem_load[0]
+
+    def _get_curr_store_address(self) -> int:
+        return self._curr_mem_store[0]
+
+    def _get_curr_load_taint(self) -> TaintedValue:
+        address = self._get_curr_load_address()
         size = self._curr_mem_load[1]
         mem_value = self._emulator.mem_read(address, size)
         mem_value_int = int.from_bytes(mem_value, 'little')
         pc = self._model.layout.code_addr_to_offset(self._curr_instruction_addr)
-        return _TaintedValue(pc, address, mem_value_int)
+        return TaintedValue(pc, address, mem_value_int)
+
+    def _collect_src_regs(self) -> Set[str]:
+        """
+        Collect the src registers of the current instruction that occur outside of a memory
+        operand. As a side effect, record the instruction's dest registers and their widths
+        in _curr_dest_regs and _curr_dest_regs_sizes.
+        """
+        src_regs: Set[str] = set()
+        for op in self._model.state.current_instruction.get_all_operands():
+            if isinstance(op, RegisterOp):
+                if op.src:
+                    op_normalized = self._target_desc.reg_normalized[op.value]
+                    src_regs.add(op_normalized)
+                    # src_regs_sizes[op_normalized] = op.width
+                if op.dest:
+                    op_normalized = self._target_desc.reg_normalized[op.value]
+                    self._curr_dest_regs.append(op_normalized)
+                    self._curr_dest_regs_sizes[op_normalized] = op.width
+            elif isinstance(op, FlagsOp):
+                src_regs.update(op.get_flags_by_type('read'))
+                self._curr_dest_regs.extend(op.get_flags_by_type('write'))
+        return src_regs
+
+    def _collect_fault_taints(self) -> None:
+        """
+        Taint the dest operands of the faulting instruction with all the values that the
+        instruction depends on, i.e., its src registers and, for loads, the loaded value.
+        """
+        # source_values = evaluated load address + values of src regs
+        # these are all the values the faulting instruction depends on
+        self._curr_taint, _ = self._assemble_reg_values(self._collect_src_regs())
+
+        if self._model.state.current_instruction.has_read():
+            self._curr_taint.add(self._get_curr_load_taint())
+
+        if self._model.state.current_instruction.has_write():
+            address = self._get_curr_store_address()
+            size = self._curr_mem_store[1]
+            for i in range(size):
+                self._mem_taints[address + i] = self._curr_taint
+
+        # need to set _curr_src_tainted to make update_reg_taints call work
+        self._curr_src_tainted = True
+        self._update_reg_taints()
 
     def _speculate_fault(self, errno: int) -> int:
         if not self._fault_triggers_speculation(errno):
@@ -220,43 +271,7 @@ class _VspecBaseSpeculator(FaultSpeculator, ABC):
         # tainted if they are, the taints have been propagated correctly already,code_start
         # so just ignore fault
         if not self._curr_src_tainted:
-
-            # collect registers occurring in src and destination operands
-            # src_regs = src registers occurring outside memory load
-            # dest_regs = dest registers occurring outside memory store
-            # mem_src_regs = src registers occurring as part of address
-            # mem_dest_regs = dest registers occurring as part of store
-            src_regs = set()
-            for op in self._model.state.current_instruction.get_all_operands():
-                if isinstance(op, RegisterOp):
-                    if op.src:
-                        op_normalized = self._target_desc.reg_normalized[op.value]
-                        src_regs.add(op_normalized)
-                        # src_regs_sizes[op_normalized] = op.width
-                    if op.dest:
-                        op_normalized = self._target_desc.reg_normalized[op.value]
-                        self._curr_dest_regs.append(op_normalized)
-                        self._curr_dest_regs_sizes[op_normalized] = op.width
-                elif isinstance(op, FlagsOp):
-                    src_regs.update(op.get_flags_by_type('read'))
-                    self._curr_dest_regs.extend(op.get_flags_by_type('write'))
-
-            # source_values = evaluated load address + values of src regs
-            # these are all the values the faulting instruction depends on
-            self._curr_taint, _ = self._assemble_reg_values(src_regs)
-
-            if self._model.state.current_instruction.has_read():
-                self._curr_taint.add(self._get_curr_load_taint())
-
-            if self._model.state.current_instruction.has_write():
-                address = self._curr_mem_store[0]
-                size = self._curr_mem_store[1]
-                for i in range(size):
-                    self._mem_taints[address + i] = self._curr_taint
-
-            # need to set _curr_src_tainted to make update_reg_taints call work
-            self._curr_src_tainted = True
-            self._update_reg_taints()
+            self._collect_fault_taints()
 
         return self._get_next_instruction()
 
@@ -293,24 +308,13 @@ class _VspecBaseSpeculator(FaultSpeculator, ABC):
         if not self._in_speculation or (not self._reg_taints and not self._mem_taints):
             return
 
-        src_regs = set()
+        src_regs = self._collect_src_regs()
         mem_src_regs = set()
         mem_dest_regs = set()
 
-        # assemble source and destination registers of instruction
-        # distinguish between normal registers and registers used in memory access
-        # some code duplication, with method _speculate_fault()
+        # assemble the registers that are used as part of a memory address
         for op in self._model.state.current_instruction.get_all_operands():
-            if isinstance(op, RegisterOp):
-                if op.src:
-                    op_normalized = self._target_desc.reg_normalized[op.value]
-                    src_regs.add(op_normalized)
-                    # src_regs_sizes[op_normalized] = op.width
-                if op.dest:
-                    op_normalized = self._target_desc.reg_normalized[op.value]
-                    self._curr_dest_regs.append(op_normalized)
-                    self._curr_dest_regs_sizes[op_normalized] = op.width
-            elif isinstance(op, MemoryOp):
+            if isinstance(op, MemoryOp):
                 for sub_op in re.split(r'\+|-|\*| ', op.value):
                     if sub_op and sub_op in self._target_desc.reg_normalized:
                         normalized = self._target_desc.reg_normalized[sub_op]
@@ -318,11 +322,6 @@ class _VspecBaseSpeculator(FaultSpeculator, ABC):
                             mem_src_regs.add(normalized)
                         if op.dest:
                             mem_dest_regs.add(normalized)
-            elif isinstance(op, FlagsOp):
-                # print('read flags:', op.get_flags_by_type('read'))
-                # print('write flags:', op.get_flags_by_type('write'))
-                src_regs.update(op.get_flags_by_type('read'))
-                self._curr_dest_regs.extend(op.get_flags_by_type('write'))
             elif isinstance(op, AgenOp):
                 assert self._model.state.current_instruction.name == "lea"
                 assert op.src
@@ -413,7 +412,7 @@ class _VspecBaseSpeculator(FaultSpeculator, ABC):
                 # and potentially add to taints
                 mem_value_int = int.from_bytes(mem_value, 'little')
                 pc = self._model.layout.code_addr_to_offset(self._curr_instruction_addr)
-                self._curr_taint.add(_TaintedValue(pc, address, mem_value_int))
+                self._curr_taint.add(TaintedValue(pc, address, mem_value_int))
                 self._update_reg_taints()
 
         if access == UC_MEM_WRITE:
@@ -462,196 +461,7 @@ class _VspecBaseSpeculator(FaultSpeculator, ABC):
         return self._model.state.fault_handler_addr
 
 
-class VspecDIVSpeculator(_VspecBaseSpeculator):
-    """ Operand value speculation on division errors """
-
-    def __init__(self, target_desc: TargetDesc, model: UnicornModel,
-                 taint_tracker: UnicornTaintTracker) -> None:
-        super().__init__(target_desc, model, taint_tracker)
-        # DIV exceptions only
-        self._errno_that_trigger_speculation = {21}
-
-
-class VspecMemoryFaultsSpeculator(_VspecBaseSpeculator):
-    """ Operand value  speculation on page faults """
-
-    pending_restore_protection: bool = False
-    pending_re_execution: bool = False
-
-    def __init__(self, target_desc: TargetDesc, model: UnicornModel,
-                 taint_tracker: UnicornTaintTracker) -> None:
-        super().__init__(target_desc, model, taint_tracker)
-        # Page faults and other memory errors
-        self._errno_that_trigger_speculation = {6, 7, 12, 13}
-
-    def _get_curr_load_taint(self) -> _TaintedValue:
-        # The loaded value is undefined for faulting loads,
-        # hence the memory value should not be included in dependencies
-        load_addr = self._curr_mem_load[0]
-        pc = self._model.layout.code_addr_to_offset(self._curr_instruction_addr)
-        return _TaintedValue(pc, load_addr, 0)
-
-    def _speculate_instruction(self, address: int, size: int) -> None:
-        if self.pending_restore_protection:
-            self.pending_restore_protection = False
-            # FIXME: this is outdated;
-            # see speculator_faults.py:X86UnicornNull for a maintained implementation
-            # of a similar algorithm
-            # aid = self._model.state.current_actor.get_id()
-            # if self.rw_forbidden[aid]:
-            #     self._model.set_faulty_area_rw(self._model.state.current_actor.get_id(), False,
-            #                                    False)
-            # elif self.w_forbidden[aid]:
-            #     self._model.set_faulty_area_rw(self._model.state.current_actor.get_id(), True,
-            #                                    False)
-        elif self.pending_re_execution:
-            self.pending_re_execution = False
-            self.pending_restore_protection = True
-        super()._speculate_instruction(address, size)
-
-    def _get_next_instruction(self) -> int:
-        if self._model.state.is_exit_addr(self._next_instruction_addr):
-            return 0  # no need for speculation if we're at the end
-
-        # FIXME: uses outdated interfaces
-        # aid = self.current_actor.get_id()
-        # if self.pending_fault == UC_ERR_WRITE_PROT and self.w_forbidden[aid]:
-        #     # remove protection
-        #     self._model.set_faulty_area_rw(self.current_actor.get_id(), True, True)
-        #     self.pending_re_execution = True
-        #     return self._curr_instruction_addr
-        return self._next_instruction_addr
-
-
-class VspecMemoryAssistsSpeculator(VspecMemoryFaultsSpeculator):
-    """ Operand value  speculation on page faults with memory assists """
-
-    def __init__(self, target_desc: TargetDesc, model: UnicornModel,
-                 taint_tracker: UnicornTaintTracker) -> None:
-        super().__init__(target_desc, model, taint_tracker)
-        self._errno_that_trigger_speculation = {12, 13}
-
-    def rollback(self) -> int:
-        next_instruction = super().rollback()
-        if not self._in_speculation:
-            # remove protection after the assists has completed
-            self._model.set_faulty_area_rw(self._model.state.current_actor.get_id(), True, True)
-
-        return next_instruction
-
-    def _get_rollback_address(self) -> int:
-        if self._in_speculation:
-            return self._model.state.fault_handler_addr
-        return self._curr_instruction_addr
-
-
-class VspecGPSpeculator(_VspecBaseSpeculator, X86NonCanonicalAddress):
-    """ Operand value  speculation on General Protection Faults """
-
-    address_register: int
-    register_value: int
-
-    def __init__(self, target_desc: TargetDesc, model: UnicornModel,
-                 taint_tracker: UnicornTaintTracker) -> None:
-        super().__init__(target_desc, model, taint_tracker)
-        self._errno_that_trigger_speculation.update([6, 7])
-
-    # def _speculate_fault(self, errno: int) -> int:
-    #     if not self._fault_triggers_speculation(errno):
-    #         return 0
-
-    #     self._checkpoint(self._model.state.fault_handler_addr)
-    #     self.faulty_instruction_addr = self._curr_instruction_addr
-    #     return self._curr_instruction_addr
-
-    def _speculate_fault(self, errno: int) -> int:
-        if not self._fault_triggers_speculation(errno):
-            return 0
-
-        # only collect new taints if none of the src operands in the faulting instruction are
-        # tainted if they are, the taints have been propagated correctly already,code_start
-        # so just ignore fault
-        if not self._curr_src_tainted:
-
-            # collect registers occurring in src and destination operands
-            # src_regs = src registers occurring outside memory load
-            # dest_regs = dest registers occurring outside memory store
-            # mem_src_regs = src registers occurring as part of address
-            # mem_dest_regs = dest registers occurring as part of store
-            src_regs = set()
-            for op in self._model.state.current_instruction.get_all_operands():
-                if isinstance(op, RegisterOp):
-                    if op.src:
-                        op_normalized = self._target_desc.reg_normalized[op.value]
-                        src_regs.add(op_normalized)
-                        # src_regs_sizes[op_normalized] = op.width
-                    if op.dest:
-                        op_normalized = self._target_desc.reg_normalized[op.value]
-                        self._curr_dest_regs.append(op_normalized)
-                        self._curr_dest_regs_sizes[op_normalized] = op.width
-                elif isinstance(op, FlagsOp):
-                    src_regs.update(op.get_flags_by_type('read'))
-                    self._curr_dest_regs.extend(op.get_flags_by_type('write'))
-
-            # source_values = evaluated load address + values of src regs
-            # these are all the values the faulting instruction depends on
-            self._curr_taint, _ = self._assemble_reg_values(src_regs)
-
-            if self._model.state.current_instruction.has_read():
-                address = self._curr_mem_load[0]
-                address = self._noncanonical_to_canonical(address)
-                size = self._curr_mem_load[1]
-                mem_value = self._emulator.mem_read(address, size)
-                mem_value_int = int.from_bytes(mem_value, 'little')
-                pc = self._model.layout.code_addr_to_offset(self._curr_instruction_addr)
-                self._curr_taint.add(_TaintedValue(pc, address, mem_value_int))
-
-            if self._model.state.current_instruction.has_write():
-                address = self._curr_mem_store[0]
-                address = self._noncanonical_to_canonical(address)
-                size = self._curr_mem_store[1]
-                for i in range(size):
-                    self._mem_taints[address + i] = self._curr_taint
-
-            # need to set _curr_src_tainted to make update_reg_taints call work
-            self._curr_src_tainted = True
-            self._update_reg_taints()
-
-        # speculatively skip the faulting instruction
-        return self._curr_instruction_addr
-
-    def _speculate_mem_access(self, access: int, address: int, size: int, value: int) -> None:
-        if self._curr_instruction_addr == self.faulty_instruction_addr:
-            if access != UC_MEM_WRITE:
-                self._curr_mem_load = (address, size)
-            else:
-                self._curr_mem_store = (address, size)
-            self._speculate_fault(6)
-        super()._speculate_mem_access(access, address, size, value)
-
-    def _speculate_instruction(self, address: int, size: int) -> None:
-        super(X86NonCanonicalAddress, self)._speculate_instruction(address, size)
-        if address != self.faulty_instruction_addr:
-            super(_VspecBaseSpeculator, self)._speculate_instruction(address, size)
-
-    def _noncanonical_to_canonical(self, address: int) -> int:
-        if address & (1 << 47):  # bit 48 is 1 => high address
-            address = address | 0xFFFF800000000000
-        else:  # bit 48 is 0 => low address
-            address = address & 0x00007FFFFFFFFFF
-        return address
-
-    def _get_rollback_address(self) -> int:
-        return self._model.state.fault_handler_addr
-
-    def reset(self) -> None:
-        self.faulty_instruction_addr = -1
-        self.address_register = -1
-        self.register_value = -1
-        return super().reset()
-
-
-class VspecAllSpeculator(_VspecBaseSpeculator):
+class VspecAllBaseSpeculator(VspecBaseSpeculator):
     """
     Most permissive contract.
     Uses vspec-unknown contract but destination operands in case of
@@ -692,63 +502,11 @@ class VspecAllSpeculator(_VspecBaseSpeculator):
         return self._get_next_instruction()
 
 
-class VspecAllDIVSpeculator(VspecAllSpeculator):
-    """ Any-value speculation on division errors """
-
-    def __init__(self, target_desc: TargetDesc, model: UnicornModel,
-                 taint_tracker: UnicornTaintTracker) -> None:
-        super().__init__(target_desc, model, taint_tracker)
-        # DIV exceptions only
-        self._errno_that_trigger_speculation = {21}
-
-
-class VspecAllMemoryFaultsSpeculator(VspecAllSpeculator):
-    """ Any-value speculation on page faults """
-
-    pending_restore_protection: bool = False
-    pending_re_execution: bool = False
-
-    def __init__(self, target_desc: TargetDesc, model: UnicornModel,
-                 taint_tracker: UnicornTaintTracker) -> None:
-        super().__init__(target_desc, model, taint_tracker)
-        # Page faults and other memory errors
-        self._errno_that_trigger_speculation = {6, 7, 12, 13}
-
-    def _speculate_instruction(self, address: int, size: int) -> None:
-        if self.pending_restore_protection:
-            self.pending_restore_protection = False
-            # FIXME: this is outdated;
-            # see speculator_faults.py:X86UnicornNull for a maintained implementation
-            # of a similar algorithm
-            # aid = self._model.state.current_actor.get_id()
-            # if self.rw_forbidden[aid]:
-            #     self._model.set_faulty_area_rw(self._model.state.current_actor.get_id(), False,
-            #                                    False)
-            # elif self.w_forbidden[aid]:
-            #     self._model.set_faulty_area_rw(self._model.state.current_actor.get_id(), True,
-            #                                    False)
-        elif self.pending_re_execution:
-            self.pending_re_execution = False
-            self.pending_restore_protection = True
-            return
-        super()._speculate_instruction(address, size)
-
-    def _get_next_instruction(self) -> int:
-        if self._model.state.is_exit_addr(self._next_instruction_addr):
-            return 0  # no need for speculation if we're at the end
-
-        # FIXME: uses outdated interfaces
-        # aid = self.current_actor.get_id()
-        # if self.pending_fault == UC_ERR_WRITE_PROT and self.w_forbidden[aid]:
-        #     # remove protection
-        #     self._model.set_faulty_area_rw(self.current_actor.get_id(), True, True)
-        #     self.pending_re_execution = True
-        #     return self._curr_instruction_addr
-        return self._next_instruction_addr
-
-
-class VspecAllMemoryAssistsSpeculator(VspecAllSpeculator):
-    """ Any-value speculation on A/D-bit microcode assists (MDS style) """
+class VspecAssistsMixin(VspecBaseSpeculator, ABC):
+    """
+    Mixin with the behavior shared by all speculators that model microcode assists: speculation
+    is triggered by A/D-bit assists, and the page protection is restored once it ends.
+    """
 
     def __init__(self, target_desc: TargetDesc, model: UnicornModel,
                  taint_tracker: UnicornTaintTracker) -> None:

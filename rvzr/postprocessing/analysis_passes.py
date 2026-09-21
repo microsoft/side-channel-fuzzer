@@ -8,8 +8,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List
 from typing_extensions import assert_never
 
-from ..model_unicorn import model as uc_model, speculators_basic as uc_speculator, \
-    tracer as uc_tracer, interpreter as uc_interpreter
+from ..model_unicorn import model as uc_model, tracer as uc_tracer, \
+    interpreter as uc_interpreter
+from ..model_unicorn.speculators import SeqSpeculator
 from ..sandbox import CodeArea
 from ..arch.x86.target_desc import X86TargetDesc
 from ..arch.arm64.target_desc import ARM64TargetDesc
@@ -44,8 +45,7 @@ def _get_seq_model(data_start: int, code_start: int) -> uc_model.UnicornModel:
         assert_never(CONF.instruction_set)
 
     bases = (data_start, code_start)
-    model = model_cls(bases, target_desc, uc_speculator.SeqSpeculator, uc_tracer.CTTracer,
-                      interpreter)
+    model = model_cls(bases, target_desc, SeqSpeculator, uc_tracer.CTTracer, interpreter)
     return model
 
 

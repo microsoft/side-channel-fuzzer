@@ -8,8 +8,13 @@ from __future__ import annotations
 from typing import Dict, Type, List, TYPE_CHECKING, Any, Optional, Union
 
 from . import data_generator, analyser, executor, fuzzer, model, elf_parser
-from .model_unicorn import tracer, speculator_abc, speculators_basic, \
-    speculators_fault, speculators_vs, interpreter, model as uc_model
+from .model_unicorn import tracer, speculator_abc, interpreter, model as uc_model
+from .model_unicorn.speculators import SeqSpeculator, SequentialAssistSpeculator, \
+    StoreBpasSpeculator, X86CondSpeculator, ARM64CondSpeculator, X86CondBpasSpeculator, \
+    X86Meltdown, X86UnicornDEH, ARM64UnicornDEH, X86UnicornNull, X86UnicornNullAssist, \
+    X86NonCanonicalAddress, VspecDIVSpeculator, VspecAllDIVSpeculator, \
+    VspecMemoryFaultsSpeculator, VspecMemoryAssistsSpeculator, VspecGPSpeculator, \
+    VspecAllMemoryFaultsSpeculator, VspecAllMemoryAssistsSpeculator
 from .model_dynamorio import model as dr_model
 from .postprocessing.minimizer import Minimizer
 
@@ -117,36 +122,36 @@ _TRACERS: Dict[str, Type[tracer.UnicornTracer]] = {
 }
 
 _SPECULATORS_GENERIC: Dict[str, Type[speculator_abc.UnicornSpeculator]] = {
-    "seq": speculators_basic.SeqSpeculator,
-    "no_speculation": speculators_basic.SeqSpeculator,
-    "bpas": speculators_basic.StoreBpasSpeculator,
-    "cond-bpas": speculators_basic.X86CondBpasSpeculator,
-    "seq-assist": speculators_fault.SequentialAssistSpeculator,
+    "seq": SeqSpeculator,
+    "no_speculation": SeqSpeculator,
+    "bpas": StoreBpasSpeculator,
+    "cond-bpas": X86CondBpasSpeculator,
+    "seq-assist": SequentialAssistSpeculator,
 }
 
 _SPECULATORS_X86: Dict[str, Type[speculator_abc.UnicornSpeculator]] = {
     **_SPECULATORS_GENERIC,
-    "cond": speculators_basic.X86CondSpeculator,
-    "conditional_br_misprediction": speculators_basic.X86CondSpeculator,
-    "delayed-exception-handling": speculators_fault.X86UnicornDEH,
-    "nullinj-fault": speculators_fault.X86UnicornNull,
-    "nullinj-assist": speculators_fault.X86UnicornNullAssist,
-    "meltdown": speculators_fault.X86Meltdown,
-    "noncanonical": speculators_fault.X86NonCanonicalAddress,
-    "vspec-ops-div": speculators_vs.VspecDIVSpeculator,
-    "vspec-ops-memory-faults": speculators_vs.VspecMemoryFaultsSpeculator,
-    "vspec-ops-memory-assists": speculators_vs.VspecMemoryAssistsSpeculator,
-    "vspec-ops-gp": speculators_vs.VspecGPSpeculator,
-    "vspec-all-div": speculators_vs.VspecAllDIVSpeculator,
-    "vspec-all-memory-faults": speculators_vs.VspecAllMemoryFaultsSpeculator,
-    "vspec-all-memory-assists": speculators_vs.VspecAllMemoryAssistsSpeculator,
+    "cond": X86CondSpeculator,
+    "conditional_br_misprediction": X86CondSpeculator,
+    "delayed-exception-handling": X86UnicornDEH,
+    "nullinj-fault": X86UnicornNull,
+    "nullinj-assist": X86UnicornNullAssist,
+    "meltdown": X86Meltdown,
+    "noncanonical": X86NonCanonicalAddress,
+    "vspec-ops-div": VspecDIVSpeculator,
+    "vspec-ops-memory-faults": VspecMemoryFaultsSpeculator,
+    "vspec-ops-memory-assists": VspecMemoryAssistsSpeculator,
+    "vspec-ops-gp": VspecGPSpeculator,
+    "vspec-all-div": VspecAllDIVSpeculator,
+    "vspec-all-memory-faults": VspecAllMemoryFaultsSpeculator,
+    "vspec-all-memory-assists": VspecAllMemoryAssistsSpeculator,
 }
 
 _SPECULATORS_ARM64: Dict[str, Type[speculator_abc.UnicornSpeculator]] = {
     **_SPECULATORS_GENERIC,
-    "cond": speculators_basic.ARM64CondSpeculator,
-    "conditional_br_misprediction": speculators_basic.ARM64CondSpeculator,
-    "delayed-exception-handling": speculators_fault.ARMUnicornDEH,
+    "cond": ARM64CondSpeculator,
+    "conditional_br_misprediction": ARM64CondSpeculator,
+    "delayed-exception-handling": ARM64UnicornDEH,
 }
 
 
