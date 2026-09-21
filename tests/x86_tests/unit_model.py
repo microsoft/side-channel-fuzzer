@@ -418,6 +418,46 @@ class _SharedX86Model(unittest.TestCase):
             False)
         self.assertEqual(ctraces[0].get_untyped(), expected_trace)
 
+    def test_ct_cond_backward_branch(self) -> None:
+        # The mispredicted target of `jnz .l0` is reachable only if its negative rel8
+        # displacement is decoded as a signed value
+        test_case = InstList(
+            [
+                Inst("jmp .l1", 2, 0, 0),
+                Inst(".l0:", 0, 0, 0),
+                Inst("mov rax, qword ptr [r14]", 3, MAIN_OFFSET + 0, 1),
+                Inst("lfence", 3, 0, 0),
+                Inst(".l1:", 0, 0, 0),
+                Inst("xor rbx, rbx", 3, 0, 0),
+                Inst("jnz .l0", 2, 0, 0),
+                Inst(".l2:", 0, 0, 0),
+                Inst("mov rcx, qword ptr [r14 + 64]", 5, MAIN_OFFSET + 64, 1),
+            ],
+            backend=self._backend,
+        )
+        input_ = self._input_builder.get_default_input()
+        ctraces = self._get_trace(
+            test_case=test_case,
+            input_data=[input_],
+            obs_clause="memory",
+            exec_clause=["cond"],
+        )
+        self.assertEqual(len(ctraces), 1)
+
+        expected_trace = test_case.get_expected_observations(
+            [
+                0,
+                5,
+                6,  # ZF is set, so the branch is not taken; speculation jumps backwards to .l0
+                2,  # the speculative load
+                3,  # lfence terminates speculation
+                8,  # resumed after the rollback
+            ],
+            False,
+            True,
+            False)
+        self.assertEqual(ctraces[0].get_untyped(), expected_trace)
+
     def test_rollback_on_fence(self) -> None:
         test_case = InstList(
             [
@@ -478,6 +518,30 @@ class _SharedX86Model(unittest.TestCase):
         expected_trace.append(test_case[2].mem_address)
         expected_trace.append(test_case[3].pc_offset)
 
+        self.assertEqual(ctraces[0].get_untyped(), expected_trace)
+
+    @skip_for_backend("dr")
+    def test_ct_bpas_blocked_by_fence(self) -> None:
+        test_case = InstList(
+            [
+                Inst("mov qword ptr [r14], 42", 7, MAIN_OFFSET + 0, TEST_MEM_VALUE_A),
+                Inst("lfence", 3, 0, 0),
+                Inst("mov rax, qword ptr [r14]", 3, MAIN_OFFSET + 0, TEST_MEM_VALUE_A),
+                Inst("mov rax, qword ptr [r14 + rax]", 4, MAIN_OFFSET + TEST_MEM_VALUE_A, 0),
+            ],
+            backend=self._backend,
+        )
+        input_ = self._input_builder.get_default_input()
+        ctraces = self._get_trace(
+            exec_clause=["bpas"],
+            test_case=test_case,
+            input_data=[input_],
+        )
+        self.assertEqual(len(ctraces), 1)
+
+        # the fence blocks the bypass, hence the execution is purely sequential and the second
+        # load is offset by the stored value (42) rather than by the stale value
+        expected_trace = test_case.get_expected_observations([0, 1, 2, 3], True, True, False)
         self.assertEqual(ctraces[0].get_untyped(), expected_trace)
 
     @skip_for_backend("dr")

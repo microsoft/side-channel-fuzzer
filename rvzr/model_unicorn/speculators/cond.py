@@ -5,7 +5,8 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Dict, Tuple, Final, Callable
+from abc import abstractmethod
+from typing import TYPE_CHECKING, Optional, Tuple, Final, Callable
 
 import unicorn.x86_const as ucc  # type: ignore # no type hints for this library
 import unicorn.arm64_const as aucc  # type: ignore # no type hints for this library
@@ -18,186 +19,148 @@ if TYPE_CHECKING:
     from rvzr.model_unicorn.taint_tracker import UnicornTaintTracker
     from rvzr.target_desc import TargetDesc
 
-FLAGS_CF = 0b000000000001
-FLAGS_PF = 0b000000000100
-FLAGS_AF = 0b000000010000
-FLAGS_ZF = 0b000001000000
-FLAGS_SF = 0b000010000000
-FLAGS_TF = 0b000100000000
-FLAGS_IF = 0b001000000000
-FLAGS_DF = 0b010000000000
-FLAGS_OF = 0b100000000000
+FLAGS_CF: int = 0b000000000001
+FLAGS_PF: int = 0b000000000100
+FLAGS_AF: int = 0b000000010000
+FLAGS_ZF: int = 0b000001000000
+FLAGS_SF: int = 0b000010000000
+FLAGS_TF: int = 0b000100000000
+FLAGS_IF: int = 0b001000000000
+FLAGS_DF: int = 0b010000000000
+FLAGS_OF: int = 0b100000000000
 
 FLAGS_N: Final[int] = 1 << 31
 FLAGS_Z: Final[int] = 1 << 30
 FLAGS_C: Final[int] = 1 << 29
 FLAGS_V: Final[int] = 1 << 28
 
-_CondBranchFlipper = Callable[[bytearray, int, int], Tuple[bytearray, bool, bool]]
+_Successors = Tuple[int, int, bool]
+""" Branch target, fall-through address, and whether the branch is architecturally taken """
+
+_X86_CONDITIONS: Final[Tuple[Callable[[int], bool], ...]] = (
+    lambda f: f & FLAGS_OF != 0,  # 0x0: JO
+    lambda f: f & FLAGS_OF == 0,  # 0x1: JNO
+    lambda f: f & FLAGS_CF != 0,  # 0x2: JB
+    lambda f: f & FLAGS_CF == 0,  # 0x3: JAE
+    lambda f: f & FLAGS_ZF != 0,  # 0x4: JE
+    lambda f: f & FLAGS_ZF == 0,  # 0x5: JNE
+    lambda f: f & (FLAGS_CF | FLAGS_ZF) != 0,  # 0x6: JBE
+    lambda f: f & (FLAGS_CF | FLAGS_ZF) == 0,  # 0x7: JA
+    lambda f: f & FLAGS_SF != 0,  # 0x8: JS
+    lambda f: f & FLAGS_SF == 0,  # 0x9: JNS
+    lambda f: f & FLAGS_PF != 0,  # 0xA: JP
+    lambda f: f & FLAGS_PF == 0,  # 0xB: JNP
+    lambda f: (f & FLAGS_SF == 0) != (f & FLAGS_OF == 0),  # 0xC: JL
+    lambda f: (f & FLAGS_SF == 0) == (f & FLAGS_OF == 0),  # 0xD: JGE
+    lambda f: f & FLAGS_ZF != 0 or (f & FLAGS_SF == 0) != (f & FLAGS_OF == 0),  # 0xE: JLE
+    lambda f: f & FLAGS_ZF == 0 and (f & FLAGS_SF == 0) == (f & FLAGS_OF == 0),  # 0xF: JG
+)
+""" Conditions of x86 Jcc instructions, indexed by the low nibble of the opcode; the nibble is
+the same for the short (0x7X) and the near (0x0F 0x8X) encodings """
 
 
-class X86CondSpeculator(UnicornSpeculator):
+class _CondSpeculator(UnicornSpeculator):
     """
-    Speculator for conditional branch mispredicitons.
-    Forces all cond. branches to speculatively go into a wrong target
+    Architecture-independent implementation of the always-mispredict semantics: checkpoint the
+    architecturally-correct successor of a conditional branch, then redirect execution into the
+    other one.
     """
 
-    jumps = {
-        # c - the byte code of the instruction
-        # f - the value of EFLAGS
-        0x70:
-            lambda c, f, r: (c[1:], f & FLAGS_OF != 0, False),  # JO
-        0x71:
-            lambda c, f, r: (c[1:], f & FLAGS_OF == 0, False),  # JNO
-        0x72:
-            lambda c, f, r: (c[1:], f & FLAGS_CF != 0, False),  # JB
-        0x73:
-            lambda c, f, r: (c[1:], f & FLAGS_CF == 0, False),  # JAE
-        0x74:
-            lambda c, f, r: (c[1:], f & FLAGS_ZF != 0, False),  # JZ
-        0x75:
-            lambda c, f, r: (c[1:], f & FLAGS_ZF == 0, False),  # JNZ
-        0x76:
-            lambda c, f, r: (c[1:], f & FLAGS_CF != 0 or f & FLAGS_ZF != 0, False),  # JNA
-        0x77:
-            lambda c, f, r: (c[1:], f & FLAGS_CF == 0 and f & FLAGS_ZF == 0, False),  # JNBE
-        0x78:
-            lambda c, f, r: (c[1:], f & FLAGS_SF != 0, False),  # JS
-        0x79:
-            lambda c, f, r: (c[1:], f & FLAGS_SF == 0, False),  # JNS
-        0x7A:
-            lambda c, f, r: (c[1:], f & FLAGS_PF != 0, False),  # JP
-        0x7B:
-            lambda c, f, r: (c[1:], f & FLAGS_PF == 0, False),  # JPO
-        0x7C:
-            lambda c, f, r: (c[1:], (f & FLAGS_SF == 0) != (f & FLAGS_OF == 0), False),  # JNGE
-        0x7D:
-            lambda c, f, r: (c[1:], (f & FLAGS_SF == 0) == (f & FLAGS_OF == 0), False),  # JNL
-        0x7E:
-            lambda c, f, r: (
-                c[1:],
-                f & FLAGS_ZF != 0 or (f & FLAGS_SF == 0) != (f & FLAGS_OF == 0),
-                False,
-            ),
-        0x7F:
-            lambda c, f, r: (
-                c[1:],
-                f & FLAGS_ZF == 0 and (f & FLAGS_SF == 0) == (f & FLAGS_OF == 0),
-                False,
-            ),
-        0xE0:
-            lambda c, f, r: (c[1:], r != 1 and (f & FLAGS_ZF == 0), True),  # LOOPNE
-        0xE1:
-            lambda c, f, r: (c[1:], r != 1 and (f & FLAGS_ZF != 0), True),  # LOOPE
-        0xE2:
-            lambda c, f, r: (c[1:], r != 1, True),  # LOOP
-        0xE3:
-            lambda c, f, r: (c[1:], r == 0, False),  # J*CXZ
-        0x0F:
-            lambda c, f, r: X86CondSpeculator.multibyte_jmp.get(c[1], (lambda _, __, ___:
-                                                                       ([0], False, False)))
-            (c, f, r),
-    }
+    def _speculate_instruction(self, address: int, size: int) -> None:
+        if self._max_nesting_reached():  # reached max spec. window? skip
+            return
 
-    multibyte_jmp: Final[Dict[int, _CondBranchFlipper]] = {
-        0x80:
-            lambda c, f, r: (c[2:], f & FLAGS_OF != 0, False),  # JO
-        0x81:
-            lambda c, f, r: (c[2:], f & FLAGS_OF == 0, False),  # JNO
-        0x82:
-            lambda c, f, r: (c[2:], f & FLAGS_CF != 0, False),  # JB
-        0x83:
-            lambda c, f, r: (c[2:], f & FLAGS_CF == 0, False),  # JAE
-        0x84:
-            lambda c, f, r: (c[2:], f & FLAGS_ZF != 0, False),  # JE
-        0x85:
-            lambda c, f, r: (c[2:], f & FLAGS_ZF == 0, False),  # JNE
-        0x86:
-            lambda c, f, r: (c[2:], f & FLAGS_CF != 0 or f & FLAGS_ZF != 0, False),  # JBE
-        0x87:
-            lambda c, f, r: (c[2:], f & FLAGS_CF == 0 and f & FLAGS_ZF == 0, False),  # JA
-        0x88:
-            lambda c, f, r: (c[2:], f & FLAGS_SF != 0, False),  # JS
-        0x89:
-            lambda c, f, r: (c[2:], f & FLAGS_SF == 0, False),  # JNS
-        0x8A:
-            lambda c, f, r: (c[2:], f & FLAGS_PF != 0, False),  # JP
-        0x8B:
-            lambda c, f, r: (c[2:], f & FLAGS_PF == 0, False),  # JPO
-        0x8C:
-            lambda c, f, r: (c[2:], (f & FLAGS_SF == 0) != (f & FLAGS_OF == 0), False),  # JNGE
-        0x8D:
-            lambda c, f, r: (c[2:], (f & FLAGS_SF == 0) == (f & FLAGS_OF == 0), False),  # JNL
-        0x8E:
-            lambda c, f, r: (
-                c[2:],
-                f & FLAGS_ZF != 0 or (f & FLAGS_SF == 0) != (f & FLAGS_OF == 0),
-                False,
-            ),
-        0x8F:
-            lambda c, f, r: (
-                c[2:],
-                f & FLAGS_ZF == 0 and (f & FLAGS_SF == 0) == (f & FLAGS_OF == 0),
-                False,
-            ),
-    }
+        successors = self._decode_branch(address, size)
+        if successors is None:  # not a cond. branch? ignore
+            return
+        branch_target, fall_through, will_jump = successors
+
+        self._checkpoint(branch_target if will_jump else fall_through)
+        self._emulator.reg_write(self._uc_target_desc.pc_register,
+                                 fall_through if will_jump else branch_target)
+
+    @abstractmethod
+    def _decode_branch(self, address: int, size: int) -> Optional[_Successors]:
+        """
+        Decode the instruction at `address` and, if it is a conditional branch, return its
+        successors; return None otherwise.
+        """
+
+
+class X86CondSpeculator(_CondSpeculator):
+    """
+    Leakage model of conditional branch speculation on x86-64.
+
+    Implements the contract for conditional branch prediction by over-approximating the
+    branch predictor with always-mispredict semantics: every conditional branch, up to the
+    configured nesting and speculation-window bounds, is taken speculatively into the wrong
+    direction, and the correct direction is resumed after a rollback. This subsumes the traces
+    of any real predictor, at the cost of reporting speculative paths that a concrete predictor
+    might never take.
+    """
 
     def __init__(self, target_desc: TargetDesc, model: UnicornModel,
                  taint_tracker: UnicornTaintTracker) -> None:
         super().__init__(target_desc, model, taint_tracker)
         assert CONF.instruction_set == "x86-64"
 
-    def _speculate_instruction(self, address: int, size: int) -> None:
-        if self._max_nesting_reached():  # reached max spec. window? skip
-            return
+    def _decode_branch(self, address: int, size: int) -> Optional[_Successors]:
+        # Unicorn reports a huge size for undefined instructions; 15 bytes is the x86 maximum
+        if size > 15:
+            return None
 
-        # if the instruction is undefined, Unicorn will return a huge value as size
-        # skip those
-        if size > 15:  # 15 bytes is max instr size on Intel
-            return
-
-        # decode the instruction
         code: bytearray = self._emulator.mem_read(address, size)
         flags: int = self._emulator.reg_read(self._uc_target_desc.flags_register)  # type: ignore
-        rcx: int = self._emulator.reg_read(ucc.UC_X86_REG_RCX)  # type: ignore
-        target, will_jump, is_loop = self.decode(code, flags, rcx)
+        opcode = code[0]
 
-        # not a a cond. jump? ignore
-        if not target:
-            return
-
-        # LOOP instructions must also decrement RCX
-        if is_loop:
-            self._emulator.reg_write(ucc.UC_X86_REG_RCX, rcx - 1)
-
-        # Take a checkpoint
-        next_instr = address + size + target if will_jump else address + size
-        self._checkpoint(next_instr)
-
-        # Simulate misprediction
-        if will_jump:
-            self._emulator.reg_write(ucc.UC_X86_REG_RIP, address + size)
+        displacement: bytearray
+        condition: Optional[int]
+        if 0x70 <= opcode <= 0x7F:  # Jcc rel8
+            displacement, condition = code[1:], opcode & 0xF
+        elif opcode == 0x0F and 0x80 <= code[1] <= 0x8F:  # Jcc rel32
+            displacement, condition = code[2:], code[1] & 0xF
+        elif 0xE0 <= opcode <= 0xE3:  # LOOP/LOOPE/LOOPNE/JRCXZ
+            displacement, condition = code[1:], None
         else:
-            self._emulator.reg_write(ucc.UC_X86_REG_RIP, address + size + target)
+            return None
 
-    def decode(self, code: bytearray, flags: int, rcx: int) -> Tuple[int, bool, bool]:
+        will_jump = _X86_CONDITIONS[condition](flags) if condition is not None \
+            else self._resolve_loop(opcode, flags)
+
+        # x86 branch offsets are relative to the end of the branch instruction
+        fall_through = address + size
+        offset = int.from_bytes(displacement, byteorder='little', signed=True)
+        return (fall_through + offset, fall_through, will_jump)
+
+    def _resolve_loop(self, opcode: int, flags: int) -> bool:
         """
-        Decodes the instruction encoded in `code` and, if it's a conditional jump,
-        returns its expected target, whether it will jump to the target (based
-        on the `flags` value), and whether it is a LOOP instruction
+        Evaluate the condition of a LOOP*/JRCXZ instruction and, for LOOP*, apply its decrement of
+        RCX; the decrement has to be applied here because the speculator overwrites RIP and thus
+        the instruction itself never executes.
         """
-        calculate_target = \
-            self.jumps.get(code[0], (lambda _, __, ___: ([0], False, False)))
-        target, will_jump, is_loop = calculate_target(code, flags, rcx)  # type: ignore
-        if len(target) == 1:
-            return target[0], will_jump, is_loop
-        return int.from_bytes(target, byteorder='little', signed=True), will_jump, is_loop
+        rcx: int = self._emulator.reg_read(ucc.UC_X86_REG_RCX)  # type: ignore
+        if opcode == 0xE3:  # JRCXZ
+            return rcx == 0
+
+        self._emulator.reg_write(ucc.UC_X86_REG_RCX, rcx - 1)
+        counter_nonzero = rcx != 1  # the decremented RCX is zero only if RCX was 1
+        if opcode == 0xE0:  # LOOPNE
+            return counter_nonzero and flags & FLAGS_ZF == 0
+        if opcode == 0xE1:  # LOOPE
+            return counter_nonzero and flags & FLAGS_ZF != 0
+        return counter_nonzero  # LOOP
 
 
-class ARM64CondSpeculator(UnicornSpeculator):
+class ARM64CondSpeculator(_CondSpeculator):
     """
-    Speculator for conditional branch mispredictions on ARM64.
-    Forces all cond. branches to speculatively go into a wrong target
+    Leakage model of conditional branch speculation on ARM64.
+
+    Implements the contract for conditional branch prediction by over-approximating the
+    branch predictor with always-mispredict semantics: every conditional branch, up to the
+    configured nesting and speculation-window bounds, is taken speculatively into the wrong
+    direction, and the correct direction is resumed after a rollback. This subsumes the traces
+    of any real predictor, at the cost of reporting speculative paths that a concrete predictor
+    might never take.
     """
 
     def __init__(self, target_desc: TargetDesc, model: UnicornModel,
@@ -205,48 +168,23 @@ class ARM64CondSpeculator(UnicornSpeculator):
         super().__init__(target_desc, model, taint_tracker)
         assert CONF.instruction_set == "arm64"
 
-    def _speculate_instruction(self, address: int, size: int) -> None:
-        if self._max_nesting_reached():  # reached max spec. window? skip
-            return
-
-        # decode the instruction
+    def _decode_branch(self, address: int, size: int) -> Optional[_Successors]:
         code: bytearray = self._emulator.mem_read(address, size)
-        flags: int = self._emulator.reg_read(self._uc_target_desc.flags_register)  # type: ignore
-        target_offset, will_jump = self.decode(code, flags)
+        instruction = int.from_bytes(code, byteorder='little')
+        first_byte = instruction >> 24
 
-        # not a a cond. jump? ignore
-        if not target_offset:
-            return
+        if first_byte == 0x54 and instruction & 0x10 == 0:  # B.cond
+            flags: int = self._emulator.reg_read(
+                self._uc_target_desc.flags_register)  # type: ignore
+            offset, will_jump = self._decode_b_cond(instruction, flags)
+        elif 0xb4 <= first_byte <= 0xb7 or 0x34 <= first_byte <= 0x37:  # CBZ/CBNZ/TBZ/TBNZ
+            offset, will_jump = self._decode_cb_tb(instruction, first_byte)
+        else:
+            return None
 
         # ARM64 branch offsets are encoded in units of 4 bytes and are relative to the
         # branch instruction itself
-        branch_target = address + (target_offset << 2)
-        fall_through = address + size
-
-        # Take a checkpoint
-        next_instr = branch_target if will_jump else fall_through
-        self._checkpoint(next_instr)
-
-        # Simulate misprediction
-        target_addr = fall_through if will_jump else branch_target
-        self._emulator.reg_write(self._uc_target_desc.pc_register, target_addr)
-
-    def decode(self, code: bytearray, flags: int) -> Tuple[int, bool]:
-        """
-        Decodes the instruction encoded in `code` and, if it's a conditional jump,
-        returns its expected target and whether it will jump to the target (based
-        on the `flags` value).
-        """
-        instruction = int.from_bytes(code, byteorder='little')
-        first_byte = instruction >> 24
-        if first_byte == 0x54 and instruction & 0x10 == 0:
-            # B.cond instruction
-            return self._decode_b_cond(instruction, flags)
-
-        if 0xb4 <= first_byte <= 0xb7 or 0x34 <= first_byte <= 0x37:
-            # CBZ/CBNZ/TBZ/TBNZ
-            return self._decode_cb_tb(instruction, first_byte)
-        return (0, False)
+        return (address + (offset << 2), address + size, will_jump)
 
     def _decode_b_cond(self, instruction: int, flags: int) -> Tuple[int, bool]:
         target = self._twos_complement(instruction >> 5, 19)
@@ -274,7 +212,7 @@ class ARM64CondSpeculator(UnicornSpeculator):
             not z and n == v,  # c = b.gt "greater than"
             z or n != v,  # d = b.le "less than or equal"
             True,  # e = b.al "always"
-            False,  # f = b.nv "never"
+            True,  # f = b.nv; in A64, this encoding behaves identically to b.al
         ][condition]
         return (target, will_jump)
 
@@ -284,18 +222,16 @@ class ARM64CondSpeculator(UnicornSpeculator):
         is_32bit = first_byte >> 4 == 0x3
 
         register_value: int
-        if register_index < 31:
+        if register_index == 31:
+            # xzr "zero register"
+            register_value = 0
+        else:
             # for some reason UC_ARM64_REG_X29 != UC_ARM64_REG_X0 + 29
             uc_reg_id = \
                 (aucc.UC_ARM64_REG_X0 + register_index) if register_index <= 28 else \
                 (aucc.UC_ARM64_REG_X29 + (register_index - 29))
 
             register_value = self._emulator.reg_read(uc_reg_id)  # type: ignore
-        elif register_index == 31:
-            # xzr "zero register"
-            register_value = 0
-        else:
-            raise ValueError(f"Invalid register index {register_index} in CBZ/CBNZ/TBZ/TBNZ")
 
         if is_32bit:
             register_value &= 0xffff_ffff

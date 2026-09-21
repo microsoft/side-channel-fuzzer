@@ -4,12 +4,12 @@ SPDX-License-Identifier: MIT
 """
 import unittest
 import tempfile
-import subprocess
 import os
 from pathlib import Path
 from copy import deepcopy
 
-from rvzr.arch.x86.generator import X86Generator, _X86Printer, _X86PatchUndefinedFlagsPass
+from rvzr.arch.x86.generator import X86Generator, _X86Printer, _X86PatchUndefinedFlagsPass, \
+    _X86PatchOpcodesPass
 from rvzr.arch.x86.target_desc import X86TargetDesc
 from rvzr.elf_parser import ELFParser
 from rvzr.factory import get_program_generator, get_asm_parser
@@ -100,6 +100,7 @@ class X86GeneratorTest(unittest.TestCase):
 
         func = generator._function_generator\
             .generate_empty(".function_0", tc.find_section(name="main"))
+        tc.find_section(name="main").append(func)
         printer = _X86Printer(X86TargetDesc())
         all_instructions = ['.intel_syntax noprefix\n']
 
@@ -110,6 +111,11 @@ class X86GeneratorTest(unittest.TestCase):
                 inst = generator.generate_instruction(instruction_spec)
                 bb.insert_after(bb.get_last(), inst)
 
+        # rewrite the mnemonics that the assembler does not accept into raw opcodes, the same
+        # way the generator's pass pipeline does
+        _X86PatchOpcodesPass().run_on_test_case(tc)
+
+        for bb in func:
             for instr in bb:
                 instr_str = printer._instruction_to_str(instr)
                 self.assertTrue(instr_str, f'Instruction {instr} was not generated.')
@@ -117,11 +123,12 @@ class X86GeneratorTest(unittest.TestCase):
 
         for i in all_instructions:
             asm_file.write(i)
+        asm_file.flush()
 
         # check if the generated instructions are valid
         try:
-            assemble(tc)
-        except subprocess.CalledProcessError:
+            assemble(tc)  # terminates with SystemExit if `as` rejects the input
+        except SystemExit:
             self.fail("Generated invalid instruction(s)")
         else:
             obj_file.close()
