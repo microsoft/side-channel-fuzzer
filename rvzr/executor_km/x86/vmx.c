@@ -396,14 +396,7 @@ int set_vmcs_state(void)
     int err = 0;
     uint8_t err_inv = 0, err_val = 0;
 
-    // if necessary, allocate additional memory for VMCSs
     ASSERT(n_actors <= MAX_ACTORS, "set_vmcs_state:n_actors exceeds MAX_ACTORS");
-    static unsigned old_n_actors = 0;
-    if (n_actors > old_n_actors) {
-        SAFE_VFREE(vmcss);
-        vmcss = CHECKED_VMALLOC(n_actors * VMCS_SIZE);
-    }
-    old_n_actors = n_actors;
 
     // initialize VMCSs for all guest actors
     for (int actor_id = 0; actor_id < n_actors; actor_id++) {
@@ -853,7 +846,7 @@ int init_vmx(void)
     ASSERT((vmxon_page_hpa & 0xFFF) == 0, "init_vmx"); // VMXON region must be 4KB-aligned
 
     // VMCS
-    vmcss = CHECKED_VMALLOC(VMCS_SIZE);
+    vmcss = CHECKED_VMALLOC(MAX_ACTORS * VMCS_SIZE);
     vmcs_hpas = CHECKED_ZALLOC(sizeof(uint64_t) * MAX_ACTORS);
 
     return err;
