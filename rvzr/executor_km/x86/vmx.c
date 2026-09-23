@@ -343,6 +343,28 @@ int store_orig_vmcs_state(void)
     return 0;
 }
 
+/// @brief VMCLEAR every VMCS used by the test case
+/// Leaving a launched VMCS current would let the processor keep cached in-processor state for it,
+/// which the SDM requires to be flushed before the VMCS is reused or used on another CPU.
+/// @return void
+void clear_vmcs_state(void)
+{
+    uint8_t err_inv = 0, err_val = 0;
+
+    if (!vmx_is_on || !vmcs_hpas)
+        return;
+
+    for (int actor_id = 0; actor_id < n_actors; actor_id++) {
+        if (actors[actor_id].mode != MODE_GUEST || vmcs_hpas[actor_id] == 0)
+            continue;
+
+        vmclear(vmcs_hpas[actor_id], &err_inv, &err_val);
+        if (err_inv || err_val)
+            PRINT_ERRS("clear_vmcs_state", "Exited with VMfailInvalid=%d, VMfailValid=%d\n",
+                       err_inv, err_val);
+    }
+}
+
 /// @brief Restore the VMCS state that was active when we started
 /// Should never fail as this function can be used in exception handlers;
 /// instead, it prints warnings upon errors.

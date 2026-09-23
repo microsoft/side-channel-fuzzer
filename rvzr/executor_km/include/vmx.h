@@ -66,6 +66,7 @@ int vmx_check_cpu_compatibility(void);
 int start_vmx_operation(void);
 void stop_vmx_operation(void);
 int store_orig_vmcs_state(void);
+void clear_vmcs_state(void);
 void restore_orig_vmcs_state(void);
 int set_vmcs_state(void);
 int print_vmx_exit_info(void);

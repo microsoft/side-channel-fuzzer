@@ -217,6 +217,7 @@ void recover_orig_state(void)
         if (cpuinfo->x86_vendor == X86_VENDOR_INTEL) {
             // if (vmx_is_on)
             //     print_vmx_exit_info(); // uncomment to debug VMX exits
+            clear_vmcs_state();
             restore_orig_vmcs_state();
             stop_vmx_operation();
         } else if (cpuinfo->x86_vendor == X86_VENDOR_AMD) {
