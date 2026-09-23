@@ -261,6 +261,11 @@ function arm_only() {
     assert_no_violation "$fuzz_opt -t $ASM_DIR/macro_fault_handler.asm -c $CONF_DIR/arch-faults.yaml -i 20"
 }
 
+@test "Architectural Test: Fault Handling after a fault in a non-main actor" {
+    x86_only
+    assert_no_violation "$fuzz_opt -t $ASM_DIR/macro_fault_handler_actor.asm -c $CONF_DIR/arch-faults-actors.yaml -i 20"
+}
+
 @test "Feature: Fault Handling" {
     local cmd="$fuzz_opt -t $ASM_DIR/macro_fault_handler.asm -c $CONF_DIR/fault-handler.yaml -i 1"
     run bash -c "$cmd"

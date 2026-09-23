@@ -1,0 +1,5 @@
+file: !include arch-faults.yaml
+
+actors:
+  - actor2:
+      - mode: "host"

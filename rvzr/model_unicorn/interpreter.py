@@ -192,7 +192,7 @@ class _MacroInterpreterCommon:
             "measurement_start": self._macro_measurement_start,
             "measurement_end": self._macro_measurement_end,
             "switch": self._macro_switch,
-            "fault_handler": lambda *_: None,
+            "fault_handler": self._macro_fault_handler,
         }
 
     def load_test_case(self, test_case: TestCaseProgram) -> None:
@@ -268,6 +268,17 @@ class _MacroInterpreterCommon:
 
         # actor update
         model.state.current_actor = self._sid_to_actor[section_id]
+
+    def _macro_fault_handler(self, _: int, __: int, ___: int, ____: int) -> None:
+        """
+        Reset data area base and SP to the main actor, as the fault may have been raised
+        by another actor
+        """
+        layout = self._model.layout
+        new_base = layout.get_data_addr(DataArea.MAIN, 0)
+        new_sp = layout.get_data_addr(DataArea.RSP_INIT, 0)
+        self._model.emulator.reg_write(self._uc_target_desc.actor_base_register, new_base)
+        self._model.emulator.reg_write(self._uc_target_desc.sp_register, new_sp)
 
 
 class _X86MacroInterpreter(_MacroInterpreterCommon):
@@ -439,9 +450,6 @@ class _ARM64MacroInterpreter(_MacroInterpreterCommon):
     def __init__(self, model: UnicornModel, target_desc: TargetDesc):
         super().__init__(model, target_desc)
         self._is_amd = target_desc.cpu_desc.vendor == "AMD"
-        self._macro_callbacks.update({
-            "fault_handler": lambda *_: None,
-        })
 
 
 # ==================================================================================================
