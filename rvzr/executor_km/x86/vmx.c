@@ -547,7 +547,9 @@ static int set_vmcs_host_state(void)
     CHECKED_VMWRITE(HOST_GS_BASE, rdmsr64(MSR_GS_BASE));
     CHECKED_VMWRITE(HOST_TR_BASE, tr_base);
     CHECKED_VMWRITE(HOST_GDTR_BASE, gdtr.address);
-    CHECKED_VMWRITE(HOST_IDTR_BASE, test_case_idtr.address);
+    // VM exits load IDTR from the VMCS, so this field must name the IDT that is currently
+    // installed; make_vmcs_launched switches it to the test case IDT after the initial launch
+    CHECKED_VMWRITE(HOST_IDTR_BASE, idtr.address);
 
     // - MSRs
     CHECKED_VMWRITE(HOST_IA32_SYSENTER_CS, rdmsr64(MSR_IA32_SYSENTER_CS));
@@ -730,11 +732,13 @@ static int make_vmcs_launched(int actor_id)
            "make_vmcs_launched:unexpected exit reason");
 
     // 5. Finalize VMCS fields
+    // Note: all later VM exits happen while the test case is running, hence the test case IDT
     guest_memory_t *guest_v_memory = (guest_memory_t *)(GUEST_V_MEMORY_START);
     CHECKED_VMWRITE(GUEST_RIP, (uint64_t)&guest_v_memory->code.section[0]);
     CHECKED_VMWRITE(GUEST_RSP, (uint64_t)&guest_v_memory->data.main_area[LOCAL_RSP_OFFSET]);
     CHECKED_VMWRITE(HOST_RIP, (uint64_t)fault_handler);
     CHECKED_VMWRITE(HOST_RSP, (uint64_t)&sandbox->data[0].main_area[LOCAL_RSP_OFFSET]);
+    CHECKED_VMWRITE(HOST_IDTR_BASE, test_case_idtr.address);
 
     return 0;
 }
