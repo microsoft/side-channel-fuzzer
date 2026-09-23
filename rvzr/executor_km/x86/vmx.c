@@ -521,8 +521,10 @@ static int set_vmcs_host_state(void)
                  :
                  : "memory");
     struct ldttss_desc *tr_register = (struct ldttss_desc *)(gdtr.address + tr);
-    uint64_t tr_base = ((uint64_t)tr_register->base0 | ((tr_register->base1) << 16) |
-                        ((tr_register->base2) << 24) | ((uint64_t)tr_register->base3 << 32));
+    // each field is widened before shifting; as int bit-fields, base2 << 24 would sign-extend
+    uint64_t tr_base =
+        ((uint64_t)tr_register->base0 | ((uint64_t)tr_register->base1 << 16) |
+         ((uint64_t)tr_register->base2 << 24) | ((uint64_t)tr_register->base3 << 32));
 
     // SDM 25.5 Host-State Area
     // - Control registers
