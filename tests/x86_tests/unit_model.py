@@ -431,7 +431,7 @@ class _SharedX86Model(unittest.TestCase):
                 Inst("xor rbx, rbx", 3, 0, 0),
                 Inst("jnz .l0", 2, 0, 0),
                 Inst(".l2:", 0, 0, 0),
-                Inst("mov rcx, qword ptr [r14 + 64]", 5, MAIN_OFFSET + 64, 1),
+                Inst("mov rcx, qword ptr [r14 + 64]", 4, MAIN_OFFSET + 64, 1),
             ],
             backend=self._backend,
         )
@@ -439,7 +439,6 @@ class _SharedX86Model(unittest.TestCase):
         ctraces = self._get_trace(
             test_case=test_case,
             input_data=[input_],
-            obs_clause="memory",
             exec_clause=["cond"],
         )
         self.assertEqual(len(ctraces), 1)
@@ -453,7 +452,7 @@ class _SharedX86Model(unittest.TestCase):
                 3,  # lfence terminates speculation
                 8,  # resumed after the rollback
             ],
-            False,
+            True,
             True,
             False)
         self.assertEqual(ctraces[0].get_untyped(), expected_trace)
