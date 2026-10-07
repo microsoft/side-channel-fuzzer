@@ -12,13 +12,11 @@
         <meta name="author" content="Microsoft">
       
       
-        <link rel="canonical" href="https://github.com/microsoft/side-channel-fuzzer/dev/ref/registers/">
+        <link rel="canonical" href="https://github.com/microsoft/side-channel-fuzzer/dev/internals/isa-constraints/">
       
       
-        <link rel="prev" href="../binary-formats/">
+        <link rel="prev" href="../model-backends/model-dr/">
       
-      
-        <link rel="next" href="../sandbox/">
       
       
         
@@ -29,7 +27,7 @@
     
     
       
-        <title>Registers - Revizor</title>
+        <title>ISA Constraints - Revizor</title>
       
     
     
@@ -82,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#register-allocation" class="md-skip">
+        <a href="#isa-constraints" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Registers
+              ISA Constraints
             
           </span>
         </div>
@@ -249,12 +247,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../../structure/" class="md-tabs__link">
           
   
@@ -317,11 +313,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../internals/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -412,10 +410,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -437,20 +433,17 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -468,7 +461,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1381,10 +1374,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -1415,11 +1406,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
         
           
           <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
@@ -1440,7 +1431,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1458,7 +1449,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../modes/" class="md-nav__link">
+      <a href="../../ref/modes/" class="md-nav__link">
         
   
   
@@ -1486,7 +1477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cli/" class="md-nav__link">
+      <a href="../../ref/cli/" class="md-nav__link">
         
   
   
@@ -1514,7 +1505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../config/" class="md-nav__link">
+      <a href="../../ref/config/" class="md-nav__link">
         
   
   
@@ -1542,7 +1533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../runtime-statistic/" class="md-nav__link">
+      <a href="../../ref/runtime-statistic/" class="md-nav__link">
         
   
   
@@ -1570,7 +1561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../minimization-passes/" class="md-nav__link">
+      <a href="../../ref/minimization-passes/" class="md-nav__link">
         
   
   
@@ -1598,7 +1589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../macros/" class="md-nav__link">
+      <a href="../../ref/macros/" class="md-nav__link">
         
   
   
@@ -1626,7 +1617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../artifact-file-formats/" class="md-nav__link">
+      <a href="../../ref/artifact-file-formats/" class="md-nav__link">
         
   
   
@@ -1654,7 +1645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../binary-formats/" class="md-nav__link">
+      <a href="../../ref/binary-formats/" class="md-nav__link">
         
   
   
@@ -1679,19 +1670,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../ref/registers/" class="md-nav__link">
         
   
   
@@ -1707,7 +1689,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -1720,7 +1701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sandbox/" class="md-nav__link">
+      <a href="../../ref/sandbox/" class="md-nav__link">
         
   
   
@@ -1784,7 +1765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../papers/" class="md-nav__link">
+      <a href="../../ref/papers/" class="md-nav__link">
         
   
   
@@ -2054,6 +2035,8 @@
       
   
   
+    
+  
   
   
     
@@ -2079,18 +2062,21 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../internals/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -2108,13 +2094,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2134,7 +2120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/contributing/overview/" class="md-nav__link">
+      <a href="../contributing/overview/" class="md-nav__link">
         
   
   
@@ -2220,7 +2206,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/contributing/general/" class="md-nav__link">
+      <a href="../contributing/general/" class="md-nav__link">
         
   
   
@@ -2248,7 +2234,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/contributing/code-style/" class="md-nav__link">
+      <a href="../contributing/code-style/" class="md-nav__link">
         
   
   
@@ -2276,7 +2262,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/contributing/git/" class="md-nav__link">
+      <a href="../contributing/git/" class="md-nav__link">
         
   
   
@@ -2312,7 +2298,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/code-structure/" class="md-nav__link">
+      <a href="../code-structure/" class="md-nav__link">
         
   
   
@@ -2412,7 +2398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/overview/" class="md-nav__link">
+      <a href="../architecture/overview/" class="md-nav__link">
         
   
   
@@ -2440,7 +2426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/fuzz/" class="md-nav__link">
+      <a href="../architecture/fuzz/" class="md-nav__link">
         
   
   
@@ -2468,7 +2454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/isa/" class="md-nav__link">
+      <a href="../architecture/isa/" class="md-nav__link">
         
   
   
@@ -2496,7 +2482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/code/" class="md-nav__link">
+      <a href="../architecture/code/" class="md-nav__link">
         
   
   
@@ -2524,7 +2510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/data/" class="md-nav__link">
+      <a href="../architecture/data/" class="md-nav__link">
         
   
   
@@ -2552,7 +2538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/exec/" class="md-nav__link">
+      <a href="../architecture/exec/" class="md-nav__link">
         
   
   
@@ -2580,7 +2566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/model/" class="md-nav__link">
+      <a href="../architecture/model/" class="md-nav__link">
         
   
   
@@ -2608,7 +2594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/analysis/" class="md-nav__link">
+      <a href="../architecture/analysis/" class="md-nav__link">
         
   
   
@@ -2636,7 +2622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/mini/" class="md-nav__link">
+      <a href="../architecture/mini/" class="md-nav__link">
         
   
   
@@ -2664,7 +2650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/logging/" class="md-nav__link">
+      <a href="../architecture/logging/" class="md-nav__link">
         
   
   
@@ -2756,7 +2742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/model-backends/model-unicorn/" class="md-nav__link">
+      <a href="../model-backends/model-unicorn/" class="md-nav__link">
         
   
   
@@ -2784,7 +2770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/model-backends/model-dr/" class="md-nav__link">
+      <a href="../model-backends/model-dr/" class="md-nav__link">
         
   
   
@@ -2817,10 +2803,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../internals/isa-constraints/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ISA Constraints
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2836,6 +2849,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2868,58 +2934,37 @@
   
 
 
-<h1 id="register-allocation">Register Allocation</h1>
-<p>The test cases are executed in a sandboxed environment, where some of the registers are reserved for internal use, and some are available for use in the test cases.
-Below is a list of registers and their purpose.</p>
-<div class="admonition info">
-<p class="admonition-title">Advanced Topic</p>
-<p>This is an advanced topic describing internal implementation details of Revizor. You are unlikely to need this information unless you are extending or modifying Revizor's core components.</p>
-</div>
-<h4 id="r15"><code>R15</code></h4>
-<p>Contains the base address of the UTILITY area in the <a href="../sandbox/">sandbox</a>.</p>
-<p>If the test case does not enter a VM, the register value remains constant during the execution of the test cases.
-Otherwise, the register value is updated to point to the UTILITY area of the currently active VM when the <code>switch_h2g</code> macro is called, and it is restored to the original value when the <code>switch_g2h</code> macro is called.</p>
-<p>The register is used by internal functions, such as the implementation of Prime+Probe.</p>
-<h4 id="r14"><code>R14</code></h4>
-<p>Contains the base address of the current actor's <a href="../sandbox/">sandbox</a> (namely, it points to the base of the actor's MAIN area).</p>
-<p>At the beginning of the test case execution, the register is set to the base address of the MAIN area of the first actor (actor <code>main</code>). The register value is updated to point to the MAIN area of the currently active actor when a macro from the <code>landing_*</code> group of macros is called. It is also updated by the <code>fault_handler</code> macro.</p>
-<p>The register is used in test cases as a part of the sandboxing mechanism.
-For example, all generated memory accesses are relative to the value stored in <code>R14</code>, and have the form of <code>[R14 + offset]</code>.</p>
-<h4 id="r13-htrace_register-constant-in-the-kernel-module"><code>R13</code> (<code>HTRACE_REGISTER</code> constant in the kernel module)</h4>
-<p>Contains either intermediate or final result of the hardware trace measurements.</p>
-<p>Before entering the test case, the register is set to 0.
-When a <code>measurement_start</code> macro is executed, the register is (optionally) set to the starting value,
-such a initial reading of time stamp counter when the <code>TSC</code> mode is used.
-When a <code>measurement_end</code> macro is executed, the register is updated with the final value of the measurement and contains the resulting hardware trace.</p>
-<h4 id="r12-status_register-constant-in-the-kernel-module"><code>R12</code> (<code>STATUS_REGISTER</code> constant in the kernel module)</h4>
-<p>Contains a compressed status of the test case execution:</p>
-<p>Bits[0:7] contain a measurement status.
-At the beginning of the test case execution, the bits are set to 0.
-When <code>measurement_start</code> macro is executed, the bits are set to 1.
-When <code>measurement_end</code> macro is executed, the bits are set to 2.
-If the measurement status is not 2 at the end of the test case execution, the kernel module will report an error.</p>
-<p>Bits[8:31] are unused.</p>
-<p>Bits[32:63] contain a counter of SMI (System Management Interrupt) events.
-The counter is set automatically before entering the test case (<code>READ_SMI_START</code>), and updated when the test case finishes (<code>READ_SMI_END</code>).
-If the difference between the readings is not 0, the kernel module will report an error.</p>
-<h4 id="r11"><code>R11</code></h4>
-<p>The register is used as a temporary buffer by some of the macros.</p>
-<p>Before entering the test case, the register is set to 0.
-When certain macros are executed (e.g., <code>set_k2u_target</code>), the register will contain temporary values.
-The register should not be used in the test case, as the temporary value may be consumed by latter macros.</p>
-<h4 id="r10-r9-r8"><code>R10, R9, R8</code></h4>
-<p>Stores the values of performance counters.
-<code>R10</code> stores the value of performance counter #1, <code>R9</code> stores the value of performance counter #2, and <code>R8</code> stores the value of performance counter #3.</p>
-<p>Before entering the test case, the registers are set to 0.
-When a <code>measurement_start</code> macro is executed, the registers are (optionally) set to the starting values.
-When a <code>measurement_end</code> macro is executed, the registers are updated with the final values of the measurements.</p>
-<h4 id="other-general-purpose-registers">Other General Purpose Registers</h4>
-<p>The remaining registers (<code>rax</code>, <code>rcx</code>, <code>rdx</code>, <code>rsi</code>, <code>rdi</code>, <code>rflags</code>) are available for use in the test cases and can be modified freely.
-A special case are <code>rsp</code> and <code>rbp</code>, which can be used in the test cases, but their values must always remain within the sandbox (see <a href="../sandbox/">Sandbox</a>).</p>
-<h4 id="vector-registers">Vector Registers</h4>
-<p>Vector registers (<code>xmm0</code>-<code>xmm15</code>) are also available for use in the test cases.
-However, only <code>xmm0-xmm7</code> are initialized with input-based values, and the remaining registers are always zero-initialized.</p>
-<p>Large-size vector registers (<code>ymm</code> and <code>zmm</code>) are not supported.</p>
+<h1 id="isa-constraints">ISA Constraints</h1>
+<p>This document describes how Revizor decides which parts of an ISA specification may be used
+when generating test-case programs: which instructions, instruction categories, registers, and
+operand types are filtered out, who owns each filtering rule, and how the rules are combined.</p>
+<h2 id="overview">Overview</h2>
+<p>The pool of instructions available to the program generator is the ISA descriptor file
+(e.g., <code>base.json</code>) reduced by two kinds of filters:</p>
+<ol>
+<li><strong>User intent</strong>, expressed in the config (e.g., <code>instruction_categories</code>)</li>
+<li><strong>Built-in constraints</strong>, expressed in code as <code>InstructionPoolConstraints</code> objects:
+    restrictions that do not depend on user intent, such as instructions
+    that a model backend cannot emulate faithfully.</li>
+</ol>
+<p>The two are deliberately independent: setting <code>instruction_blocklist</code> or <code>register_blocklist</code>
+in a config does not disable the built-in constraints. The only way to override a built-in
+constraint is an explicit allowlist entry, which triggers a warning.</p>
+<h2 id="data-flow">Data flow</h2>
+<p><code>rvzr/factory.py:get_effective_constraints</code> is the single place where config options are
+converted into constraints. It looks up the per-arch capability tables by the selected
+architecture and model backend, merges them with the contract table and the policy constraints,
+nd folds the user <em>register</em> lists into the result:
+<code>blocked_registers = (merged ∪ register_blocklist) − register_allowlist</code>.</p>
+<p>The user <em>instruction</em> lists do not fold into the merged result: <code>instruction_allowlist</code>
+overrides category filtering, which is inherently per-spec, so both instruction lists are
+applied inside <code>rvzr/isa_spec.py:InstructionSet</code> instead.</p>
+<h2 id="see-also">See also</h2>
+<ul>
+<li><a href="../architecture/isa/">ISA Specification</a> — how the ISA descriptor file is loaded</li>
+<li><a href="../architecture/code/">Test Case Code Generation</a> — how the instruction pool is used</li>
+<li><a href="../../ref/config/">Configuration File Reference</a> — the user-facing filtering options</li>
+</ul>
 
 
 

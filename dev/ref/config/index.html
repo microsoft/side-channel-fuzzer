@@ -2220,6 +2220,8 @@
       
         
       
+        
+      
     
     
     
@@ -2958,6 +2960,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../internals/isa-constraints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ISA Constraints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3227,16 +3257,12 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <h4 id="instruction_blocklist"><code>instruction_blocklist</code></h4>
 <dl>
 <dd>
-<p><span class="inline-box" title="Default Value is Chosen Automatically Based on the Target CPU"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8.75 8h6.5a.75.75 0 0 1 .75.75v6.5a.75.75 0 0 1-.75.75h-6.5a.75.75 0 0 1-.75-.75v-6.5A.75.75 0 0 1 8.75 8m.75 6.5h5v-5h-5Z"/><path d="M15.25 1a.75.75 0 0 1 .75.75V4h2.25c.966 0 1.75.784 1.75 1.75V8h2.25a.75.75 0 0 1 0 1.5H20v5h2.25a.75.75 0 0 1 0 1.5H20v2.25A1.75 1.75 0 0 1 18.25 20H16v2.25a.75.75 0 0 1-1.5 0V20h-5v2.25a.75.75 0 0 1-1.5 0V20H5.75A1.75 1.75 0 0 1 4 18.25V16H1.75a.75.75 0 0 1 0-1.5H4v-5H1.75a.75.75 0 0 1 0-1.5H4V5.75C4 4.784 4.784 4 5.75 4H8V1.75a.75.75 0 0 1 1.5 0V4h5V1.75a.75.75 0 0 1 .75-.75m3 17.5a.25.25 0 0 0 .25-.25V5.75a.25.25 0 0 0-.25-.25H5.75a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25Z"/></svg></span></span> A list of instructions that will <strong>not</strong> be used for generating programs. This list filters out instructions from <code>instruction_categories</code>, but not from <code>instruction_allowlist</code>.</p>
+<p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>[]</code></span> A list of instructions that will <strong>not</strong> be used for generating programs. This list filters out instructions from <code>instruction_categories</code>, but not from <code>instruction_allowlist</code>.</p>
 <div class="admonition info">
 <p class="admonition-title">Priority</p>
 <p>This list has lower priority than <code>instruction_allowlist</code>.</p>
 <p>The resulting instruction pool is:
 <code>all from(instruction_categories) - instruction_blocklist + instruction_allowlist</code></p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Danger Zone</p>
-<p>This option has a somewhat sensible default value for each supported architecture, selected to avoid known-bad instructions. Thus, setting this option explicitly is unadvisable. Prefer using <code>instruction_blocklist_append</code> to add more instructions to the default blocklist.</p>
 </div>
 <div class="tabbed-set tabbed-alternate" data-tabs="12:2"><input checked="checked" id="__tabbed_12_1" name="__tabbed_12" type="radio" /><input id="__tabbed_12_2" name="__tabbed_12" type="radio" /><div class="tabbed-labels"><label for="__tabbed_12_1">Syntax</label><label for="__tabbed_12_2">Available Options</label></div>
 <div class="tabbed-content">
@@ -3257,12 +3283,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <h4 id="instruction_blocklist_append"><code>instruction_blocklist_append</code></h4>
 <dl>
 <dd>
-<p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>[]</code></span> A list of instructions that will be appended to the default blocklist for the target ISA. This option is identical to <code>instruction_blocklist</code>, but the list is added to the default instead of replacing it.</p>
-<div class="admonition info">
-<p class="admonition-title">Priority</p>
-<p>This list has lower priority than <code>instruction_allowlist</code>.</p>
-<p>The resulting instruction pool is:
-<code>all from(instruction_categories) - instruction_blocklist + instruction_allowlist</code></p>
+<p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>[]</code></span> A list of instructions that will be appended to <code>instruction_blocklist</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Scheduled for deprecation</p>
+<p>Since <code>instruction_blocklist</code> defaults to an empty list and no longer carries built-in constraints, this option is now a plain alias of <code>instruction_blocklist</code> and will be removed in a future release.</p>
 </div>
 <div class="tabbed-set tabbed-alternate" data-tabs="13:2"><input checked="checked" id="__tabbed_13_1" name="__tabbed_13" type="radio" /><input id="__tabbed_13_2" name="__tabbed_13" type="radio" /><div class="tabbed-labels"><label for="__tabbed_13_1">Syntax</label><label for="__tabbed_13_2">Available Options</label></div>
 <div class="tabbed-content">
@@ -3289,6 +3313,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <p>This list has priority over <code>instruction_categories</code> and over <code>instruction_blocklist</code>, thus adding instructions on top of the categories.</p>
 <p>The resulting instruction pool is:
 <code>all from(instruction_categories) - instruction_blocklist + instruction_allowlist</code></p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Overrides built-in constraints</p>
+<p>This list also overrides the built-in constraints of the selected model backend, executor, and generator. Re-enabling an instruction that a component cannot handle may cause false positives or broken measurements; Revizor prints a warning for each such instruction.</p>
 </div>
 <div class="tabbed-set tabbed-alternate" data-tabs="14:2"><input checked="checked" id="__tabbed_14_1" name="__tabbed_14" type="radio" /><input id="__tabbed_14_2" name="__tabbed_14" type="radio" /><div class="tabbed-labels"><label for="__tabbed_14_1">Syntax</label><label for="__tabbed_14_2">Available Options</label></div>
 <div class="tabbed-content">
@@ -3429,6 +3457,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <p class="admonition-title">Priority</p>
 <p>This list has higher priority than <code>register_blocklist</code>. The resulting list is: <code>(all registers - register_blocklist) + register_allowlist</code>.</p>
 </div>
+<div class="admonition warning">
+<p class="admonition-title">Overrides built-in constraints</p>
+<p>This list also overrides the built-in register constraints (e.g., registers reserved for internal use by the executor). Re-enabling such a register may lead to broken measurements or a full system crash; Revizor prints a warning for each such register.</p>
+</div>
 <div class="tabbed-set tabbed-alternate" data-tabs="22:2"><input checked="checked" id="__tabbed_22_1" name="__tabbed_22" type="radio" /><input id="__tabbed_22_2" name="__tabbed_22" type="radio" /><div class="tabbed-labels"><label for="__tabbed_22_1">Syntax</label><label for="__tabbed_22_2">Available Options</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -3448,14 +3480,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <h4 id="register_blocklist"><code>register_blocklist</code></h4>
 <dl>
 <dd>
-<p><span class="inline-box" title="Default Value is Chosen Automatically Based on the Target CPU"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8.75 8h6.5a.75.75 0 0 1 .75.75v6.5a.75.75 0 0 1-.75.75h-6.5a.75.75 0 0 1-.75-.75v-6.5A.75.75 0 0 1 8.75 8m.75 6.5h5v-5h-5Z"/><path d="M15.25 1a.75.75 0 0 1 .75.75V4h2.25c.966 0 1.75.784 1.75 1.75V8h2.25a.75.75 0 0 1 0 1.5H20v5h2.25a.75.75 0 0 1 0 1.5H20v2.25A1.75 1.75 0 0 1 18.25 20H16v2.25a.75.75 0 0 1-1.5 0V20h-5v2.25a.75.75 0 0 1-1.5 0V20H5.75A1.75 1.75 0 0 1 4 18.25V16H1.75a.75.75 0 0 1 0-1.5H4v-5H1.75a.75.75 0 0 1 0-1.5H4V5.75C4 4.784 4.784 4 5.75 4H8V1.75a.75.75 0 0 1 1.5 0V4h5V1.75a.75.75 0 0 1 .75-.75m3 17.5a.25.25 0 0 0 .25-.25V5.75a.25.25 0 0 0-.25-.25H5.75a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25Z"/></svg></span></span> A list of registers that will <strong>not</strong> be used for generating programs.</p>
+<p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>[]</code></span> A list of registers that will <strong>not</strong> be used for generating programs.</p>
 <div class="admonition info">
 <p class="admonition-title">Priority</p>
 <p>This list has lower priority than <code>register_allowlist</code>. The resulting list is: <code>(all registers - register_blocklist) + register_allowlist</code>.</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Danger Zone</p>
-<p>The default value of this option includes registers that reserved for internal use by the executor, and thus should be avoided. Modifying this option may lead to a full system crash.</p>
 </div>
 <div class="tabbed-set tabbed-alternate" data-tabs="23:2"><input checked="checked" id="__tabbed_23_1" name="__tabbed_23" type="radio" /><input id="__tabbed_23_2" name="__tabbed_23" type="radio" /><div class="tabbed-labels"><label for="__tabbed_23_1">Syntax</label><label for="__tabbed_23_2">Available Options</label></div>
 <div class="tabbed-content">
@@ -3504,30 +3532,56 @@ speculation/observation filters as well as at every iteration of multi-sample co
 </div>
 </dd>
 </dl>
+<h4 id="suppress_known_leaks"><code>suppress_known_leaks</code></h4>
+<dl>
+<dd>
+<p><span class="inline-box" title="Default Value is Chosen Automatically Based on the Target CPU"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8.75 8h6.5a.75.75 0 0 1 .75.75v6.5a.75.75 0 0 1-.75.75h-6.5a.75.75 0 0 1-.75-.75v-6.5A.75.75 0 0 1 8.75 8m.75 6.5h5v-5h-5Z"/><path d="M15.25 1a.75.75 0 0 1 .75.75V4h2.25c.966 0 1.75.784 1.75 1.75V8h2.25a.75.75 0 0 1 0 1.5H20v5h2.25a.75.75 0 0 1 0 1.5H20v2.25A1.75 1.75 0 0 1 18.25 20H16v2.25a.75.75 0 0 1-1.5 0V20h-5v2.25a.75.75 0 0 1-1.5 0V20H5.75A1.75 1.75 0 0 1 4 18.25V16H1.75a.75.75 0 0 1 0-1.5H4v-5H1.75a.75.75 0 0 1 0-1.5H4V5.75C4 4.784 4.784 4 5.75 4H8V1.75a.75.75 0 0 1 1.5 0V4h5V1.75a.75.75 0 0 1 .75-.75m3 17.5a.25.25 0 0 0 .25-.25V5.75a.25.25 0 0 0-.25-.25H5.75a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25Z"/></svg></span></span> Named groups of instructions whose only known effect is a well-known, uninteresting leak; the instructions in the listed groups are excluded from generated programs. The default enables all groups defined for the target architecture (<code>[fpvi, div64]</code> on x86-64; <code>[]</code> on arm64). Set the option to an empty list to disable the suppression and test the corresponding leaks (e.g., to detect Zero Division Injection, remove <code>div64</code>).</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="25:3"><input checked="checked" id="__tabbed_25_1" name="__tabbed_25" type="radio" /><input id="__tabbed_25_2" name="__tabbed_25" type="radio" /><input id="__tabbed_25_3" name="__tabbed_25" type="radio" /><div class="tabbed-labels"><label for="__tabbed_25_1">Syntax</label><label for="__tabbed_25_2">Available Options</label><label for="__tabbed_25_3">Options Explained</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nt">suppress_known_leaks</span><span class="p">:</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;group1&gt;</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;group2&gt;</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>x86-64: <code>fpvi</code>, <code>div64</code>; arm64: none.</p>
+</div>
+<div class="tabbed-block">
+<ul>
+<li><code>fpvi</code> - floating-point arithmetic instructions, which leak operand values via Floating-Point Value Injection (FPVI).</li>
+<li><code>div64</code> - 64-bit variants of division instructions, which leak operand values via Zero Division Injection; the 8/16/32-bit variants are not affected and stay enabled.</li>
+</ul>
+</div>
+</div>
+</div>
+</dd>
+</dl>
 <h2 id="actor-configuration"><a name="actor"></a> Actor Configuration</h2>
 <p>All actors are defined in the <code>actors</code> list, with the following syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nt">actors</span><span class="p">:</span>
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor1_name&gt;</span><span class="p">:</span>
-<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">      </span><span class="nt">&lt;actor_option&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value&gt;</span>
-<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">      </span><span class="nt">&lt;actor_option&gt;</span><span class="p">:</span>
-<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="w">        </span><span class="nt">&lt;sub_option1&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value1&gt;</span>
-<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="w">        </span><span class="nt">&lt;sub_option2&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value2&gt;</span>
-<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">...</span>
-<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor2_name&gt;</span><span class="p">:</span>
-<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">...</span>
-<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nt">actors</span><span class="p">:</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor1_name&gt;</span><span class="p">:</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">      </span><span class="nt">&lt;actor_option&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value&gt;</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">      </span><span class="nt">&lt;actor_option&gt;</span><span class="p">:</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">        </span><span class="nt">&lt;sub_option1&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value1&gt;</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="w">        </span><span class="nt">&lt;sub_option2&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value2&gt;</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor2_name&gt;</span><span class="p">:</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
 <p>The following options are available for each actor:</p>
 <h4 id="mode"><code>mode</code></h4>
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>host</code></span> The execution mode of the actor.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="25:3"><input checked="checked" id="__tabbed_25_1" name="__tabbed_25" type="radio" /><input id="__tabbed_25_2" name="__tabbed_25" type="radio" /><input id="__tabbed_25_3" name="__tabbed_25" type="radio" /><div class="tabbed-labels"><label for="__tabbed_25_1">Syntax</label><label for="__tabbed_25_2">Available Options</label><label for="__tabbed_25_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="26:3"><input checked="checked" id="__tabbed_26_1" name="__tabbed_26" type="radio" /><input id="__tabbed_26_2" name="__tabbed_26" type="radio" /><input id="__tabbed_26_3" name="__tabbed_26" type="radio" /><div class="tabbed-labels"><label for="__tabbed_26_1">Syntax</label><label for="__tabbed_26_2">Available Options</label><label for="__tabbed_26_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nt">actors</span><span class="p">:</span>
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
-<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;mode&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="nt">actors</span><span class="p">:</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;mode&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3547,12 +3601,12 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>kernel</code></span> The privilege level of the actor.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="26:3"><input checked="checked" id="__tabbed_26_1" name="__tabbed_26" type="radio" /><input id="__tabbed_26_2" name="__tabbed_26" type="radio" /><input id="__tabbed_26_3" name="__tabbed_26" type="radio" /><div class="tabbed-labels"><label for="__tabbed_26_1">Syntax</label><label for="__tabbed_26_2">Available Options</label><label for="__tabbed_26_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="27:3"><input checked="checked" id="__tabbed_27_1" name="__tabbed_27" type="radio" /><input id="__tabbed_27_2" name="__tabbed_27" type="radio" /><input id="__tabbed_27_3" name="__tabbed_27" type="radio" /><div class="tabbed-labels"><label for="__tabbed_27_1">Syntax</label><label for="__tabbed_27_2">Available Options</label><label for="__tabbed_27_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="nt">actors</span><span class="p">:</span>
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">      </span><span class="nt">privilege_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;level&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="nt">actors</span><span class="p">:</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">      </span><span class="nt">privilege_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;level&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3573,20 +3627,20 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dd><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> (see below)</span> The properties of the data memory used by the actor. These properties are applied only to the faulty page of the actor's data region (see <a href="../sandbox/">sandbox</a> for details).</dd>
 <dd>
 <p>Note that the above properties are set in the host page tables for actors with <code>mode: host</code>, and in the guest page tables for actors with <code>mode: guest</code>.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="27:3"><input checked="checked" id="__tabbed_27_1" name="__tabbed_27" type="radio" /><input id="__tabbed_27_2" name="__tabbed_27" type="radio" /><input id="__tabbed_27_3" name="__tabbed_27" type="radio" /><div class="tabbed-labels"><label for="__tabbed_27_1">Syntax</label><label for="__tabbed_27_2">Available Options</label><label for="__tabbed_27_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="28:3"><input checked="checked" id="__tabbed_28_1" name="__tabbed_28" type="radio" /><input id="__tabbed_28_2" name="__tabbed_28" type="radio" /><input id="__tabbed_28_3" name="__tabbed_28" type="radio" /><div class="tabbed-labels"><label for="__tabbed_28_1">Syntax</label><label for="__tabbed_28_2">Available Options</label><label for="__tabbed_28_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="nt">actors</span><span class="p">:</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">      </span><span class="nt">data_properties</span><span class="p">:</span>
-<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">        </span><span class="nt">present</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="w">        </span><span class="nt">writable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="w">        </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="w">        </span><span class="nt">accessed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a><span class="w">        </span><span class="nt">dirty</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a><span class="w">        </span><span class="nt">executable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a><span class="w">        </span><span class="nt">reserved_bit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a><span class="w">        </span><span class="nt">randomized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="nt">actors</span><span class="p">:</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">      </span><span class="nt">data_properties</span><span class="p">:</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w">        </span><span class="nt">present</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="w">        </span><span class="nt">writable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="w">        </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="w">        </span><span class="nt">accessed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="w">        </span><span class="nt">dirty</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a><span class="w">        </span><span class="nt">executable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a><span class="w">        </span><span class="nt">reserved_bit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a><span class="w">        </span><span class="nt">randomized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3613,20 +3667,20 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dd><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>(see below)</code></span> The properties of the EPT entry used by the actor (on Intel) or the NPT entry (on AMD). These properties are applied only to the faulty page of the actor's data region (see <a href="../sandbox/">sandbox</a> for details).</dd>
 <dd>
 <p>This property has no effect on actors with <code>mode: host</code>.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="28:3"><input checked="checked" id="__tabbed_28_1" name="__tabbed_28" type="radio" /><input id="__tabbed_28_2" name="__tabbed_28" type="radio" /><input id="__tabbed_28_3" name="__tabbed_28" type="radio" /><div class="tabbed-labels"><label for="__tabbed_28_1">Syntax</label><label for="__tabbed_28_2">Available Options</label><label for="__tabbed_28_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="29:3"><input checked="checked" id="__tabbed_29_1" name="__tabbed_29" type="radio" /><input id="__tabbed_29_2" name="__tabbed_29" type="radio" /><input id="__tabbed_29_3" name="__tabbed_29" type="radio" /><div class="tabbed-labels"><label for="__tabbed_29_1">Syntax</label><label for="__tabbed_29_2">Available Options</label><label for="__tabbed_29_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="nt">actors</span><span class="p">:</span>
-<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
-<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">      </span><span class="nt">data_ept_properties</span><span class="p">:</span>
-<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w">        </span><span class="nt">present</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="w">        </span><span class="nt">writable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="w">        </span><span class="nt">executable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="w">        </span><span class="nt">accessed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="w">        </span><span class="nt">dirty</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a><span class="w">        </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a><span class="w">        </span><span class="nt">reserved_bit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a><span class="w">        </span><span class="nt">randomized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="nt">actors</span><span class="p">:</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">      </span><span class="nt">data_ept_properties</span><span class="p">:</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w">        </span><span class="nt">present</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a><span class="w">        </span><span class="nt">writable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a><span class="w">        </span><span class="nt">executable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a><span class="w">        </span><span class="nt">accessed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a><span class="w">        </span><span class="nt">dirty</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a><span class="w">        </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a><span class="w">        </span><span class="nt">reserved_bit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a><span class="w">        </span><span class="nt">randomized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3652,12 +3706,12 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>False</code></span> If enabled, the actor will be an observer actor, hence modelling an attacker. This option is only used if the contract is <code>noninterference</code>, and it is ignored otherwise.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="29:1"><input checked="checked" id="__tabbed_29_1" name="__tabbed_29" type="radio" /><div class="tabbed-labels"><label for="__tabbed_29_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="30:1"><input checked="checked" id="__tabbed_30_1" name="__tabbed_30" type="radio" /><div class="tabbed-labels"><label for="__tabbed_30_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="nt">actors</span><span class="p">:</span>
-<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
-<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">      </span><span class="nt">observer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nt">actors</span><span class="p">:</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">      </span><span class="nt">observer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -3673,15 +3727,15 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <p class="admonition-title">Priority</p>
 <p>This list has priority over the global <code>instruction_blocklist</code> and modifies the instruction pool for the specific actor.</p>
 </div>
-<div class="tabbed-set tabbed-alternate" data-tabs="30:1"><input checked="checked" id="__tabbed_30_1" name="__tabbed_30" type="radio" /><div class="tabbed-labels"><label for="__tabbed_30_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="31:1"><input checked="checked" id="__tabbed_31_1" name="__tabbed_31" type="radio" /><div class="tabbed-labels"><label for="__tabbed_31_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nt">actors</span><span class="p">:</span>
-<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
-<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">      </span><span class="nt">instruction_blocklist</span><span class="p">:</span>
-<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;instruction1&gt;</span>
-<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;instruction2&gt;</span>
-<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="w">        </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nt">actors</span><span class="p">:</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">      </span><span class="nt">instruction_blocklist</span><span class="p">:</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;instruction1&gt;</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;instruction2&gt;</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">        </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
 </div>
 </div>
@@ -3697,15 +3751,15 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <p class="admonition-title">Priority</p>
 <p>This list has priority over the global <code>faults_allowlist</code> and modifies the fault-inducing instrumentation for the specific actor.</p>
 </div>
-<div class="tabbed-set tabbed-alternate" data-tabs="31:2"><input checked="checked" id="__tabbed_31_1" name="__tabbed_31" type="radio" /><input id="__tabbed_31_2" name="__tabbed_31" type="radio" /><div class="tabbed-labels"><label for="__tabbed_31_1">Syntax</label><label for="__tabbed_31_2">Available Options</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="32:2"><input checked="checked" id="__tabbed_32_1" name="__tabbed_32" type="radio" /><input id="__tabbed_32_2" name="__tabbed_32" type="radio" /><div class="tabbed-labels"><label for="__tabbed_32_1">Syntax</label><label for="__tabbed_32_2">Available Options</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nt">actors</span><span class="p">:</span>
-<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
-<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">      </span><span class="nt">fault_blocklist</span><span class="p">:</span>
-<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;fault1&gt;</span>
-<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;fault2&gt;</span>
-<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">        </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="nt">actors</span><span class="p">:</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">&lt;actor_name&gt;</span><span class="p">:</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="w">      </span><span class="nt">fault_blocklist</span><span class="p">:</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;fault1&gt;</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;fault2&gt;</span>
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a><span class="w">        </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3720,10 +3774,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>random</code></span> Select the method of test case data generation.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="32:3"><input checked="checked" id="__tabbed_32_1" name="__tabbed_32" type="radio" /><input id="__tabbed_32_2" name="__tabbed_32" type="radio" /><input id="__tabbed_32_3" name="__tabbed_32" type="radio" /><div class="tabbed-labels"><label for="__tabbed_32_1">Syntax</label><label for="__tabbed_32_2">Available Options</label><label for="__tabbed_32_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="33:3"><input checked="checked" id="__tabbed_33_1" name="__tabbed_33" type="radio" /><input id="__tabbed_33_2" name="__tabbed_33" type="radio" /><input id="__tabbed_33_3" name="__tabbed_33" type="radio" /><div class="tabbed-labels"><label for="__tabbed_33_1">Syntax</label><label for="__tabbed_33_2">Available Options</label><label for="__tabbed_33_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="nt">data_generator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;type&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="nt">data_generator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;type&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3742,10 +3796,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>10</code></span> Seed of the test case data generator. If set to zero, a random seed will be used for each run.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="33:1"><input checked="checked" id="__tabbed_33_1" name="__tabbed_33" type="radio" /><div class="tabbed-labels"><label for="__tabbed_33_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="34:1"><input checked="checked" id="__tabbed_34_1" name="__tabbed_34" type="radio" /><div class="tabbed-labels"><label for="__tabbed_34_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="nt">data_generator_seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;seed&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="nt">data_generator_seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;seed&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -3756,10 +3810,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>31</code></span> Entropy of the random values created by the data generator.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="34:2"><input checked="checked" id="__tabbed_34_1" name="__tabbed_34" type="radio" /><input id="__tabbed_34_2" name="__tabbed_34" type="radio" /><div class="tabbed-labels"><label for="__tabbed_34_1">Syntax</label><label for="__tabbed_34_2">Allowed Values</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="35:2"><input checked="checked" id="__tabbed_35_1" name="__tabbed_35" type="radio" /><input id="__tabbed_35_2" name="__tabbed_35" type="radio" /><div class="tabbed-labels"><label for="__tabbed_35_1">Syntax</label><label for="__tabbed_35_2">Allowed Values</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="nt">data_generator_entropy_bits</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;bits&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="nt">data_generator_entropy_bits</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;bits&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3773,10 +3827,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>0.05</code></span> When set to a non-zero value, the data generator will occasionally produce special values (such as zero or MAX_INT) alongside random values, with the frequency controlled by this probability. These special values help exercise fast-path optimizations in the microarchitecture.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="35:2"><input checked="checked" id="__tabbed_35_1" name="__tabbed_35" type="radio" /><input id="__tabbed_35_2" name="__tabbed_35" type="radio" /><div class="tabbed-labels"><label for="__tabbed_35_1">Syntax</label><label for="__tabbed_35_2">Allowed Values</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="36:2"><input checked="checked" id="__tabbed_36_1" name="__tabbed_36" type="radio" /><input id="__tabbed_36_2" name="__tabbed_36" type="radio" /><div class="tabbed-labels"><label for="__tabbed_36_1">Syntax</label><label for="__tabbed_36_2">Allowed Values</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="nt">input_gen_probability_of_special_value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;probability&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="nt">input_gen_probability_of_special_value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;probability&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3790,10 +3844,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>2</code></span> Number of inputs generated for each input class via input boosting (aka Contract-Driven Input Generation). For the explanation of the input classes and the generation algorithm, see <a href="https://arxiv.org/pdf/2301.07642">this paper</a>, Section 4.D. Contract-driven Input Generator.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="36:1"><input checked="checked" id="__tabbed_36_1" name="__tabbed_36" type="radio" /><div class="tabbed-labels"><label for="__tabbed_36_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="37:1"><input checked="checked" id="__tabbed_37_1" name="__tabbed_37" type="radio" /><div class="tabbed-labels"><label for="__tabbed_37_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="nt">inputs_per_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;count&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="nt">inputs_per_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;count&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -3805,11 +3859,11 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>['seq']</code></span> The execution clause of the contract. Multiple clauses can be combined to form a more permissive contract.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="37:3"><input checked="checked" id="__tabbed_37_1" name="__tabbed_37" type="radio" /><input id="__tabbed_37_2" name="__tabbed_37" type="radio" /><input id="__tabbed_37_3" name="__tabbed_37" type="radio" /><div class="tabbed-labels"><label for="__tabbed_37_1">Syntax</label><label for="__tabbed_37_2">Available Options</label><label for="__tabbed_37_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="38:3"><input checked="checked" id="__tabbed_38_1" name="__tabbed_38" type="radio" /><input id="__tabbed_38_2" name="__tabbed_38" type="radio" /><input id="__tabbed_38_3" name="__tabbed_38" type="radio" /><div class="tabbed-labels"><label for="__tabbed_38_1">Syntax</label><label for="__tabbed_38_2">Available Options</label><label for="__tabbed_38_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="nt">contract_execution_clause</span><span class="p">:</span>
-<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;clause&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="nt">contract_execution_clause</span><span class="p">:</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;clause&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3842,10 +3896,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>ct</code></span> The observation clause of the contract. In most cases, the default value should be used.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="38:3"><input checked="checked" id="__tabbed_38_1" name="__tabbed_38" type="radio" /><input id="__tabbed_38_2" name="__tabbed_38" type="radio" /><input id="__tabbed_38_3" name="__tabbed_38" type="radio" /><div class="tabbed-labels"><label for="__tabbed_38_1">Syntax</label><label for="__tabbed_38_2">Available Options</label><label for="__tabbed_38_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="39:3"><input checked="checked" id="__tabbed_39_1" name="__tabbed_39" type="radio" /><input id="__tabbed_39_2" name="__tabbed_39" type="radio" /><input id="__tabbed_39_3" name="__tabbed_39" type="radio" /><div class="tabbed-labels"><label for="__tabbed_39_1">Syntax</label><label for="__tabbed_39_2">Available Options</label><label for="__tabbed_39_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="nt">contract_observation_clause</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;clause&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="nt">contract_observation_clause</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;clause&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3874,10 +3928,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>unicorn</code></span> The backend used to implement the contract model.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="39:3"><input checked="checked" id="__tabbed_39_1" name="__tabbed_39" type="radio" /><input id="__tabbed_39_2" name="__tabbed_39" type="radio" /><input id="__tabbed_39_3" name="__tabbed_39" type="radio" /><div class="tabbed-labels"><label for="__tabbed_39_1">Syntax</label><label for="__tabbed_39_2">Available Options</label><label for="__tabbed_39_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="40:3"><input checked="checked" id="__tabbed_40_1" name="__tabbed_40" type="radio" /><input id="__tabbed_40_2" name="__tabbed_40" type="radio" /><input id="__tabbed_40_3" name="__tabbed_40" type="radio" /><div class="tabbed-labels"><label for="__tabbed_40_1">Syntax</label><label for="__tabbed_40_2">Available Options</label><label for="__tabbed_40_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="nt">model_backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;backend&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="nt">model_backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;backend&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3899,10 +3953,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dd><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>1</code></span> Minimum number of nested mispredictions in the model. This value is used to generate the contract traces on the fast path of the fuzzer. Chose a small value when speculation is rare, and a larger value when speculation is common.</dd>
 <dd>
 <p>This option is a pure performance optimization. It only impacts the speed of fuzzing, and not its correctness.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="40:1"><input checked="checked" id="__tabbed_40_1" name="__tabbed_40" type="radio" /><div class="tabbed-labels"><label for="__tabbed_40_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="41:1"><input checked="checked" id="__tabbed_41_1" name="__tabbed_41" type="radio" /><div class="tabbed-labels"><label for="__tabbed_41_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="nt">model_min_nesting</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;depth&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nt">model_min_nesting</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;depth&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -3914,10 +3968,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dd><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>30</code></span> Maximum number of nested mispredictions in the model. This value is used to generate the contract traces on the slow path of the fuzzer, i.e., when a potential violation is detected and the fuzzer tries to check if it is a true positive.</dd>
 <dd>
 <p>In contrast to <code>model_min_nesting</code>, this option could cause false positives if set too low. Thus, it is advisable to set it to a sufficiently high value to cover all possible nested mispredictions in the test cases. Leave the default unless you are sure that a lower value is sufficient.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="41:1"><input checked="checked" id="__tabbed_41_1" name="__tabbed_41" type="radio" /><div class="tabbed-labels"><label for="__tabbed_41_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="42:1"><input checked="checked" id="__tabbed_42_1" name="__tabbed_42" type="radio" /><div class="tabbed-labels"><label for="__tabbed_42_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nt">model_max_nesting</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;depth&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="nt">model_max_nesting</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;depth&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -3929,10 +3983,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dd><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>250</code></span> Size of the speculation window in the model.</dd>
 <dd>
 <p>This option sets a trade-off between accuracy and performance. A larger speculation window avoids potential false positives due to inaccurate modelling of the speculation, but it also slows down the model execution. Leave the default unless you are sure that a different value is needed.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="42:1"><input checked="checked" id="__tabbed_42_1" name="__tabbed_42" type="radio" /><div class="tabbed-labels"><label for="__tabbed_42_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="43:1"><input checked="checked" id="__tabbed_43_1" name="__tabbed_43" type="radio" /><div class="tabbed-labels"><label for="__tabbed_43_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="nt">model_max_spec_window</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;size&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nt">model_max_spec_window</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;size&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -3944,10 +3998,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value is Chosen Automatically Based on the Target CPU"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8.75 8h6.5a.75.75 0 0 1 .75.75v6.5a.75.75 0 0 1-.75.75h-6.5a.75.75 0 0 1-.75-.75v-6.5A.75.75 0 0 1 8.75 8m.75 6.5h5v-5h-5Z"/><path d="M15.25 1a.75.75 0 0 1 .75.75V4h2.25c.966 0 1.75.784 1.75 1.75V8h2.25a.75.75 0 0 1 0 1.5H20v5h2.25a.75.75 0 0 1 0 1.5H20v2.25A1.75 1.75 0 0 1 18.25 20H16v2.25a.75.75 0 0 1-1.5 0V20h-5v2.25a.75.75 0 0 1-1.5 0V20H5.75A1.75 1.75 0 0 1 4 18.25V16H1.75a.75.75 0 0 1 0-1.5H4v-5H1.75a.75.75 0 0 1 0-1.5H4V5.75C4 4.784 4.784 4 5.75 4H8V1.75a.75.75 0 0 1 1.5 0V4h5V1.75a.75.75 0 0 1 .75-.75m3 17.5a.25.25 0 0 0 .25-.25V5.75a.25.25 0 0 0-.25-.25H5.75a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25Z"/></svg></span></span> ISA-specific version of the executor to use. The default value is auto-detected based on <code>cpuinfo</code>. Should be changed only if the auto-detection fails.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="43:2"><input checked="checked" id="__tabbed_43_1" name="__tabbed_43" type="radio" /><input id="__tabbed_43_2" name="__tabbed_43" type="radio" /><div class="tabbed-labels"><label for="__tabbed_43_1">Syntax</label><label for="__tabbed_43_2">Available Options</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="44:2"><input checked="checked" id="__tabbed_44_1" name="__tabbed_44" type="radio" /><input id="__tabbed_44_2" name="__tabbed_44" type="radio" /><div class="tabbed-labels"><label for="__tabbed_44_1">Syntax</label><label for="__tabbed_44_2">Available Options</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nt">executor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;type&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="nt">executor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;type&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3961,10 +4015,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>P+P</code></span> Method of collecting hardware traces in the executor. The method determines the contents of hardware traces.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="44:3"><input checked="checked" id="__tabbed_44_1" name="__tabbed_44" type="radio" /><input id="__tabbed_44_2" name="__tabbed_44" type="radio" /><input id="__tabbed_44_3" name="__tabbed_44" type="radio" /><div class="tabbed-labels"><label for="__tabbed_44_1">Syntax</label><label for="__tabbed_44_2">Available Options</label><label for="__tabbed_44_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="45:3"><input checked="checked" id="__tabbed_45_1" name="__tabbed_45" type="radio" /><input id="__tabbed_45_2" name="__tabbed_45" type="radio" /><input id="__tabbed_45_3" name="__tabbed_45" type="radio" /><div class="tabbed-labels"><label for="__tabbed_45_1">Syntax</label><label for="__tabbed_45_2">Available Options</label><label for="__tabbed_45_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="nt">executor_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;mode&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="nt">executor_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;mode&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -3987,10 +4041,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>5</code></span> Number of warmup rounds executed before starting to collect hardware traces.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="45:1"><input checked="checked" id="__tabbed_45_1" name="__tabbed_45" type="radio" /><div class="tabbed-labels"><label for="__tabbed_45_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="46:1"><input checked="checked" id="__tabbed_46_1" name="__tabbed_46" type="radio" /><div class="tabbed-labels"><label for="__tabbed_46_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="nt">executor_warmups</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;count&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="nt">executor_warmups</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;count&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -4007,13 +4061,13 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <p>For performance reasons, Revizor does not immediately use a large sample size. Instead, it starts with a small sample, collects the traces, and checks if a violation is detected. If no violation is detected, the executor assumes that the test case is safe, and moves on to the next one. If a violation is detected, however, the executor tries to reproduce it with larger sample sizes.</p>
 <p>This option defines the list of sample sizes through which Revizor will iterate in this process. To make it sensible, the list should be sorted in ascending order with a reasonable gap between the sizes.</p>
 </div>
-<div class="tabbed-set tabbed-alternate" data-tabs="46:1"><input checked="checked" id="__tabbed_46_1" name="__tabbed_46" type="radio" /><div class="tabbed-labels"><label for="__tabbed_46_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="47:1"><input checked="checked" id="__tabbed_47_1" name="__tabbed_47" type="radio" /><div class="tabbed-labels"><label for="__tabbed_47_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="nt">executor_sample_sizes</span><span class="p">:</span>
-<a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;sample_size1&gt;</span>
-<a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;sample_size2&gt;</span>
-<a id="__codelineno-46-4" name="__codelineno-46-4" href="#__codelineno-46-4"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="nt">executor_sample_sizes</span><span class="p">:</span>
+<a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;sample_size1&gt;</span>
+<a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;sample_size2&gt;</span>
+<a id="__codelineno-47-4" name="__codelineno-47-4" href="#__codelineno-47-4"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
 </div>
 </div>
@@ -4024,10 +4078,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>10</code></span> The sample size to be used by the speculation and observation filters.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="47:1"><input checked="checked" id="__tabbed_47_1" name="__tabbed_47" type="radio" /><div class="tabbed-labels"><label for="__tabbed_47_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="48:1"><input checked="checked" id="__tabbed_48_1" name="__tabbed_48" type="radio" /><div class="tabbed-labels"><label for="__tabbed_48_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="nt">executor_filtering_repetitions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;count&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="nt">executor_filtering_repetitions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;count&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -4038,10 +4092,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>0</code></span> The CPU core ID which the executor will use for running test cases. That is, the executor process will be pinned to this core.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="48:1"><input checked="checked" id="__tabbed_48_1" name="__tabbed_48" type="radio" /><div class="tabbed-labels"><label for="__tabbed_48_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="49:1"><input checked="checked" id="__tabbed_49_1" name="__tabbed_49" type="radio" /><div class="tabbed-labels"><label for="__tabbed_49_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="nt">executor_taskset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;core_id&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="nt">executor_taskset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;core_id&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -4052,10 +4106,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>True</code></span> If enabled, the executor will do its best to flush the microarchitectural state before running test cases.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="49:1"><input checked="checked" id="__tabbed_49_1" name="__tabbed_49" type="radio" /><div class="tabbed-labels"><label for="__tabbed_49_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="50:1"><input checked="checked" id="__tabbed_50_1" name="__tabbed_50" type="radio" /><div class="tabbed-labels"><label for="__tabbed_50_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="nt">enable_pre_run_flush</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="nt">enable_pre_run_flush</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -4067,10 +4121,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>chi2</code></span> The type of the analyser that is used to compare hardware traces against contract traces.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="50:3"><input checked="checked" id="__tabbed_50_1" name="__tabbed_50" type="radio" /><input id="__tabbed_50_2" name="__tabbed_50" type="radio" /><input id="__tabbed_50_3" name="__tabbed_50" type="radio" /><div class="tabbed-labels"><label for="__tabbed_50_1">Syntax</label><label for="__tabbed_50_2">Available Options</label><label for="__tabbed_50_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="51:3"><input checked="checked" id="__tabbed_51_1" name="__tabbed_51" type="radio" /><input id="__tabbed_51_2" name="__tabbed_51" type="radio" /><input id="__tabbed_51_3" name="__tabbed_51" type="radio" /><div class="tabbed-labels"><label for="__tabbed_51_1">Syntax</label><label for="__tabbed_51_2">Available Options</label><label for="__tabbed_51_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="nt">analyser</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;type&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="nt">analyser</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;type&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -4092,10 +4146,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>False</code></span> This option is relevant only for the <code>sets</code> and <code>bitmaps</code> analysers. If enabled, the analyser will not label hardware traces as mismatching if they form a subset relation.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="51:1"><input checked="checked" id="__tabbed_51_1" name="__tabbed_51" type="radio" /><div class="tabbed-labels"><label for="__tabbed_51_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="52:1"><input checked="checked" id="__tabbed_52_1" name="__tabbed_52" type="radio" /><div class="tabbed-labels"><label for="__tabbed_52_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="nt">analyser_subsets_is_violation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="nt">analyser_subsets_is_violation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -4106,10 +4160,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>0.1</code></span> This option is relevant only for the <code>sets</code> and <code>bitmaps</code> analysers. The analyser will ignore the hardware traces that appear in less than this percentage of the sampled traces.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="52:1"><input checked="checked" id="__tabbed_52_1" name="__tabbed_52" type="radio" /><div class="tabbed-labels"><label for="__tabbed_52_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="53:1"><input checked="checked" id="__tabbed_53_1" name="__tabbed_53" type="radio" /><div class="tabbed-labels"><label for="__tabbed_53_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="nt">analyser_outliers_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;threshold&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="nt">analyser_outliers_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;threshold&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -4122,10 +4176,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dd>For the chi2 test, the threshold is applied to the <code>statistics / (len(htrace1) + len(htrace2))</code>.</dd>
 <dd>
 <p>For the mwu test, the threshold is applied to the p-value.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="53:1"><input checked="checked" id="__tabbed_53_1" name="__tabbed_53" type="radio" /><div class="tabbed-labels"><label for="__tabbed_53_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="54:1"><input checked="checked" id="__tabbed_54_1" name="__tabbed_54" type="radio" /><div class="tabbed-labels"><label for="__tabbed_54_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="nt">analyser_stat_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;threshold&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="nt">analyser_stat_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;threshold&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -4137,10 +4191,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>none</code></span> The type of coverage tracking.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="54:3"><input checked="checked" id="__tabbed_54_1" name="__tabbed_54" type="radio" /><input id="__tabbed_54_2" name="__tabbed_54" type="radio" /><input id="__tabbed_54_3" name="__tabbed_54" type="radio" /><div class="tabbed-labels"><label for="__tabbed_54_1">Syntax</label><label for="__tabbed_54_2">Available Options</label><label for="__tabbed_54_3">Options Explained</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="55:3"><input checked="checked" id="__tabbed_55_1" name="__tabbed_55" type="radio" /><input id="__tabbed_55_2" name="__tabbed_55" type="radio" /><input id="__tabbed_55_3" name="__tabbed_55" type="radio" /><div class="tabbed-labels"><label for="__tabbed_55_1">Syntax</label><label for="__tabbed_55_2">Available Options</label><label for="__tabbed_55_3">Options Explained</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="nt">coverage_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;type&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="nt">coverage_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;type&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -4160,10 +4214,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>1</code></span> Number of minimization retries. When the minimizer performs a check to reduce a test case, each check is attempted this number of times and it succeeds if at least one check is successful.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="55:1"><input checked="checked" id="__tabbed_55_1" name="__tabbed_55" type="radio" /><div class="tabbed-labels"><label for="__tabbed_55_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="56:1"><input checked="checked" id="__tabbed_56_1" name="__tabbed_56" type="radio" /><div class="tabbed-labels"><label for="__tabbed_56_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="nt">minimizer_retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;count&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="nt">minimizer_retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;count&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -4175,10 +4229,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>True</code></span> Enable a microcode patch against Speculative Store Bypass, if available.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="56:1"><input checked="checked" id="__tabbed_56_1" name="__tabbed_56" type="radio" /><div class="tabbed-labels"><label for="__tabbed_56_1">Syntax</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="57:1"><input checked="checked" id="__tabbed_57_1" name="__tabbed_57" type="radio" /><div class="tabbed-labels"><label for="__tabbed_57_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="nt">x86_executor_enable_ssbp_patch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="nt">x86_executor_enable_ssbp_patch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
 </code></pre></div>
 </div>
 </div>
@@ -4189,24 +4243,10 @@ speculation/observation filters as well as at every iteration of multi-sample co
 <dl>
 <dd>
 <p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>False</code></span> Enable all prefetchers, if the software controls are available.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="57:1"><input checked="checked" id="__tabbed_57_1" name="__tabbed_57" type="radio" /><div class="tabbed-labels"><label for="__tabbed_57_1">Syntax</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="nt">x86_executor_enable_prefetcher</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
-</code></pre></div>
-</div>
-</div>
-</div>
-</dd>
-</dl>
-<h4 id="x86_disable_div64"><code>x86_disable_div64</code></h4>
-<dl>
-<dd>
-<p><span class="inline-box" title="Default Value"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a6 6 0 0 1-6-6c0-4 6-10.75 6-10.75S18 10 18 14a6 6 0 0 1-6 6"/></svg></span> <code>True</code></span> Do not generate 64-bit division instructions. Useful for avoiding certain types of speculation that are specific to 64-bit division.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="58:1"><input checked="checked" id="__tabbed_58_1" name="__tabbed_58" type="radio" /><div class="tabbed-labels"><label for="__tabbed_58_1">Syntax</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="nt">x86_disable_div64</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="nt">x86_executor_enable_prefetcher</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;True|False&gt;</span>
 </code></pre></div>
 </div>
 </div>
