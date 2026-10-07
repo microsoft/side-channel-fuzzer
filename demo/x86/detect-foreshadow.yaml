@@ -36,4 +36,3 @@ program_size: 16
 avg_mem_accesses: 8
 inputs_per_class: 2
 executor_warmups: 2
-x86_disable_div64: false

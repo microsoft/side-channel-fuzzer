@@ -470,7 +470,9 @@ class Fuzzer:
 
         # Create all main modules
         self.log = FuzzLogger()
-        self._isa_spec = InstructionSet(instruction_set_spec, CONF.instruction_categories)
+        constraints = factory.get_instruction_pool_constraints()
+        self._isa_spec = InstructionSet(instruction_set_spec, CONF.instruction_categories,
+                                        constraints)
         self.code_gen = factory.get_program_generator(CONF.program_generator_seed, self._isa_spec)
         self.data_gen = factory.get_data_generator(CONF.data_generator_seed)
         self.executor = factory.get_executor()

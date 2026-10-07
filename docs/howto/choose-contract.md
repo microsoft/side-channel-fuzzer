@@ -24,13 +24,13 @@ CT-SEQ provides the strictest security guarantees and will detect the widest ran
 
 When you find a violation with CT-SEQ and want to continue testing for additional vulnerabilities, you have two approaches.
 
-The simpler and more efficient approach is to blocklist the instruction that triggered the violation. Use the [`instruction_blocklist_append`](../ref/config.md#instruction_blocklist_append) configuration option to exclude specific instructions from testing. For example, if a branch misprediction caused the violation, blocklist all conditional branch instructions:
+The simpler and more efficient approach is to blocklist the instruction that triggered the violation. Use the [`instruction_blocklist`](../ref/config.md#instruction_blocklist) configuration option to exclude specific instructions from testing. For example, if a branch misprediction caused the violation, blocklist all conditional branch instructions:
 
 ```yaml
 contract_observation_clause: ct
 contract_execution_clause:
   - seq
-instruction_blocklist_append:
+instruction_blocklist:
   - jne
   - je
   # add other branch instructions

@@ -18,4 +18,7 @@ avg_mem_accesses: 24
 inputs_per_class: 2
 
 program_generator_seed: 252633
-x86_disable_div64: false
+
+suppress_known_leaks:
+  # overwrite the default suppression list to permit 64-bit division (ZDI leaks are expected here)
+  - fpvi

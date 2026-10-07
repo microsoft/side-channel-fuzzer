@@ -1,5 +1,5 @@
 """
-File:
+File: Loading, filtering, and categorization of ISA specifications.
 
 Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
@@ -7,11 +7,12 @@ SPDX-License-Identifier: MIT
 from __future__ import annotations
 import json
 from copy import deepcopy
-from typing import Dict, List, Optional, Any, get_args
+from dataclasses import dataclass
+from typing import AbstractSet, Dict, List, NamedTuple, Optional, Any, get_args
 
 from .instruction_spec import OT, XOT, OperandSpec, InstructionSpec
-from .config import CONF
-from .logs import ISALogger
+from .config import CONF, ConfigException
+from .logs import ISALogger, warning
 
 _OT_STR_TO_ENUM = {
     "REG": OT.REG,
@@ -23,10 +24,121 @@ _OT_STR_TO_ENUM = {
     "COND": OT.COND,
 }
 
-_FP_XOT = ["f64", "f32", "f16", "2f16"]
-_BFP_XOT = ["bf16"]
+
+# ==================================================================================================
+# Constraints on the instruction pool usable by the code generators
+# ==================================================================================================
+class BlockedInstructionVariant(NamedTuple):
+    """ Matches specs with the given name whose first explicit operand has the given width. """
+
+    name: str
+    width: int
 
 
+@dataclass(frozen=True)
+class InstructionPoolConstraints:
+    """
+    Constraints on ISA elements eligible for use in generated programs.
+
+    An instance may represent component capabilities, test-case contract requirements, or
+    generation policy. Instances from independent sources can be merged into their combined
+    constraints.
+
+    Invariants (not enforced by the type itself):
+
+    - Precedence: a category may legitimately appear both in `supported_categories` and in
+            `blocked_categories`. Blocked wins.
+    - Merge directions: `supported_categories` is an allowlist, so merging intersects it
+            (every source must support a category for it to be usable); the `blocked_*` fields are
+            blocklists, so merging unions them (a single source suffices to block an entry).
+    - Default posture for a category newly added to the spec file: denied by default by models
+      (absent from their allowlists) but allowed by default through generator/executor
+      (absent from their blocklists).
+    """
+
+    supported_categories: Optional[AbstractSet[str]] = None
+    """ Allowlist of supported instruction categories; None means unrestricted (no category
+    constraint; e.g., the dummy model). Note that None and an empty set differ: an empty set
+    means that no category is supported at all. """
+
+    blocked_categories: AbstractSet[str] = frozenset()
+    """ Category exclusions; used by components that cannot reasonably maintain a full
+    allowlist of supported categories (generator, executor). """
+
+    blocked_instructions: AbstractSet[str] = frozenset()
+    """ Names of blocked instructions (all variants). """
+
+    blocked_instruction_variants: AbstractSet[BlockedInstructionVariant] = frozenset()
+    """ Width-qualified instruction variants to block (see BlockedInstructionVariant). """
+
+    blocked_registers: AbstractSet[str] = frozenset()
+    """ Names of registers that must not appear in generated programs. """
+
+    blocked_xtypes: AbstractSet[str] = frozenset()
+    """ Extended operand types (XOT) that must not appear in generated programs. """
+
+    def __post_init__(self) -> None:
+        """ Freeze all sets to ensure immutability. """
+        for name in (
+                "supported_categories",
+                "blocked_categories",
+                "blocked_instructions",
+                "blocked_instruction_variants",
+                "blocked_registers",
+                "blocked_xtypes",
+        ):
+            value = getattr(self, name)
+            if value is not None:
+                object.__setattr__(self, name, frozenset(value))
+
+    @staticmethod
+    def none() -> InstructionPoolConstraints:
+        """ Return a constraints object that does not constrain anything. """
+        return InstructionPoolConstraints()
+
+    @staticmethod
+    def merge(constraints: List[InstructionPoolConstraints]) -> InstructionPoolConstraints:
+        """
+        Merge a list of constraints into a single object: intersection of the
+        supported-category sets (ignoring None entries), union of everything else.
+        """
+        supported: Optional[AbstractSet[str]] = None
+        for c in constraints:
+            if c.supported_categories is None:
+                continue
+            if supported is None:
+                supported = set(c.supported_categories)
+            else:
+                supported &= c.supported_categories
+        return InstructionPoolConstraints(
+            supported_categories=supported,
+            blocked_categories=set().union(*(c.blocked_categories for c in constraints)),
+            blocked_instructions=set().union(*(c.blocked_instructions for c in constraints)),
+            blocked_instruction_variants=set().union(
+                *(c.blocked_instruction_variants for c in constraints)),
+            blocked_registers=set().union(*(c.blocked_registers for c in constraints)),
+            blocked_xtypes=set().union(*(c.blocked_xtypes for c in constraints)),
+        )
+
+
+@dataclass(frozen=True)
+class PerArchConstraints:
+    """
+    A collection class that holds the constraints for all components for a given architecture.
+    Meant to be used a public interface with which per-arch ISA constraints modules communicate
+    the constraints of various components.
+    """
+    model: Dict[str, InstructionPoolConstraints]
+    executor: InstructionPoolConstraints
+    generator: InstructionPoolConstraints
+    contract: InstructionPoolConstraints
+    known_leak_groups: Dict[str, InstructionPoolConstraints]
+    fault_suppression: Dict[str, InstructionPoolConstraints]
+
+
+# ==================================================================================================
+# Representation of the instruction set under test and its categorization
+# ==================================================================================================
 class InstructionSet:
     """
     Class representing an instruction set of a given architecture.
@@ -35,6 +147,7 @@ class InstructionSet:
 
     instructions: List[InstructionSpec]
     instructions_unfiltered: List[InstructionSpec]
+    constraints: InstructionPoolConstraints
     logger: ISALogger
 
     has_unconditional_branch: bool = False
@@ -50,11 +163,15 @@ class InstructionSet:
     store_instructions: List[InstructionSpec]
     cond_branches: List[InstructionSpec]
 
-    def __init__(self, filename: str, include_categories: Optional[List[str]] = None):
+    def __init__(self, filename: str, include_categories: Optional[List[str]],
+                 constraints: InstructionPoolConstraints):
+        self.constraints = constraints
+        _validate_categories(include_categories, constraints)
         self.instructions = []
         _read_json_spec(self, filename)
         self.instructions_unfiltered = deepcopy(self.instructions)
         _reduce(self, include_categories)
+        _warn_about_empty_categories(self, include_categories)
         _set_isa_properties(self)
         _dedup(self)
         _set_categories(self)
@@ -130,23 +247,63 @@ def _parse_json_operand(op: Dict[str, Any], parent: InstructionSpec) -> OperandS
     return spec
 
 
+def _validate_categories(include_categories: Optional[List[str]],
+                         constraints: InstructionPoolConstraints) -> None:
+    """ Check that all requested categories are supported by the selected model backend """
+    if not include_categories or constraints.supported_categories is None:
+        return
+    unsupported = sorted(set(include_categories) - constraints.supported_categories)
+    if unsupported:
+        supported = sorted(constraints.supported_categories)
+        raise ConfigException(
+            f"instruction_categories: {unsupported} not supported by model backend "
+            f"'{CONF.model_backend}' ({CONF.instruction_set}). Supported: {supported}")
+
+
+def _warn_about_empty_categories(isa: InstructionSet,
+                                 include_categories: Optional[List[str]]) -> None:
+    """ Warn when a requested category contributes no instructions """
+    if not include_categories or not CONF.is_generation_enabled():
+        return
+    present_categories = {inst.category for inst in isa.instructions}
+    for category in include_categories:
+        if category not in present_categories:
+            warning(
+                "isa_spec", f"Requested instruction category '{category}' contributes no "
+                "instructions: it is either absent from the spec file or all of its "
+                "instructions are filtered out")
+
+
 def _reduce(isa: InstructionSet, include_categories: Optional[List[str]]) -> None:
     """ Remove unsupported instructions and operand values """
 
     def is_supported(spec: InstructionSpec) -> bool:
-        # pylint: disable=too-many-return-statements
+        # pylint: disable=too-many-return-statements, too-many-branches
         # justification: this is a filtering function
 
         if not CONF.is_generation_enabled():
             # if we use an existing test case, then instruction filtering is irrelevant
             return True
 
-        # allowlist has priority over blocklist
+        # user allowlist has priority over categories, blocklists, and component constraints
         if spec.name in CONF.instruction_allowlist:
             return True
 
         if include_categories and spec.category not in include_categories:
             logger.dbg_dump_filtering_reason(spec, "category not in include_categories")
+            return False
+
+        if spec.category in constraints.blocked_categories:
+            logger.dbg_dump_filtering_reason(spec, "category is blocked")
+            return False
+
+        if spec.name in constraints.blocked_instructions:
+            logger.dbg_dump_filtering_reason(spec, "instruction is blocked")
+            return False
+
+        if spec.operands and BlockedInstructionVariant(spec.name, spec.operands[0].width) \
+                in constraints.blocked_instruction_variants:
+            logger.dbg_dump_filtering_reason(spec, "instruction variant is blocked")
             return False
 
         if spec.name in CONF.instruction_blocklist:
@@ -155,37 +312,34 @@ def _reduce(isa: InstructionSet, include_categories: Optional[List[str]]) -> Non
 
         for operand in spec.operands:
             if operand.type == OT.MEM and operand.values \
-                    and operand.values[0] in register_blocklist:
+                    and operand.values[0] in constraints.blocked_registers:
                 logger.dbg_dump_filtering_reason(spec, "mem operand uses blocked register")
                 return False
 
-        # FP SIMD is not supported
         for operand in spec.operands:
             if operand.type != OT.REG or operand.xtype is None:
                 continue
             assert operand.xtype in get_args(XOT), f"Unknown xtype value: {operand.xtype}"
-            if operand.xtype in _FP_XOT or operand.xtype in _BFP_XOT:
-                logger.dbg_dump_filtering_reason(spec, "uses unsupported FP/SIMD registers")
+            if operand.xtype in constraints.blocked_xtypes:
+                logger.dbg_dump_filtering_reason(spec, "operand xtype is blocked")
                 return False
 
         for implicit_operand in spec.implicit_operands:
             assert implicit_operand.type != OT.LABEL  # I know no such instructions
             if implicit_operand.type == OT.MEM \
-                    and implicit_operand.values[0] in register_blocklist:
+                    and implicit_operand.values[0] in constraints.blocked_registers:
                 logger.dbg_dump_filtering_reason(spec, "implicit mem operand uses blocked register")
                 return False
 
             if implicit_operand.type == OT.REG \
-                    and implicit_operand.values[0] in register_blocklist:
+                    and implicit_operand.values[0] in constraints.blocked_registers:
                 assert len(implicit_operand.values) == 1
                 logger.dbg_dump_filtering_reason(spec, "implicit reg operand uses blocked register")
                 return False
         return True
 
     logger = ISALogger()
-
-    # Identify which registers should not be used
-    register_blocklist = set(CONF.register_blocklist) - set(CONF.register_allowlist)
+    constraints = isa.constraints
 
     # Remove unsupported instructions
     skip_list = []
@@ -206,7 +360,7 @@ def _reduce(isa: InstructionSet, include_categories: Optional[List[str]]) -> Non
                 continue
 
             # identify supported registers
-            op_values = sorted(list(set(op.values) - register_blocklist))
+            op_values = sorted(set(op.values) - constraints.blocked_registers)
 
             # FIXME: temporary disabled generation of higher reg. bytes for x86
             for i, reg in enumerate(op_values):

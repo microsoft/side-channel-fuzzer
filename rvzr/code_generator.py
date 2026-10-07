@@ -24,7 +24,8 @@ from .config import CONF, ActorsConf
 
 if TYPE_CHECKING:
     from .tc_components.test_case_code import InstructionNode
-    from .target_desc import TargetDesc
+    from .tc_components.instruction import RegSize
+    from .target_desc import TargetDesc, RegName
     from .asm_parser import AsmParser
     from .instruction_spec import InstructionSpec, OperandSpec
     from .isa_spec import InstructionSet
@@ -357,6 +358,18 @@ class CodeGenerator(ABC):
                     bb.insert_after(node.previous, inst)
                 else:
                     bb.insert_before(bb.get_first(), inst)
+
+    def _get_usable_registers(self) -> Dict[RegSize, List[RegName]]:
+        """
+        Calculate a dictionary of registers that are permitted for use in generated code,
+        indexed by register size.
+        """
+        blocked_registers = self._instruction_set.constraints.blocked_registers
+        all_registers_by_size = self._target_desc.registers_by_size
+        return {
+            size: [r for r in registers if r not in blocked_registers]
+            for size, registers in all_registers_by_size.items()
+        }
 
 
 def assemble(test_case: TestCaseProgram) -> None:

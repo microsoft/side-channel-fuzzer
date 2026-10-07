@@ -177,7 +177,11 @@ class Conf:
      (instructions from instruction_categories - instruction_blocklist) + instruction_allowlist """
     instruction_blocklist_append: List[str] = []
     """ instruction_blocklist_append: same as instruction_blocklist, but the list is added
-    to the existing blocklist instead of replacing it """
+    to the existing blocklist instead of replacing it.
+
+    Scheduled for deprecation: since instruction_blocklist defaults to an empty list and no
+    longer carries built-in constraints, this option is now a plain alias of
+    instruction_blocklist """
     program_generator_seed: int = 0
     """ program_generator_seed: seed of the program generator; if set to zero, a random seed
     will be used """
@@ -212,7 +216,11 @@ class Conf:
     trigger exceptions. This option modifies this behavior by permitting the generator to produce
     'unsafe' instruction sequences that could potentially trigger an exception. Model and executor
      will also be configured to handle these exceptions gracefully """
-
+    suppress_known_leaks: List[str] = []
+    """ suppress_known_leaks: named groups of instructions whose only known effect is a
+    well-known, uninteresting leak; the instructions in the listed groups are excluded from
+    generated programs. Defaults to all groups defined for the architecture
+    (x86-64: [fpvi, div64]; arm64: []); set to an empty list to disable the suppression """
     # ==============================================================================================
     # Input Data Generator
     data_generator: str = 'random'
@@ -423,19 +431,10 @@ class Conf:
             if var == "actors":
                 self.set_actor_properties(value)
                 continue
-            if var == "instruction_categories":
-                backend = config_update.get("model_backend", self.model_backend)
-                if backend == "unicorn":
-                    options_name = "unicorn_instruction_categories"
-                elif backend == "dynamorio":
-                    options_name = "dr_instruction_categories"
-                else:
-                    options_name = "dr_instruction_categories"
-                self.safe_set(var, value, options_name)
 
             self.safe_set(var, value)
 
-    def safe_set(self, name: str, value: Any, options_name: str = "") -> None:
+    def safe_set(self, name: str, value: Any) -> None:
         assert name not in ["instruction_set"]
 
         # sanity checks
@@ -448,10 +447,7 @@ class Conf:
             raise ConfigException(f"Wrong type of the configuration variable {name}.\n"
                                   f"It's likely a typo in the configuration file.")
 
-        if options_name:
-            self._check_options(options_name, value)
-        else:
-            self._check_options(name, value)
+        self._check_options(name, value)
         setattr(self, name, value)
 
     def _check_options(self, name: str, value: Any) -> None:

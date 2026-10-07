@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple, NamedTuple, Literal, TYPE_CHECKING
 import subprocess
 
-from rvzr.config import CONF, PagePropertyName
+from rvzr.config import PagePropertyName
 
 if TYPE_CHECKING:
     from .tc_components.instruction import Instruction, RegSize
@@ -221,14 +221,3 @@ class TargetDesc(ABC):
             if macro_spec.type_ == type_:
                 return macro_spec
         raise KeyError(f"Unknown macro type: {type_}")
-
-    def _filter_blocked_registers(self) -> Dict[RegSize, List[str]]:
-        """ Filter function used to remove blocked registers. Invoked by subclasses. """
-
-        filtered_decoding: Dict[RegSize, List[str]] = {}
-        for size, registers in self.registers_by_size.items():
-            filtered_decoding[size] = []
-            for register in registers:
-                if register not in CONF.register_blocklist or register in CONF.register_allowlist:
-                    filtered_decoding[size].append(register)
-        return filtered_decoding

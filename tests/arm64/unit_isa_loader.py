@@ -5,6 +5,7 @@ SPDX-License-Identifier: MIT
 import unittest
 from pathlib import Path
 
+from rvzr.factory import get_instruction_pool_constraints
 from rvzr.isa_spec import InstructionSet
 from rvzr.config import CONF
 
@@ -17,6 +18,6 @@ class ARM64ISALoaderTest(unittest.TestCase):
 
     def test_loading(self) -> None:
         instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix(),
-                                         ["general-dataxfer"])
+                                         ["general-dataxfer"], get_instruction_pool_constraints())
         inst_names = [i.name for i in instruction_set.instructions]
         self.assertIn("mov", inst_names)

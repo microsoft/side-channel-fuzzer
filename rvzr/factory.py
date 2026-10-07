@@ -5,6 +5,7 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
+from dataclasses import replace
 from typing import Dict, Type, List, TYPE_CHECKING, Any, Optional, Union
 
 from . import data_generator, analyser, executor, fuzzer, model, elf_parser
@@ -20,11 +21,15 @@ from .postprocessing.minimizer import Minimizer
 
 from .arch.x86 import asm_parser as x86_asm_parser, \
     executor as x86_executor, fuzzer as x86_fuzzer, generator as x86_generator, \
-    target_desc as x86_target_desc, get_spec as x86_get_spec
+    target_desc as x86_target_desc, get_spec as x86_get_spec, \
+    isa_constraints as x86_isa_constraints
 from .arch.arm64 import asm_parser as arm64_asm_parser, \
     executor as arm64_executor, fuzzer as arm64_fuzzer, generator as arm64_generator, \
-    target_desc as arm64_target_desc, get_spec as arm64_get_spec
+    target_desc as arm64_target_desc, get_spec as arm64_get_spec, \
+    isa_constraints as arm64_isa_constraints
 from .config import CONF, ConfigException
+from .isa_spec import InstructionPoolConstraints, PerArchConstraints
+from .logs import warning
 
 if TYPE_CHECKING:
     from .isa_spec import InstructionSet
@@ -50,6 +55,51 @@ _TARGET_DESC: Dict[str, Type[TargetDesc]] = {
     "x86-64": x86_target_desc.X86TargetDesc,
     "arm64": arm64_target_desc.ARM64TargetDesc,
 }
+
+# ==================================================================================================
+# Selection of Constraints on the Instruction Pool
+# ==================================================================================================
+_ARCH_CONSTRAINTS: Dict[str, PerArchConstraints] = {
+    "x86-64": x86_isa_constraints.ARCH_CONSTRAINTS,
+    "arm64": arm64_isa_constraints.ARCH_CONSTRAINTS,
+}
+
+
+def get_instruction_pool_constraints() -> InstructionPoolConstraints:
+    """ Compute instruction-pool constraints for the current configuration. """
+    arch: str = CONF.instruction_set
+    arch_constraints = _ARCH_CONSTRAINTS[arch]
+    model_constraints = arch_constraints.model.get(CONF.model_backend)
+    assert model_constraints is not None
+
+    sources = [
+        model_constraints,
+        arch_constraints.executor,
+        arch_constraints.generator,
+        arch_constraints.contract,
+    ]
+    sources += [arch_constraints.known_leak_groups[group] for group in CONF.suppress_known_leaks]
+    sources += [
+        constraint for fault, constraint in arch_constraints.fault_suppression.items()
+        if fault not in CONF.faults_allowlist
+    ]
+    merged = InstructionPoolConstraints.merge(sources)
+
+    # warn when a user allowlist re-enables an entry blocked by a built-in constraint
+    if CONF.is_generation_enabled():
+        for name in sorted(set(CONF.instruction_allowlist) & merged.blocked_instructions):
+            warning(
+                "factory", f"instruction_allowlist re-enables '{name}', which is blocked by "
+                "a built-in constraint; this may cause false positives or broken measurements")
+        for name in sorted(set(CONF.register_allowlist) & merged.blocked_registers):
+            warning(
+                "factory", f"register_allowlist re-enables '{name}', which is blocked by "
+                "a built-in constraint; this may cause false positives or broken measurements")
+
+    # fold the user register lists into the effective result
+    blocked_registers = \
+        (merged.blocked_registers | set(CONF.register_blocklist)) - set(CONF.register_allowlist)
+    return replace(merged, blocked_registers=blocked_registers)
 
 
 # ==================================================================================================

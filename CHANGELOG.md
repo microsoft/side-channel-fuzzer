@@ -5,6 +5,32 @@ All notable changes to Revizor will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- A warning is printed when a requested instruction category contributes no instructions
+  (previously silent).
+- A warning is printed when `instruction_allowlist` or `register_allowlist` re-enables an
+  entry blocked by a built-in constraint.
+
+### Changed
+
+- Config option `x86_disable_div64` has been replaced by `suppress_known_leaks`, which controls
+  suppression of known leaks (`fpvi` and `div64` on x86-64). The `div64` group replaces the old
+  option. All groups are suppressed by default; set the option to an empty list to test these
+  leaks.
+- Setting `instruction_blocklist` or `register_blocklist` no longer discards built-in
+  restrictions. Both options now default to an empty list.
+- The DynamoRIO and dummy model backends now allow instructions previously restricted by
+  Unicorn limitations (e.g., `cmpxchg8b/16b`).
+- Suppressing 64-bit division no longer silently shortens generated programs.
+
+### Deprecated
+
+- `instruction_blocklist_append` is scheduled for deprecation; it is now a plain alias of
+  `instruction_blocklist`.
+
 ## [2.0.0] - 2026-01-10
 
 ### TL;DR

@@ -30,7 +30,8 @@ if TYPE_CHECKING:
     from rvzr.elf_parser import ELFParser
     from rvzr.asm_parser import AsmParser
     from rvzr.isa_spec import InstructionSet
-    from rvzr.target_desc import TargetDesc
+    from rvzr.tc_components.instruction import RegSize
+    from rvzr.target_desc import TargetDesc, RegName
 
 
 # ==================================================================================================
@@ -323,10 +324,12 @@ class _X86SandboxPass(Pass):
     mask_3bits = "0b111"
     bit_test_names = ["bt", "btc", "btr", "bts", "lock bt", "lock btc", "lock btr", "lock bts"]
 
-    def __init__(self, target_desc: TargetDesc, faults: _FaultFilter) -> None:
+    def __init__(self, target_desc: TargetDesc, faults: _FaultFilter,
+                 usable_registers_by_size: Dict[RegSize, List[RegName]]) -> None:
         super().__init__()
         self.target_desc = target_desc
         self.faults = faults
+        self.usable_registers_by_size = usable_registers_by_size
 
         size_of_directly_accessible_memory = SandboxLayout.data_area_size(DataArea.MAIN) \
             + SandboxLayout.data_area_size(DataArea.FAULTY)
@@ -419,7 +422,7 @@ class _X86SandboxPass(Pass):
         # instrument each operand to sandbox the memory accesses
         for address_reg, mem_operand in uniq_operands.items():
             imm_width = mem_operand.width if mem_operand.width <= 32 else 32
-            assert address_reg in self.target_desc.registers_by_size[64], \
+            assert address_reg in self.usable_registers_by_size[64], \
                 f"Unexpected address register {address_reg} used in {instr}"
             apply_mask = Instruction("and", is_instrumentation=True) \
                 .add_op(RegisterOp(address_reg, mem_operand.width, True, True)) \
@@ -501,11 +504,6 @@ class _X86SandboxPass(Pass):
                f"Unexpected operand type {operand}"
         divisor = copy_op_with_flow_modification(operand, dest=True)
         size = divisor.width
-
-        # This option prevents triggering of Zero Division Injection in the tests
-        if size == 64 and getattr(CONF, 'x86_disable_div64'):
-            parent.delete(node)
-            return
 
         # Prevent div by zero
         if not enable_div_by_zero:
@@ -968,11 +966,12 @@ class X86Generator(CodeGenerator):
         assert isinstance(self._target_desc, X86TargetDesc)
 
         self._faults = _FaultFilter()
+        usable_registers: Dict[RegSize, List[RegName]] = self._get_usable_registers()
 
         # configure instrumentation passes
         self._passes = [
             _X86PatchUndefinedFlagsPass(self._instruction_set, self),
-            _X86SandboxPass(self._target_desc, self._faults),
+            _X86SandboxPass(self._target_desc, self._faults, usable_registers),
             _X86PatchUndefinedResultPass(),
         ]
         if self._faults.non_canonical_access:

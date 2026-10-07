@@ -19,7 +19,6 @@ from rvzr.tc_components.test_case_code import TestCaseProgram
 from rvzr.logs import warning
 from rvzr.stats import FuzzingStats
 from rvzr.config import CONF
-from .config import _buggy_instructions
 from .executor import X86IntelExecutor
 
 if TYPE_CHECKING:
@@ -145,10 +144,6 @@ class X86Fuzzer(Fuzzer):
 
         return False
 
-    def _adjust_config(self, existing_test_case: str) -> None:
-        super()._adjust_config(existing_test_case)
-        _update_instruction_list()
-
 
 # ==================================================================================================
 # Non-standard Fuzzers
@@ -159,10 +154,6 @@ class X86ArchitecturalFuzzer(ArchitecturalFuzzer):
     Essentially the same as the generic ArchitecturalFuzzer, but with some additional checks
     on the instruction set
     """
-
-    def _adjust_config(self, existing_test_case: str) -> None:
-        super()._adjust_config(existing_test_case)
-        _update_instruction_list()
 
     def start(self, num_test_cases: int, num_inputs: int, timeout: int, nonstop: bool,
               save_violations: bool, type_: FuzzingMode) -> bool:
@@ -180,10 +171,6 @@ class X86ArchDiffFuzzer(ArchDiffFuzzer):
 
     executor: X86IntelExecutor
 
-    def _adjust_config(self, existing_test_case: str) -> None:
-        super()._adjust_config(existing_test_case)
-        _update_instruction_list()
-
     def start(self, num_test_cases: int, num_inputs: int, timeout: int, nonstop: bool,
               save_violations: bool, type_: FuzzingMode) -> bool:
         _check_instruction_list(self._isa_spec)
@@ -199,20 +186,6 @@ class X86ArchDiffFuzzer(ArchDiffFuzzer):
 # ==================================================================================================
 # Helper functions
 # ==================================================================================================
-def _update_instruction_list() -> None:
-    """
-    Remove those instructions that trigger unhandled exceptions.
-    This functionality is implemented as a module-level function
-    to avoid code duplication between X86Fuzzer and X86ArchitecturalFuzzer
-    """
-    if 'opcode-undefined' not in CONF.faults_allowlist:
-        CONF.instruction_blocklist.extend(["ud", "ud2"])
-    if 'breakpoint' not in CONF.faults_allowlist:
-        CONF.instruction_blocklist.extend(["int3"])
-    if 'debug-register' not in CONF.faults_allowlist:
-        CONF.instruction_blocklist.extend(["int1"])
-
-
 def _check_instruction_list(instruction_set: InstructionSet) -> None:
     """ Check if the instruction set contains the instructions required for the faults """
     all_instruction_names = {i.name for i in instruction_set.instructions}
@@ -228,13 +201,6 @@ def _check_instruction_list(instruction_set: InstructionSet) -> None:
     if 'debug-register' in CONF.faults_allowlist:
         if 'int1' not in all_instruction_names:
             warning("fuzzer", "debug-register enabled, but INT1 instruction is missing")
-
-    # Print a warning if the instruction set contains instructions that are known to be problematic
-    for inst_name in _buggy_instructions:
-        if inst_name in all_instruction_names and CONF.is_generation_enabled():
-            warning(
-                "fuzzer", f"Instruction {inst_name} is known to cause false positives\n"
-                "Consider adding it to instruction_blocklist")
 
 
 @contextmanager

@@ -122,7 +122,6 @@ class ARM64TargetDesc(TargetDesc):
         super().__init__()
 
         # modify/set target parameters based on the CPU under test and the configuration
-        self.registers_by_size = self._filter_blocked_registers()
         self.cpu_desc = self._build_cpu_desc()
 
         # connect Unicorn TD

@@ -174,3 +174,4 @@ nav:
     - Model Backends:
       - Unicorn Backend: internals/model-backends/model-unicorn.md
       - DynamoRIO Backend: internals/model-backends/model-dr.md
+    - ISA Constraints: internals/isa-constraints.md

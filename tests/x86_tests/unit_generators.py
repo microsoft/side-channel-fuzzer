@@ -12,8 +12,8 @@ from rvzr.arch.x86.generator import X86Generator, _X86Printer, _X86PatchUndefine
     _X86PatchOpcodesPass
 from rvzr.arch.x86.target_desc import X86TargetDesc
 from rvzr.elf_parser import ELFParser
-from rvzr.factory import get_program_generator, get_asm_parser
-from rvzr.isa_spec import InstructionSet
+from rvzr.factory import get_program_generator, get_asm_parser, get_instruction_pool_constraints
+from rvzr.isa_spec import InstructionSet, InstructionPoolConstraints
 from rvzr.tc_components.actor import ActorMode
 from rvzr.tc_components.test_case_code import TestCaseProgram, Function, BasicBlock
 from rvzr.tc_components.test_case_binary import SymbolTableEntry
@@ -24,6 +24,18 @@ from rvzr.logs import update_logging_after_config_change
 CONF.instruction_set = "x86-64"
 test_path = Path(__file__).resolve()
 test_dir = test_path.parent
+
+
+def _dummy_backend_constraints() -> InstructionPoolConstraints:
+    """ Effective constraints without a model's category restrictions (as with the dummy
+    backend); used by the tests that exercise the full spec file """
+    prev_backend = CONF.model_backend
+    CONF.model_backend = "dummy"
+    try:
+        return get_instruction_pool_constraints()
+    finally:
+        CONF.model_backend = prev_backend
+
 
 ASM_OPCODE = """
 .intel_syntax noprefix
@@ -70,7 +82,9 @@ class X86GeneratorTest(unittest.TestCase):
     @staticmethod
     def load_tc(asm_str: str) -> TestCaseProgram:
 
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix())
+        constraints = get_instruction_pool_constraints()
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
+                                         constraints)
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(X86TargetDesc())
@@ -85,8 +99,9 @@ class X86GeneratorTest(unittest.TestCase):
 
     def test_x86_configuration(self) -> None:
         CONF.generator = "random"
+        constraints = get_instruction_pool_constraints()
         instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
-                                         CONF.instruction_categories)
+                                         CONF.instruction_categories, constraints)
         gen = get_program_generator(CONF.program_generator_seed, instruction_set)
         self.assertEqual(gen.__class__, X86Generator)
 
@@ -137,20 +152,24 @@ class X86GeneratorTest(unittest.TestCase):
             os.unlink(asm_file.name)
 
     def test_x86_all_instructions_reduced(self) -> None:
+        constraints = _dummy_backend_constraints()
         instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
-                                         _ALL_CATEGORIES)
+                                         _ALL_CATEGORIES, constraints)
         self._test_all_instructions(instruction_set)
 
     def test_x86_all_instructions_full(self) -> None:
         if not (test_dir / "../../base.json").exists():
             self.skipTest("base.json not available; skipping test.")
 
+        constraints = _dummy_backend_constraints()
         instruction_set = InstructionSet((test_dir / "../../base.json").absolute().as_posix(),
-                                         _ALL_CATEGORIES)
+                                         _ALL_CATEGORIES, constraints)
         self._test_all_instructions(instruction_set)
 
     def test_x86_asm_parsing_basic(self) -> None:
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix())
+        constraints = get_instruction_pool_constraints()
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
+                                         constraints)
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(X86TargetDesc())
@@ -194,7 +213,9 @@ class X86GeneratorTest(unittest.TestCase):
         CONF.get_actors_conf()["guest_1"]["mode"] = "guest"
         CONF.get_actors_conf()["guest_1"]["privilege_level"] = "kernel"
 
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix())
+        constraints = get_instruction_pool_constraints()
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
+                                         constraints)
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(X86TargetDesc())
@@ -240,7 +261,9 @@ class X86GeneratorTest(unittest.TestCase):
         CONF.get_actors_conf()["guest_1"]["mode"] = "guest"
         CONF.get_actors_conf()["guest_1"]["privilege_level"] = "kernel"
 
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix())
+        constraints = get_instruction_pool_constraints()
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
+                                         constraints)
 
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
@@ -259,8 +282,9 @@ class X86GeneratorTest(unittest.TestCase):
         CONF._actors = prev_actors
 
     def test_x86_undef_flag_patch(self) -> None:
+        constraints = get_instruction_pool_constraints()
         instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
-                                         CONF.instruction_categories + ["BASE-FLAGOP"])
+                                         CONF.instruction_categories + ["BASE-FLAGOP"], constraints)
         undef_instr_spec = list(filter(lambda x: x.name == 'bsf', instruction_set.instructions))[0]
         read_instr_spec = list(filter(lambda x: x.name == 'lahf', instruction_set.instructions))[0]
 

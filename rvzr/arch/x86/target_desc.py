@@ -255,7 +255,6 @@ class X86TargetDesc(TargetDesc):
         super().__init__()
 
         # modify/set target parameters based on the CPU under test and the configuration
-        self.registers_by_size = self._filter_blocked_registers()
         self.cpu_desc = self._build_cpu_desc()
 
         # Select VM page table bits and property mapping based on vendor

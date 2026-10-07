@@ -12,7 +12,7 @@ from copy import deepcopy
 from rvzr.arch.arm64.generator import ARM64Generator, _ARM64Printer
 from rvzr.arch.arm64.target_desc import ARM64TargetDesc
 from rvzr.elf_parser import ELFParser
-from rvzr.factory import get_program_generator, get_asm_parser
+from rvzr.factory import get_program_generator, get_asm_parser, get_instruction_pool_constraints
 from rvzr.isa_spec import InstructionSet
 from rvzr.tc_components.actor import ActorMode
 from rvzr.tc_components.test_case_code import TestCaseProgram
@@ -42,7 +42,9 @@ class ARM64GeneratorTest(unittest.TestCase):
     @staticmethod
     def load_tc(asm_str: str) -> TestCaseProgram:
 
-        instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix())
+        constraints = get_instruction_pool_constraints()
+        instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix(), None,
+                                         constraints)
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(ARM64TargetDesc())
@@ -58,7 +60,8 @@ class ARM64GeneratorTest(unittest.TestCase):
     def test_arm64_configuration(self) -> None:
         CONF.generator = "random"
         instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix(),
-                                         CONF.instruction_categories)
+                                         CONF.instruction_categories,
+                                         get_instruction_pool_constraints())
         gen = get_program_generator(CONF.program_generator_seed, instruction_set)
         self.assertEqual(gen.__class__, ARM64Generator)
 
@@ -66,7 +69,8 @@ class ARM64GeneratorTest(unittest.TestCase):
         asm_file = tempfile.NamedTemporaryFile("w", delete=False)
         obj_file = tempfile.NamedTemporaryFile("w", delete=False)
 
-        instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix())
+        instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix(), None,
+                                         get_instruction_pool_constraints())
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         tc = TestCaseProgram(asm_file.name)
         tc.assign_obj(obj_file.name)
@@ -108,7 +112,8 @@ class ARM64GeneratorTest(unittest.TestCase):
             os.unlink(asm_file.name)
 
     def test_arm64_asm_parsing_basic(self) -> None:
-        instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix())
+        instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix(), None,
+                                         get_instruction_pool_constraints())
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(ARM64TargetDesc())
@@ -152,7 +157,9 @@ class ARM64GeneratorTest(unittest.TestCase):
         CONF.get_actors_conf()["guest_1"]["mode"] = "guest"
         CONF.get_actors_conf()["guest_1"]["privilege_level"] = "kernel"
 
-        instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix())
+        constraints = get_instruction_pool_constraints()
+        instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix(), None,
+                                         constraints)
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(ARM64TargetDesc())
@@ -198,7 +205,9 @@ class ARM64GeneratorTest(unittest.TestCase):
         CONF.get_actors_conf()["guest_1"]["mode"] = "guest"
         CONF.get_actors_conf()["guest_1"]["privilege_level"] = "kernel"
 
-        instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix())
+        constraints = get_instruction_pool_constraints()
+        instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix(), None,
+                                         constraints)
 
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)

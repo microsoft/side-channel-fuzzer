@@ -23,7 +23,8 @@ if TYPE_CHECKING:
     from rvzr.elf_parser import ELFParser
     from rvzr.asm_parser import AsmParser
     from rvzr.isa_spec import InstructionSet
-    from rvzr.target_desc import TargetDesc
+    from rvzr.tc_components.instruction import RegSize
+    from rvzr.target_desc import TargetDesc, RegName
 
 
 # ==================================================================================================
@@ -200,9 +201,11 @@ class _ARM64SandboxPass(Pass):
 
 class _ARM64PatchUndefinedLoadsPass(Pass):
 
-    def __init__(self, target_desc: TargetDesc) -> None:
+    def __init__(self, target_desc: TargetDesc,
+                 usable_registers_by_size: Dict[RegSize, List[RegName]]) -> None:
         super().__init__()
         self.target_desc = target_desc
+        self.usable_registers_by_size = usable_registers_by_size
 
     def run_on_test_case(self, test_case: TestCaseProgram) -> None:
         for bb in test_case.iter_basic_blocks():
@@ -222,8 +225,8 @@ class _ARM64PatchUndefinedLoadsPass(Pass):
             for inst in to_patch:
                 org_dest = inst.operands[0]
                 assert isinstance(org_dest, RegisterOp)
-                assert org_dest.width in self.target_desc.registers_by_size
-                options = self.target_desc.registers_by_size[org_dest.width]
+                assert org_dest.width in self.usable_registers_by_size
+                options = self.usable_registers_by_size[org_dest.width]
                 options = [i for i in options if i != org_dest.value]
                 new_value = random.choice(options)
                 inst.operands[0].value = new_value
@@ -255,9 +258,11 @@ class ARM64Generator(CodeGenerator):
         super().__init__(seed, instruction_set, target_desc, asm_parser, elf_parser)
         assert isinstance(self._target_desc, ARM64TargetDesc)
 
+        usable_registers = self._get_usable_registers()
+
         # configure instrumentation passes
         self._passes = [
             _ARM64SandboxPass(self._target_desc),
-            _ARM64PatchUndefinedLoadsPass(self._target_desc),
+            _ARM64PatchUndefinedLoadsPass(self._target_desc, usable_registers),
         ]
         self._printer = _ARM64Printer(self._target_desc)

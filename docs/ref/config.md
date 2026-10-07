@@ -181,16 +181,13 @@ This option is helps a lot with readability, but may produce corrupted output wh
 
 #### `instruction_blocklist`
 
-:   <span class="inline-box" title="Default Value is Chosen Automatically Based on the Target CPU">:octicons-cpu-24:</span> A list of instructions that will **not** be used for generating programs. This list filters out instructions from `instruction_categories`, but not from `instruction_allowlist`.
+:   <span class="inline-box" title="Default Value">:material-water: `[]`</span> A list of instructions that will **not** be used for generating programs. This list filters out instructions from `instruction_categories`, but not from `instruction_allowlist`.
 
     !!! info "Priority"
         This list has lower priority than `instruction_allowlist`.
 
         The resulting instruction pool is:
         `all from(instruction_categories) - instruction_blocklist + instruction_allowlist`
-
-    !!! warning "Danger Zone"
-        This option has a somewhat sensible default value for each supported architecture, selected to avoid known-bad instructions. Thus, setting this option explicitly is unadvisable. Prefer using `instruction_blocklist_append` to add more instructions to the default blocklist.
 
     === "Syntax"
         ```yaml
@@ -204,13 +201,10 @@ This option is helps a lot with readability, but may produce corrupted output wh
 
 #### `instruction_blocklist_append`
 
-:   <span class="inline-box" title="Default Value">:material-water: `[]`</span> A list of instructions that will be appended to the default blocklist for the target ISA. This option is identical to `instruction_blocklist`, but the list is added to the default instead of replacing it.
+:   <span class="inline-box" title="Default Value">:material-water: `[]`</span> A list of instructions that will be appended to `instruction_blocklist`.
 
-    !!! info "Priority"
-        This list has lower priority than `instruction_allowlist`.
-
-        The resulting instruction pool is:
-        `all from(instruction_categories) - instruction_blocklist + instruction_allowlist`
+    !!! warning "Scheduled for deprecation"
+        Since `instruction_blocklist` defaults to an empty list and no longer carries built-in constraints, this option is now a plain alias of `instruction_blocklist` and will be removed in a future release.
 
     === "Syntax"
         ```yaml
@@ -231,6 +225,9 @@ This option is helps a lot with readability, but may produce corrupted output wh
 
         The resulting instruction pool is:
         `all from(instruction_categories) - instruction_blocklist + instruction_allowlist`
+
+    !!! warning "Overrides built-in constraints"
+        This list also overrides the built-in constraints of the selected model backend, executor, and generator. Re-enabling an instruction that a component cannot handle may cause false positives or broken measurements; Revizor prints a warning for each such instruction.
 
     === "Syntax"
         ```yaml
@@ -325,6 +322,9 @@ This option is helps a lot with readability, but may produce corrupted output wh
     !!! info "Priority"
         This list has higher priority than `register_blocklist`. The resulting list is: `(all registers - register_blocklist) + register_allowlist`.
 
+    !!! warning "Overrides built-in constraints"
+        This list also overrides the built-in register constraints (e.g., registers reserved for internal use by the executor). Re-enabling such a register may lead to broken measurements or a full system crash; Revizor prints a warning for each such register.
+
     === "Syntax"
         ```yaml
         register_allowlist:
@@ -337,13 +337,10 @@ This option is helps a lot with readability, but may produce corrupted output wh
 
 #### `register_blocklist`
 
-:   <span class="inline-box" title="Default Value is Chosen Automatically Based on the Target CPU">:octicons-cpu-24:</span> A list of registers that will **not** be used for generating programs.
+:   <span class="inline-box" title="Default Value">:material-water: `[]`</span> A list of registers that will **not** be used for generating programs.
 
     !!! info "Priority"
         This list has lower priority than `register_allowlist`. The resulting list is: `(all registers - register_blocklist) + register_allowlist`.
-
-    !!! warning "Danger Zone"
-        The default value of this option includes registers that reserved for internal use by the executor, and thus should be avoided. Modifying this option may lead to a full system crash.
 
     === "Syntax"
         ```yaml
@@ -376,6 +373,23 @@ This option is helps a lot with readability, but may produce corrupted output wh
         * `debug-register` - generate instructions that cause INT1 exceptions.
         * `non-canonical-access` - randomly select a memory access in a generated program and instrument it to access a non-canonical address.
         * `user-to-kernel-access` - randomly select memory access instructions in user-privilege actors and instrument them to access the kernel actor's (actor 0) memory. This creates cross-privilege-level memory access patterns useful for detecting CPU vulnerabilities like Meltdown. Requires at least one actor with `privilege_level: user`. The instrumentation modifies both the memory operands and the sandboxing masks to ensure accesses target the kernel's FAULTY data area.
+
+#### `suppress_known_leaks`
+
+:   <span class="inline-box" title="Default Value is Chosen Automatically Based on the Target CPU">:octicons-cpu-24:</span> Named groups of instructions whose only known effect is a well-known, uninteresting leak; the instructions in the listed groups are excluded from generated programs. The default enables all groups defined for the target architecture (`[fpvi, div64]` on x86-64; `[]` on arm64). Set the option to an empty list to disable the suppression and test the corresponding leaks (e.g., to detect Zero Division Injection, remove `div64`).
+
+    === "Syntax"
+        ```yaml
+        suppress_known_leaks:
+          - <group1>
+          - <group2>
+          ...
+        ```
+    === "Available Options"
+        x86-64: `fpvi`, `div64`; arm64: none.
+    === "Options Explained"
+        * `fpvi` - floating-point arithmetic instructions, which leak operand values via Floating-Point Value Injection (FPVI).
+        * `div64` - 64-bit variants of division instructions, which leak operand values via Zero Division Injection; the 8/16/32-bit variants are not affected and stay enabled.
 
 
 ## <a name="actor"></a> Actor Configuration
@@ -880,15 +894,6 @@ The following options are available for each actor:
     === "Syntax"
         ```yaml
         x86_executor_enable_prefetcher: <True|False>
-        ```
-
-#### `x86_disable_div64`
-
-:   <span class="inline-box" title="Default Value">:material-water: `True`</span> Do not generate 64-bit division instructions. Useful for avoiding certain types of speculation that are specific to 64-bit division.
-
-    === "Syntax"
-        ```yaml
-        x86_disable_div64: <True|False>
         ```
 
 #### `x86_enable_hpa_gpa_collisions`

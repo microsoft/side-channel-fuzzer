@@ -14,6 +14,7 @@ from pathlib import Path
 
 from rvzr.tc_components.test_case_code import TestCaseProgram
 from rvzr.tc_components.test_case_data import InputData
+from rvzr.factory import get_instruction_pool_constraints
 from rvzr.isa_spec import InstructionSet
 from rvzr.elf_parser import ELFParser
 from rvzr.arch.x86.target_desc import X86TargetDesc
@@ -125,7 +126,8 @@ class InstList:
         asm_str = ASM_HEADER
         asm_str += "\n".join([x.text for x in self.instructions])
 
-        instruction_set = InstructionSet(min_x86_path.absolute().as_posix())
+        constraints = get_instruction_pool_constraints()
+        instruction_set = InstructionSet(min_x86_path.absolute().as_posix(), None, constraints)
         target_desc = X86TargetDesc()
         elf_parser = ELFParser(target_desc)
         asm_parser = X86AsmParser(instruction_set, target_desc)

@@ -7,7 +7,7 @@ import unittest
 import tempfile
 from pathlib import Path
 
-from rvzr.factory import get_asm_parser, get_program_generator
+from rvzr.factory import get_asm_parser, get_program_generator, get_instruction_pool_constraints
 from rvzr.elf_parser import ELFParser
 from rvzr.isa_spec import InstructionSet
 from rvzr.config import CONF
@@ -34,7 +34,9 @@ class X86FuzzerTest(unittest.TestCase):
         # Test that the function _create_fenced_test_case adds fences to
         # the assembly file in a correct way
 
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix())
+        constraints = get_instruction_pool_constraints()
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
+                                         constraints)
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(X86TargetDesc())
