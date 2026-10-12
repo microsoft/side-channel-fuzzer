@@ -6,8 +6,13 @@ Copyright (C) Microsoft Corporation
 SPDX-License-Identifier: MIT
 """
 
+import sys
 from rvzr.cli import main
 
 if __name__ == '__main__':
-    exit_code = main()
-    exit(exit_code)
+    try:
+        exit_code = main()
+    except KeyboardInterrupt:
+        print("\nINFO: Interrupted by user", file=sys.stderr)
+        exit_code = 130  # 128 + SIGINT
+    sys.exit(exit_code)

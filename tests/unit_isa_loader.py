@@ -10,7 +10,6 @@ import tempfile
 from contextlib import redirect_stdout
 from typing import List, Optional
 
-from rvzr import factory
 from rvzr.config import CONF, ConfigException
 from rvzr.isa_spec import InstructionSet, InstructionPoolConstraints, BlockedInstructionVariant
 from rvzr.instruction_spec import OT, InstructionSpec
