@@ -228,7 +228,7 @@ class UnicornModel(Model, ABC):
 
         # Set the list of handled faults
         self._handled_faults = set()
-        for fault in CONF._handled_faults:
+        for fault in CONF.get_handled_faults():
             if fault in _UC_FAULT_MAPPING:
                 self._handled_faults.update(_UC_FAULT_MAPPING[fault])
             else:

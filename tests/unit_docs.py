@@ -120,7 +120,7 @@ class DocumentationTest(unittest.TestCase):
             k for k in inspect.getmembers(CONF, lambda x: not inspect.isroutine(x))
             if not k[0].startswith("_")
         ]
-        alternatives = CONF._option_values
+        alternatives = CONF.get_option_values()
 
         # check if all alternatives and defaults are documented
         for name, default_ in options:

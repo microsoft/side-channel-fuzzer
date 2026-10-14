@@ -6,7 +6,6 @@ SPDX-License-Identifier: MIT
 """
 import unittest
 from typing import Callable, List, Optional, Tuple, Union, Any, Dict
-from copy import deepcopy
 from pathlib import Path
 from functools import wraps
 
@@ -16,7 +15,7 @@ from rvzr.model_unicorn.model import X86UnicornModel
 from rvzr.tc_components.test_case_data import InputData
 from rvzr.traces import CTrace
 from rvzr.factory import get_model
-from rvzr.config import CONF, ConfigException, Conf
+from rvzr.config import CONF, ConfigException
 from rvzr.logs import update_logging_after_config_change
 
 from .model_common import Inst, InstList, InputBuilder, \
@@ -68,7 +67,7 @@ class _SharedX86Model(unittest.TestCase):
     _prev_obs_clause: Optional[str] = None
     _prev_exec_clause: Optional[List[str]] = None
     _prev_backend: Optional[str] = None
-    _prev_conf: Optional[Conf] = None
+    _prev_conf: Optional[Dict[str, Any]] = None
     _backend: Backend
     _backend_long: str
 
@@ -87,9 +86,9 @@ class _SharedX86Model(unittest.TestCase):
         :param backend_long: Full backend name ('dynamorio' or 'unicorn')
         :param additional_config: Optional dict of additional CONF attributes to set
         """
-        cls._prev_conf = deepcopy(CONF)
+        cls._prev_conf = CONF.snapshot()
         CONF.model_backend = backend_long
-        CONF._no_generation = True
+        CONF.disable_generation()
         CONF.logging_modes = []
 
         # Apply additional backend-specific configuration
@@ -103,8 +102,7 @@ class _SharedX86Model(unittest.TestCase):
     def _teardown_class(cls) -> None:
         """Restore configuration to pre-test state."""
         if cls._prev_conf is not None:
-            for attr, value in cls._prev_conf.__dict__.items():
-                setattr(CONF, attr, value)
+            CONF.restore(cls._prev_conf)
 
     def __init__(self, methodName: str = "runTest") -> None:
         super().__init__(methodName)
@@ -921,7 +919,9 @@ class X86DRModelTest(_SharedX86Model):
                    exec_clause: List[str],
                    data_bases: Tuple[int, int],
                    enable_mismatch_check: bool = False) -> DynamoRIOModel:
-        CONF.contract_observation_clause = obs_clause
+        # bypass config validation: the DR backend implements extra clauses
+        # (ind/ss/ss0) that are used by mcfz but are not supported by rvzr configs
+        object.__setattr__(CONF, 'contract_observation_clause', obs_clause)
         CONF.contract_execution_clause = exec_clause
         CONF.model_backend = "dynamorio"
         model = get_model(data_bases, enable_mismatch_check_mode=enable_mismatch_check)
@@ -934,16 +934,21 @@ class X86DRModelTest(_SharedX86Model):
         self.assertEqual(model._obs_clause_name, "ct")
         self.assertEqual(model._exec_clause_name, "seq")
 
-        # Set new clauses (invalid)
+        # Set new clauses (valid, but not supported by the DynamoRIO backend)
         with self.assertRaises(ConfigException) as e:
-            _ = self._get_model("invalid", ["seq"], (DATA_BASE, CODE_BASE))
+            _ = self._get_model("l1d", ["seq"], (DATA_BASE, CODE_BASE))
         self.assertIn("unsupported observation clause", str(e.exception))
         self.assertIn("- ct", str(e.exception))
 
         with self.assertRaises(ConfigException) as e:
-            _ = self._get_model("ct", ["invalid"], (DATA_BASE, CODE_BASE))
+            _ = self._get_model("ct", ["meltdown"], (DATA_BASE, CODE_BASE))
         self.assertIn("unsupported execution clause", str(e.exception))
         self.assertIn("- seq", str(e.exception))
+
+        # Set new clauses (invalid value, rejected by the config)
+        with self.assertRaises(ConfigException) as e:
+            CONF.contract_observation_clause = "invalid"
+        self.assertIn("not an allowed value", str(e.exception))
 
         # Set new clauses (invalid, alt interface)
         model = DynamoRIOModel((DATA_BASE, CODE_BASE))

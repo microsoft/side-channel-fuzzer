@@ -293,7 +293,8 @@ This option is helps a lot with readability, but may produce corrupted output wh
 
         * if the instruction set does not have the necessary instructions to satisfy it
         * if a certain number of successor is required for correctness.
-        * if min_successors_per_bb > max_successors_per_bb, the value is overwritten with max_successors_per_bb
+
+        Setting min_successors_per_bb > max_successors_per_bb is a configuration error.
 
     === "Syntax"
         ```yaml
@@ -394,18 +395,19 @@ This option is helps a lot with readability, but may produce corrupted output wh
 
 ## <a name="actor"></a> Actor Configuration
 
-All actors are defined in the `actors` list, with the following syntax:
+All actors are defined in the `actors` list. Each actor is a single-key list entry, and
+its properties are again a list of single-key entries:
 
 ```yaml
 actors:
   - <actor1_name>:
-      <actor_option>: <value>
-      <actor_option>:
-        <sub_option1>: <value1>
-        <sub_option2>: <value2>
-      ...
+    - <actor_option>: <value>
+    - <actor_option>:
+      - <sub_option1>: <value1>
+      - <sub_option2>: <value2>
+    ...
   - <actor2_name>:
-      ...
+    ...
   ...
 ```
 
@@ -419,7 +421,7 @@ The following options are available for each actor:
         ```yaml
         actors:
           - <actor_name>:
-              mode: <mode>
+            - mode: <mode>
         ```
     === "Available Options"
         `host` | `guest`
@@ -435,7 +437,7 @@ The following options are available for each actor:
         ```yaml
         actors:
           - <actor_name>:
-              privilege_level: <level>
+            - privilege_level: <level>
         ```
     === "Available Options"
         `user` | `kernel`
@@ -453,15 +455,15 @@ The following options are available for each actor:
         ```yaml
         actors:
           - <actor_name>:
-              data_properties:
-                present: <True|False>
-                writable: <True|False>
-                user: <True|False>
-                accessed: <True|False>
-                dirty: <True|False>
-                executable: <True|False>
-                reserved_bit: <True|False>
-                randomized: <True|False>
+            - data_properties:
+              - present: <True|False>
+              - writable: <True|False>
+              - user: <True|False>
+              - accessed: <True|False>
+              - dirty: <True|False>
+              - executable: <True|False>
+              - reserved_bit: <True|False>
+              - randomized: <True|False>
         ```
     === "Available Options"
         `present` | `writable` | `user` | `accessed` | `dirty` | `executable` | `reserved_bit` | `randomized`
@@ -485,15 +487,15 @@ The following options are available for each actor:
         ```yaml
         actors:
           - <actor_name>:
-              data_ept_properties:
-                present: <True|False>
-                writable: <True|False>
-                executable: <True|False>
-                accessed: <True|False>
-                dirty: <True|False>
-                user: <True|False>
-                reserved_bit: <True|False>
-                randomized: <True|False>
+            - data_ept_properties:
+              - present: <True|False>
+              - writable: <True|False>
+              - executable: <True|False>
+              - accessed: <True|False>
+              - dirty: <True|False>
+              - user: <True|False>
+              - reserved_bit: <True|False>
+              - randomized: <True|False>
         ```
     === "Available Options"
         `present` | `writable` | `executable` | `accessed` | `dirty` | `user` | `reserved_bit` | `randomized`
@@ -515,7 +517,7 @@ The following options are available for each actor:
         ```yaml
         actors:
           - <actor_name>:
-              observer: <True|False>
+            - observer: <True|False>
         ```
 
 #### `instruction_blocklist`
@@ -531,9 +533,9 @@ The following options are available for each actor:
         ```yaml
         actors:
           - <actor_name>:
-              instruction_blocklist:
-                - <instruction1>
-                - <instruction2>
+            - instruction_blocklist:
+              - <instruction1>
+              - <instruction2>
                 ...
         ```
 
@@ -550,9 +552,9 @@ The following options are available for each actor:
         ```yaml
         actors:
           - <actor_name>:
-              fault_blocklist:
-                - <fault1>
-                - <fault2>
+            - fault_blocklist:
+              - <fault1>
+              - <fault2>
                 ...
         ```
     === "Available Options"

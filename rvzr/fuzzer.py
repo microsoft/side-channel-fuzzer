@@ -781,8 +781,9 @@ class Fuzzer:
             input_.save(f"{violation_dir}/input_{i:04}.bin")
 
         # store the original configuration file
-        if CONF._config_path:
-            shutil.copy2(CONF._config_path, f"{violation_dir}/org-config.yaml")
+        config_path = CONF.get_config_path()
+        if config_path:
+            shutil.copy2(config_path, f"{violation_dir}/org-config.yaml")
         else:
             with open(f"{violation_dir}/org-config.yaml", "w") as f:
                 f.write("# Original violation used a default config, hence this file is empty\n")

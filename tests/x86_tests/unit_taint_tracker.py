@@ -6,15 +6,14 @@ SPDX-License-Identifier: MIT
 """
 import unittest
 from abc import ABC
-from typing import List, Tuple, Union
-from copy import deepcopy
+from typing import Any, Dict, List, Tuple, Union
 
 from rvzr.model_unicorn.model import X86UnicornModel
 from rvzr.model_dynamorio.model import DynamoRIOModel
 from rvzr.tc_components.test_case_data import InputData, InputTaint
 from rvzr.traces import CTrace
 from rvzr.factory import get_model
-from rvzr.config import CONF, Conf
+from rvzr.config import CONF
 from rvzr.logs import update_logging_after_config_change
 
 from .model_common import Inst, InstList, DATA_BASE, CODE_BASE, Backend, \
@@ -32,7 +31,7 @@ class _SharedTaintTrackerTest(ABC, unittest.TestCase):
         _model_backend_name: Model backend name ("dynamorio" or "unicorn")
     """
 
-    _prev_conf: Conf
+    _prev_conf: Dict[str, Any]
     _backend: Backend
     _model_backend_name: str
 
@@ -46,18 +45,17 @@ class _SharedTaintTrackerTest(ABC, unittest.TestCase):
             raise TypeError(
                 f"{cls.__name__} must define class attributes '_backend' and '_model_backend_name'")
         # Save and configure settings for taint tracking tests
-        cls._prev_conf = deepcopy(CONF)
+        cls._prev_conf = CONF.snapshot()
         CONF.instruction_set = "x86-64"
         CONF.model_backend = cls._model_backend_name
-        CONF._no_generation = True  # type: ignore
+        CONF.disable_generation()
         CONF.logging_modes = []
         update_logging_after_config_change()
 
     @classmethod
     def tearDownClass(cls) -> None:
         # Restore configuration
-        for attr, value in cls._prev_conf.__dict__.items():
-            setattr(CONF, attr, value)
+        CONF.restore(cls._prev_conf)
 
     def __init__(self, methodName: str) -> None:
         super().__init__(methodName)

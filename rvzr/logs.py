@@ -92,8 +92,6 @@ class _LoggingConfig:
         self.__dict__ = self._borg_shared_state
         if not self._borg_shared_state:
             self.update_logging_modes()
-            self.line_ending = '\n' if CONF.multiline_output else ''
-            self.redraw_mode = not CONF.multiline_output
 
     def update_logging_modes(self) -> None:
         """
@@ -105,6 +103,10 @@ class _LoggingConfig:
                 continue
             if mode not in self._all_modes:
                 error(f"Unknown value '{mode}' of config variable 'logging_modes'")
+
+        # Set the output format
+        self.line_ending = '\n' if CONF.multiline_output else ''
+        self.redraw_mode = not CONF.multiline_output
 
         # Set the logging modes
         self.debug = False

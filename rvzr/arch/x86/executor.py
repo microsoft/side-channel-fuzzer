@@ -43,18 +43,17 @@ class X86Executor(Executor):
         super().__init__(enable_mismatch_check_mode)
 
     def _set_vendor_specific_features(self) -> None:
-        km_write("1" if getattr(CONF, 'x86_executor_enable_ssbp_patch') else "0",
+        km_write("1" if CONF.x86_executor_enable_ssbp_patch else "0",
                  "/sys/rvzr_executor/enable_ssbp_patch")
-        km_write("1" if getattr(CONF, 'x86_executor_enable_prefetcher') else "0",
+        km_write("1" if CONF.x86_executor_enable_prefetcher else "0",
                  "/sys/rvzr_executor/enable_prefetcher")
-        km_write("1" if getattr(CONF, 'x86_enable_hpa_gpa_collisions') else "0",
+        km_write("1" if CONF.x86_enable_hpa_gpa_collisions else "0",
                  "/sys/rvzr_executor/enable_hpa_gpa_collisions")
         km_write(str(self._handled_faults_bitmap), "/sys/rvzr_executor/handled_faults")
 
     def _identify_handled_faults(self) -> int:
         handled_faults_bitmap = 0
-        for fault in CONF._handled_faults:  # type: ignore  # pylint: disable=protected-access
-            # justification: FIXME - the type issues are due to bad design of CONF; should be fixed
+        for fault in CONF.get_handled_faults():
             if fault in FAULT_IDS:
                 handled_faults_bitmap |= (1 << FAULT_IDS[fault])
         return handled_faults_bitmap

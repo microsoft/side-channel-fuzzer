@@ -392,7 +392,7 @@ class _X86SandboxPass(Pass):
         elif any(op.width >= 128 for op in mem_operands):
             mask = mask[:-4] + "0" * 4
 
-        if getattr(CONF, 'x86_generator_align_locks'):
+        if CONF.x86_generator_align_locks:
             if "lock" in instr.name or instr.name == "xchg":
                 mask = mask[:-3] + "0" * 3
 

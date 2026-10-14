@@ -69,13 +69,11 @@ def _can_set_reserved() -> bool:
     """
     actors_conf = CONF.get_actors_conf()
     reserved_requested = False
-    for a in actors_conf:
-        if 'reserved_bit' in actors_conf[a]['data_properties'] and \
-           actors_conf[a]['data_properties']['reserved_bit']:
+    for actor in actors_conf.values():
+        if actor['data_properties'].get('reserved_bit', False):
             reserved_requested = True
             break
-        if 'reserved_bit' in actors_conf[a]['data_ept_properties'] and \
-           actors_conf[a]['data_ept_properties']['reserved_bit']:
+        if actor['data_ept_properties'].get('reserved_bit', False):
             reserved_requested = True
             break
     if not reserved_requested:

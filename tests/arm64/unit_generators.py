@@ -152,10 +152,10 @@ class ARM64GeneratorTest(unittest.TestCase):
 
     def test_arm64_asm_parsing_section(self) -> None:
         prev_actors = deepcopy(CONF.get_actors_conf())
-        CONF.get_actors_conf()["guest_1"] = deepcopy(CONF._actor_default)
-        CONF.get_actors_conf()["guest_1"]["name"] = "guest_1"
-        CONF.get_actors_conf()["guest_1"]["mode"] = "guest"
-        CONF.get_actors_conf()["guest_1"]["privilege_level"] = "kernel"
+        guest = CONF.get_actor_template("guest_1")
+        guest["mode"] = "guest"
+        guest["privilege_level"] = "kernel"
+        CONF.get_actors_conf()["guest_1"] = guest
 
         constraints = get_instruction_pool_constraints()
         instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix(), None,
@@ -196,14 +196,16 @@ class ARM64GeneratorTest(unittest.TestCase):
         self.assertEqual(f1.name, ".function_1")
         self.assertEqual(len(f1[0]), 1)
 
-        CONF._actors = prev_actors
+        actors = CONF.get_actors_conf()
+        actors.clear()
+        actors.update(prev_actors)
 
     def test_arm64_asm_parsing_symbols(self) -> None:
         prev_actors = deepcopy(CONF.get_actors_conf())
-        CONF.get_actors_conf()["guest_1"] = deepcopy(CONF._actor_default)
-        CONF.get_actors_conf()["guest_1"]["name"] = "guest_1"
-        CONF.get_actors_conf()["guest_1"]["mode"] = "guest"
-        CONF.get_actors_conf()["guest_1"]["privilege_level"] = "kernel"
+        guest = CONF.get_actor_template("guest_1")
+        guest["mode"] = "guest"
+        guest["privilege_level"] = "kernel"
+        CONF.get_actors_conf()["guest_1"] = guest
 
         constraints = get_instruction_pool_constraints()
         instruction_set = InstructionSet((test_dir / "min_arm64.json").absolute().as_posix(), None,
@@ -223,4 +225,6 @@ class ARM64GeneratorTest(unittest.TestCase):
         self.assertEqual(symbol_table[3], SymbolTableEntry(0, 0x20, 0, 1))  # function_1
         self.assertEqual(symbol_table[4], SymbolTableEntry(1, 0, 0, 2))  # function_2
 
-        CONF._actors = prev_actors
+        actors = CONF.get_actors_conf()
+        actors.clear()
+        actors.update(prev_actors)
