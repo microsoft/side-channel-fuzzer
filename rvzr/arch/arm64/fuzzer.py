@@ -89,16 +89,21 @@ class ARM64Fuzzer(Fuzzer):
         if not CONF.enable_observation_filter:
             return False
 
-        with tempfile.NamedTemporaryFile(delete=False) as fenced:
+        with tempfile.NamedTemporaryFile(suffix=".asm", delete=False) as fenced:
             fenced_name = fenced.name
-        fenced_test_case = _create_fenced_test_case(test_case.asm_path(), fenced_name,
-                                                    self.asm_parser, self.code_gen, self.elf_parser)
         try:
+            fenced_test_case = _create_fenced_test_case(test_case.asm_path(), fenced_name,
+                                                        self.asm_parser, self.code_gen,
+                                                        self.elf_parser)
             self.executor.load_test_case(fenced_test_case)
             fenced_htraces = self.executor.trace_test_case(inputs, reps)
         except IOError:
             return True  # skip the test case if there is an error
-        os.remove(fenced.name)
+        finally:
+            # remove the fenced asm file and the files derived from it by parse_file
+            for path in (fenced_name, fenced_name + ".patched.asm", fenced_name[:-4] + ".o"):
+                if os.path.exists(path):
+                    os.remove(path)
 
         traces_match = True
         for i, _ in enumerate(inputs):

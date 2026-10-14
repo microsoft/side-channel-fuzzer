@@ -950,20 +950,24 @@ class ArchDiffFuzzer(Fuzzer):
             reg_values.append(htrace.get_raw_readings()[0].tolist())
 
         # collect fenced traces
-        with tempfile.NamedTemporaryFile(delete=False) as fenced:
+        with tempfile.NamedTemporaryFile(suffix=".asm", delete=False) as fenced:
             fenced_name = fenced.name
-        fenced_test_case = self._create_fenced_test_case(test_case.asm_path(), fenced_name,
-                                                         self.asm_parser, self.code_gen,
-                                                         self.elf_parser)
-        self.arch_executor.load_test_case(fenced_test_case)
         fenced_reg_values: List[List[int]] = []
         try:
+            fenced_test_case = self._create_fenced_test_case(test_case.asm_path(), fenced_name,
+                                                             self.asm_parser, self.code_gen,
+                                                             self.elf_parser)
+            self.arch_executor.load_test_case(fenced_test_case)
             htraces = self.arch_executor.trace_test_case(inputs, 1)
         except IOError:
             return None
+        finally:
+            # remove the fenced asm file and the files derived from it by parse_file
+            for path in (fenced_name, fenced_name + ".patched.asm", fenced_name[:-4] + ".o"):
+                if os.path.exists(path):
+                    os.remove(path)
         for htrace in htraces:
             fenced_reg_values.append(htrace.get_raw_readings()[0].tolist())
-        os.remove(fenced_name)
 
         for i, input_ in enumerate(inputs):
             if fenced_reg_values[i] == reg_values[i]:
