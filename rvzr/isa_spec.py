@@ -6,6 +6,7 @@ SPDX-License-Identifier: MIT
 """
 from __future__ import annotations
 import json
+import textwrap
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import AbstractSet, Dict, List, NamedTuple, Optional, Any, get_args
@@ -175,6 +176,8 @@ class InstructionSet:
         _set_isa_properties(self)
         _dedup(self)
         _set_categories(self)
+        ISALogger().dbg_dump_pool_coverage(
+            len(self.instructions), len(self.instructions_unfiltered))
 
     def get_return_spec(self) -> InstructionSpec:
         """ Return the instruction spec for the RET instruction on the given architecture """
@@ -255,9 +258,15 @@ def _validate_categories(include_categories: Optional[List[str]],
     unsupported = sorted(set(include_categories) - constraints.supported_categories)
     if unsupported:
         supported = sorted(constraints.supported_categories)
+
+        def _fmt(names: List[str]) -> str:
+            return textwrap.fill(
+                ", ".join(names), width=100, initial_indent="  ", subsequent_indent="  ")
+
         raise ConfigException(
-            f"instruction_categories: {unsupported} not supported by model backend "
-            f"'{CONF.model_backend}' ({CONF.instruction_set}). Supported: {supported}")
+            f"The following instruction_categories are not supported by model backend "
+            f"'{CONF.model_backend}' ({CONF.instruction_set}):\n{_fmt(unsupported)}\n"
+            f"Supported categories:\n{_fmt(supported)}")
 
 
 def _warn_about_empty_categories(isa: InstructionSet,

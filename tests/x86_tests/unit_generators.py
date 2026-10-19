@@ -7,6 +7,7 @@ import tempfile
 import os
 from pathlib import Path
 from copy import deepcopy
+from unittest.mock import patch
 
 from rvzr.arch.x86.generator import X86Generator, _X86Printer, _X86PatchUndefinedFlagsPass, \
     _X86PatchOpcodesPass
@@ -63,7 +64,7 @@ _ALL_CATEGORIES = [
     "CLZERO-CLZERO", "PREFETCHWT1-PREFETCHWT1", "SERIALIZE-SERIALIZE", "BASE-SYSCALL",
     "BASE-SYSRET", "BASE-SEGOP", "BASE-INTERRUPT", "LONGMODE-SYSRET", "PKU-PKU", "PCONFIG-PCONFIG",
     "BASE-IO", "BASE-IOSTRINGOP", "LONGMODE-SYSCALL", "RDPRU-RDPRU", "RDPID-RDPID", "SMAP-SMAP",
-    "UINTR-UINTR, MCOMMIT-MISC", "PTWRITE-PTWRITE", "TBM-TBM", "AVX512EVEX-LOGICAL",
+    "UINTR-UINTR", "MCOMMIT-MISC", "PTWRITE-PTWRITE", "TBM-TBM", "AVX512EVEX-LOGICAL",
     "AVX512EVEX-GFNI", "AVX512EVEX-EXPAND", "AVX512EVEX-DATAXFER", "AVX512EVEX-VFMA",
     "AVX512EVEX-LOGICAL_FP", "AVX512EVEX-VBMI2", "AVX512EVEX-IFMA", "AVX512EVEX-FP16",
     "AVX512EVEX-BROADCAST", "AVX512EVEX-COMPRESS", "AVX512EVEX-AVX512_VBMI", "AVX512EVEX-CONFLICT",
@@ -153,8 +154,9 @@ class X86GeneratorTest(unittest.TestCase):
 
     def test_x86_all_instructions_reduced(self) -> None:
         constraints = _dummy_backend_constraints()
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
-                                         _ALL_CATEGORIES, constraints)
+        with patch("rvzr.isa_spec.warning"):  # many categories are absent from the spec
+            instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
+                                             _ALL_CATEGORIES, constraints)
         self._test_all_instructions(instruction_set)
 
     def test_x86_all_instructions_full(self) -> None:
@@ -162,8 +164,9 @@ class X86GeneratorTest(unittest.TestCase):
             self.skipTest("base.json not available; skipping test.")
 
         constraints = _dummy_backend_constraints()
-        instruction_set = InstructionSet((test_dir / "../../base.json").absolute().as_posix(),
-                                         _ALL_CATEGORIES, constraints)
+        with patch("rvzr.isa_spec.warning"):  # many categories are absent from the spec
+            instruction_set = InstructionSet((test_dir / "../../base.json").absolute().as_posix(),
+                                             _ALL_CATEGORIES, constraints)
         self._test_all_instructions(instruction_set)
 
     def test_x86_asm_parsing_basic(self) -> None:

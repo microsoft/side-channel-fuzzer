@@ -837,6 +837,7 @@ class _SharedX86Model(unittest.TestCase):
             backend=self._backend,
         )
         input_ = self._input_builder.get_default_input()
+        input_[0]['main'][8] = MEM_DEFAULT_VALUE
         ctraces = self._get_trace(obs_clause="ss", test_case=test_case, input_data=[input_])
         self.assertEqual(len(ctraces), 1)
 
@@ -870,6 +871,7 @@ class _SharedX86Model(unittest.TestCase):
             backend=self._backend,
         )
         input_ = self._input_builder.get_default_input()
+        input_[0]['main'][8] = MEM_DEFAULT_VALUE
         ctraces = self._get_trace(obs_clause="ss0", test_case=test_case, input_data=[input_])
         self.assertEqual(len(ctraces), 1)
 

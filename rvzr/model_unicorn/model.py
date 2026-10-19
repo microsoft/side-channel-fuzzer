@@ -478,7 +478,7 @@ class UnicornModel(Model, ABC):
 
         # when a fault is triggered, CPU stores the PC and the fault type
         # on stack - this has to be mirrored at the contract level
-        rsp = self.layout.get_data_addr(DataArea.RSP_INIT, 0)
+        rsp = self.emulator.reg_read(self._uc_target_desc.sp_register)
         self.tracer.observe_mem_access(UC_MEM_WRITE, rsp, 8, errno)
 
         # Possible fault handling scenarios:

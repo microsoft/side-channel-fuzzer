@@ -142,6 +142,8 @@ function arch_unit_tests() {
         echo "-------------"
         python3 -m unittest tests.x86_tests.unit_dr_decoder -v
         echo "-------------"
+        python3 -m unittest tests.x86_tests.unit_fuzzer -v
+        echo "-------------"
         cd - > /dev/null || exit
         # exit
     else

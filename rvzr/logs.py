@@ -621,3 +621,10 @@ class ISALogger:
             return
 
         dbg("isa_spec", f"{instruction.name} ({instruction.category}) filtered out: {reason}")
+
+    def dbg_dump_pool_coverage(self, remaining: int, total: int) -> None:
+        """ Print final instruction pool coverage when ISA filtering debugging is enabled. """
+        if not __debug__ or not self._conf.dbg_isa_filter or not CONF.is_generation_enabled():
+            return
+        coverage = 100 * remaining / total if total else 0.0
+        dbg("isa_spec", f"Instruction Pool coverage: {remaining} / {total} ({coverage:.1f} %)")
