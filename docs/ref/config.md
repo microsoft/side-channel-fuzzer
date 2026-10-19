@@ -169,6 +169,8 @@ This option is helps a lot with readability, but may produce corrupted output wh
         The resulting instruction pool is:
         `all from(instruction_categories) - instruction_blocklist + instruction_allowlist`
 
+        An empty list selects no categories, i.e., the pool consists of `instruction_allowlist` only.
+
     === "Syntax"
         ```yaml
         instruction_categories:

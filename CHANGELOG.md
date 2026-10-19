@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The DynamoRIO and dummy model backends now allow instructions previously restricted by
   Unicorn limitations (e.g., `cmpxchg8b/16b`).
 - Suppressing 64-bit division no longer silently shortens generated programs.
+- An empty `instruction_categories` list now selects no categories (the pool consists of
+  `instruction_allowlist` only). Previously, it selected every category in the ISA spec file,
+  bypassing the model backend's list of supported categories.
 
 ### Deprecated
 

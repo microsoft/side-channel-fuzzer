@@ -92,7 +92,8 @@ class InstList:
         asm_str += "\n.test_case_exit:\n"
 
         constraints = get_instruction_pool_constraints()
-        instruction_set = InstructionSet(min_arm64_path.absolute().as_posix(), None, constraints)
+        instruction_set = InstructionSet(min_arm64_path.absolute().as_posix(),
+                                         CONF.instruction_categories, constraints)
         target_desc = ARM64TargetDesc()
         elf_parser = ELFParser(target_desc)
         asm_parser = ARM64AsmParser(instruction_set, target_desc)

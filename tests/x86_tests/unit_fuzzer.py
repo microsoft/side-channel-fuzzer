@@ -59,8 +59,8 @@ class X86FuzzerTest(unittest.TestCase):
         # the assembly file in a correct way
 
         constraints = get_instruction_pool_constraints()
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
-                                         constraints)
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
+                                         CONF.instruction_categories, constraints)
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(X86TargetDesc())
@@ -99,8 +99,8 @@ class X86FuzzerTest(unittest.TestCase):
         return the fuzzer and the executor mock
         """
         constraints = get_instruction_pool_constraints()
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
-                                         constraints)
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
+                                         CONF.instruction_categories, constraints)
         mock_executor = MagicMock()
         mock_analyser = MagicMock()
         mock_analyser.htraces_are_equivalent.return_value = False

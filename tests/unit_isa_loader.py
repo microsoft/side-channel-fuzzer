@@ -8,7 +8,7 @@ import io
 import os
 import tempfile
 from contextlib import redirect_stdout
-from typing import List, Optional
+from typing import List
 
 from rvzr.config import CONF, ConfigException
 from rvzr.isa_spec import InstructionSet, InstructionPoolConstraints, BlockedInstructionVariant
@@ -90,8 +90,10 @@ variants = """
 ]
 """
 
+VARIANTS_CATEGORIES = ["CATEGORY", "CATEGORY_FP"]
 
-def _load_isa(spec: str, categories: Optional[List[str]],
+
+def _load_isa(spec: str, categories: List[str],
               constraints: InstructionPoolConstraints) -> InstructionSet:
     """ Load an InstructionSet from a JSON string """
     spec_file = tempfile.NamedTemporaryFile("w", delete=False)
@@ -111,7 +113,8 @@ class InstructionSetParserTest(unittest.TestCase):
         with open(spec_file.name, "w") as f:
             f.write(basic)
 
-        instruction_set = InstructionSet(spec_file.name, None, InstructionPoolConstraints.none())
+        instruction_set = InstructionSet(spec_file.name, ["CATEGORY"],
+                                         InstructionPoolConstraints.none())
         spec_file.close()
         os.unlink(spec_file.name)
 
@@ -145,7 +148,8 @@ class InstructionSetParserTest(unittest.TestCase):
         with open(spec_file.name, "w") as f:
             f.write(duplicate)
 
-        instruction_set = InstructionSet(spec_file.name, None, InstructionPoolConstraints.none())
+        instruction_set = InstructionSet(spec_file.name, ["CATEGORY"],
+                                         InstructionPoolConstraints.none())
         spec_file.close()
         os.unlink(spec_file.name)
 
@@ -247,20 +251,20 @@ class InstructionSetFilteringTest(unittest.TestCase):
     def test_blocked_instruction_variants(self) -> None:
         constraints = InstructionPoolConstraints(
             blocked_instruction_variants={BlockedInstructionVariant("vdiv", 64)})
-        isa = _load_isa(variants, None, constraints)
+        isa = _load_isa(variants, VARIANTS_CATEGORIES, constraints)
         widths = {i.operands[0].width for i in isa.instructions if i.name == "vdiv"}
         self.assertEqual(widths, {16, 32})
 
     def test_blocked_xtypes(self) -> None:
         constraints = InstructionPoolConstraints(blocked_xtypes={"f64"})
-        isa = _load_isa(variants, None, constraints)
+        isa = _load_isa(variants, VARIANTS_CATEGORIES, constraints)
         names = {i.name for i in isa.instructions}
         self.assertNotIn("vsqrt", names)
         self.assertIn("vdiv", names)
 
     def test_blocked_registers_removed_from_operands(self) -> None:
         constraints = InstructionPoolConstraints(blocked_registers={"rbx", "eax"})
-        isa = _load_isa(variants, None, constraints)
+        isa = _load_isa(variants, VARIANTS_CATEGORIES, constraints)
         by_width = {i.operands[0].width: i for i in isa.instructions if i.name == "vdiv"}
         self.assertEqual(by_width[64].operands[0].values, ("rax",))
         self.assertNotIn(32, by_width)  # all of its operand values are blocked
@@ -269,7 +273,7 @@ class InstructionSetFilteringTest(unittest.TestCase):
         # setting instruction_blocklist must not disable the built-in constraints
         CONF.instruction_blocklist = ["vsqrt"]
         constraints = InstructionPoolConstraints(blocked_instructions={"vdiv"})
-        isa = _load_isa(variants, None, constraints)
+        isa = _load_isa(variants, VARIANTS_CATEGORIES, constraints)
         names = {i.name for i in isa.instructions}
         self.assertEqual(names, {"vmov"})
 
@@ -287,3 +291,12 @@ class InstructionSetFilteringTest(unittest.TestCase):
         self.assertIn("WARNING", output)
         self.assertIn("MISSING", output)
         self.assertNotIn("'CATEGORY'", output)
+
+    def test_empty_categories_select_nothing(self) -> None:
+        with self.assertRaises(ConfigException):
+            _load_isa(variants, [], InstructionPoolConstraints.none())
+
+    def test_empty_categories_with_allowlist(self) -> None:
+        CONF.instruction_allowlist = ["vmov"]
+        isa = _load_isa(variants, [], InstructionPoolConstraints.none())
+        self.assertEqual({i.name for i in isa.instructions}, {"vmov"})

@@ -84,8 +84,8 @@ class X86GeneratorTest(unittest.TestCase):
     def load_tc(asm_str: str) -> TestCaseProgram:
 
         constraints = get_instruction_pool_constraints()
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
-                                         constraints)
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
+                                         CONF.instruction_categories, constraints)
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(X86TargetDesc())
@@ -171,8 +171,8 @@ class X86GeneratorTest(unittest.TestCase):
 
     def test_x86_asm_parsing_basic(self) -> None:
         constraints = get_instruction_pool_constraints()
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
-                                         constraints)
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
+                                         CONF.instruction_categories, constraints)
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(X86TargetDesc())
@@ -217,8 +217,8 @@ class X86GeneratorTest(unittest.TestCase):
         CONF.get_actors_conf()["guest_1"] = guest
 
         constraints = get_instruction_pool_constraints()
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
-                                         constraints)
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
+                                         CONF.instruction_categories, constraints)
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)
         elf_parser = ELFParser(X86TargetDesc())
@@ -267,8 +267,8 @@ class X86GeneratorTest(unittest.TestCase):
         CONF.get_actors_conf()["guest_1"] = guest
 
         constraints = get_instruction_pool_constraints()
-        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(), None,
-                                         constraints)
+        instruction_set = InstructionSet((test_dir / "min_x86.json").absolute().as_posix(),
+                                         CONF.instruction_categories, constraints)
 
         generator = get_program_generator(CONF.program_generator_seed, instruction_set)
         asm_parser = get_asm_parser(instruction_set)

@@ -127,7 +127,8 @@ class InstList:
         asm_str += "\n".join([x.text for x in self.instructions])
 
         constraints = get_instruction_pool_constraints()
-        instruction_set = InstructionSet(min_x86_path.absolute().as_posix(), None, constraints)
+        instruction_set = InstructionSet(min_x86_path.absolute().as_posix(),
+                                         CONF.instruction_categories, constraints)
         target_desc = X86TargetDesc()
         elf_parser = ELFParser(target_desc)
         asm_parser = X86AsmParser(instruction_set, target_desc)

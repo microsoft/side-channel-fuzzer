@@ -164,7 +164,7 @@ class InstructionSet:
     store_instructions: List[InstructionSpec]
     cond_branches: List[InstructionSpec]
 
-    def __init__(self, filename: str, include_categories: Optional[List[str]],
+    def __init__(self, filename: str, include_categories: List[str],
                  constraints: InstructionPoolConstraints):
         self.constraints = constraints
         _validate_categories(include_categories, constraints)
@@ -250,10 +250,10 @@ def _parse_json_operand(op: Dict[str, Any], parent: InstructionSpec) -> OperandS
     return spec
 
 
-def _validate_categories(include_categories: Optional[List[str]],
+def _validate_categories(include_categories: List[str],
                          constraints: InstructionPoolConstraints) -> None:
     """ Check that all requested categories are supported by the selected model backend """
-    if not include_categories or constraints.supported_categories is None:
+    if constraints.supported_categories is None:
         return
     unsupported = sorted(set(include_categories) - constraints.supported_categories)
     if unsupported:
@@ -269,10 +269,9 @@ def _validate_categories(include_categories: Optional[List[str]],
             f"Supported categories:\n{_fmt(supported)}")
 
 
-def _warn_about_empty_categories(isa: InstructionSet,
-                                 include_categories: Optional[List[str]]) -> None:
+def _warn_about_empty_categories(isa: InstructionSet, include_categories: List[str]) -> None:
     """ Warn when a requested category contributes no instructions """
-    if not include_categories or not CONF.is_generation_enabled():
+    if not CONF.is_generation_enabled():
         return
     present_categories = {inst.category for inst in isa.instructions}
     for category in include_categories:
@@ -283,7 +282,7 @@ def _warn_about_empty_categories(isa: InstructionSet,
                 "instructions are filtered out")
 
 
-def _reduce(isa: InstructionSet, include_categories: Optional[List[str]]) -> None:
+def _reduce(isa: InstructionSet, include_categories: List[str]) -> None:
     """ Remove unsupported instructions and operand values """
 
     def is_supported(spec: InstructionSpec) -> bool:
@@ -298,7 +297,7 @@ def _reduce(isa: InstructionSet, include_categories: Optional[List[str]]) -> Non
         if spec.name in CONF.instruction_allowlist:
             return True
 
-        if include_categories and spec.category not in include_categories:
+        if spec.category not in include_categories:
             logger.dbg_dump_filtering_reason(spec, "category not in include_categories")
             return False
 
@@ -451,8 +450,10 @@ def _set_categories(isa: InstructionSet) -> None:
         CONF.max_successors_per_bb = 1
 
     isa.non_control_flow_specs = [i for i in isa.instructions if not i.is_control_flow]
-    assert isa.non_control_flow_specs, \
-        "The instruction set is insufficient to generate a test case"
+    if not isa.non_control_flow_specs:
+        raise ConfigException(
+            "the instruction pool has no non-control-flow instructions; check "
+            "`instruction_categories`, `instruction_blocklist`, and `instruction_allowlist`")
 
     isa.non_memory_access_specs = \
         [i for i in isa.non_control_flow_specs if not i.has_mem_operand]
