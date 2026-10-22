@@ -103,15 +103,13 @@ _UNICORN_MODEL_CONSTRAINTS: Final[InstructionPoolConstraints] = InstructionPoolC
         "lock cmpxchg8b",
         "cmpxchg16b",
         "lock cmpxchg16b",
-        # false positives: Unicorn may emulate the return value incorrectly
-        "cpuid",
         # causes crash; for cmpsd, only the BASE-STRINGOP variant is affected (the SSE2 variants
         # are removed by the generator's FP-xtype constraint on every backend)
         "cmpps",
         "cmpss",
         "cmppd",
         "cmpsd",
-        # the model initializes only xmm0-7, while mm0-7 stay uninitialized
+        # Unicorn leaves mm0-7 uninitialized; the executor and DR adapter initialize them
         "movq2dq",
         "movdq2q",
         # incorrect emulation
@@ -259,6 +257,7 @@ _GENERATOR_CONSTRAINTS = InstructionPoolConstraints.merge([
         # complex control flow is not supported by the random generator
         blocked_categories={"BASE-UNCOND_BR", "BASE-CALL", "BASE-RET"},
         blocked_instructions={
+            "cpuid",  # known source of FP-mismatches between executor and models
             "enterw",  # requires complex instrumentation
             "enter",  # requires complex instrumentation
             "leavew",  # requires complex instrumentation

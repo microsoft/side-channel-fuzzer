@@ -8808,6 +8808,55 @@
     ],
     "implicit_operands": []
   },
+  {"name": "movntdqa", "category": "SSE4-SSE", "is_control_flow": false,
+    "operands": [
+      {"type_": "REG", "values": ["xmm1"], "src": false, "dest": true, "width": 128},
+      {"type_": "MEM", "values": [], "src": true, "dest": false, "width": 128}
+    ],
+    "implicit_operands": []
+  },
+  {"name": "pmovmskb", "category": "SSE2-SSE", "is_control_flow": false,
+    "operands": [
+      {"type_": "REG", "values": ["eax", "edi"], "src": false, "dest": true, "width": 32},
+      {"type_": "REG", "values": ["xmm0", "xmm1"], "src": true, "dest": false, "width": 128}
+    ],
+    "implicit_operands": []
+  },
+  {"name": "vpmovmskb", "category": "AVX2-AVX2", "is_control_flow": false,
+    "operands": [
+      {"type_": "REG", "values": ["eax", "edi"], "src": false, "dest": true, "width": 32},
+      {"type_": "REG", "values": ["ymm0", "ymm1"], "src": true, "dest": false, "width": 256}
+    ],
+    "implicit_operands": []
+  },
+  {"name": "vmovdqu", "category": "AVX-DATAXFER", "is_control_flow": false,
+    "operands": [
+      {"type_": "REG", "values": ["ymm0", "ymm1"], "src": false, "dest": true, "width": 256},
+      {"type_": "REG", "values": ["ymm0", "ymm1"], "src": true, "dest": false, "width": 256}
+    ],
+    "implicit_operands": []
+  },
+  {"name": "vmovdqu", "category": "AVX-DATAXFER", "is_control_flow": false,
+    "operands": [
+      {"type_": "REG", "values": ["ymm0", "ymm1"], "src": false, "dest": true, "width": 256},
+      {"type_": "MEM", "values": [], "src": true, "dest": false, "width": 256}
+    ],
+    "implicit_operands": []
+  },
+  {"name": "vmovdqu", "category": "AVX-DATAXFER", "is_control_flow": false,
+    "operands": [
+      {"type_": "MEM", "values": [], "src": false, "dest": true, "width": 256},
+      {"type_": "REG", "values": ["ymm0", "ymm1"], "src": true, "dest": false, "width": 256}
+    ],
+    "implicit_operands": []
+  },
+  {"name": "movq", "category": "SSE2-DATAXFER", "is_control_flow": false,
+    "operands": [
+      {"type_": "REG", "values": ["xmm0", "xmm1"], "src": false, "dest": true, "width": 128},
+      {"type_": "REG", "values": ["rax", "rbx"], "src": true, "dest": false, "width": 64}
+    ],
+    "implicit_operands": []
+  },
   {"name": "movhps", "category": "SSE-DATAXFER", "is_control_flow": false,
     "operands": [
       {"type_": "REG", "xtype": "f32", "values": ["xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "xmm8", "xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15"], "src": false, "dest": true, "width": 128},

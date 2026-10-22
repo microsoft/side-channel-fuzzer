@@ -694,7 +694,9 @@ class Conf:
                 option='actors')
         for entry in value:
             key, val = _unpack_single_key_map(entry)
-            if key not in allowed:
+            property_key: Optional[PagePropertyName] = next(
+                (candidate for candidate in allowed if candidate == key), None)
+            if property_key is None:
                 raise ConfigException(
                     f"unknown page property `{key}` in `{prop}` of actor `{actor_name}`\n"
                     f"Allowed properties: {', '.join(allowed)}",
@@ -703,7 +705,7 @@ class Conf:
                 raise ConfigException(
                     f"page property `{key}` of actor `{actor_name}` must be a boolean",
                     option='actors')
-            target[key] = val
+            target[property_key] = val
 
     def _parse_str_list(self, value: object, prop: str, actor_name: str) -> List[str]:
         """ Validate that an actor property value is a list of strings """

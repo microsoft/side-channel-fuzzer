@@ -8,11 +8,13 @@ import unittest
 from abc import ABC
 from typing import Any, Dict, List, Tuple, Union
 
+import numpy as np
+
 from rvzr.model_unicorn.model import X86UnicornModel
 from rvzr.model_dynamorio.model import DynamoRIOModel
 from rvzr.tc_components.test_case_data import InputData, InputTaint
 from rvzr.traces import CTrace
-from rvzr.factory import get_model
+from rvzr.factory import get_data_generator, get_model
 from rvzr.config import CONF
 from rvzr.logs import update_logging_after_config_change
 
@@ -210,6 +212,90 @@ class X86DRTaintTrackerTest(_SharedTaintTrackerTest):
 
     def setUp(self) -> None:
         self._skip_if_not_installed()
+
+    def test_simd_taints_preserve_all_qwords(self) -> None:
+        cases = [("pmovmskb edi, xmm1", qword) for qword in range(2)]
+        cases += [("vpmovmskb edi, ymm1", qword) for qword in range(4)]
+        for extract_mask, qword in cases:
+            with self.subTest(extract_mask=extract_mask, qword=qword):
+                instructions = [
+                    Inst(extract_mask, 0, 0, 0),
+                    Inst(f"shr rdi, {qword * 8}", 0, 0, 0),
+                    Inst("and rdi, 0x1fff", 0, 0, 0),
+                    Inst("mov rax, qword ptr [r14 + rdi]", 0, 0, 0),
+                ]
+                test_case = InstList(instructions, backend=self._backend)
+                original = InputData()
+                original.linear_view(0)[:] = 0
+                changed = original.copy()
+                changed[0]['simd'][4 + qword] = 0x80
+                model = self._get_model()
+                model.load_test_case(test_case.to_test_case())
+                traces, taints = model.trace_test_case_with_taints([original, changed], nesting=1)
+                self.assertNotEqual(traces[0], traces[1])
+                self.assertTrue(taints[0][0]['simd'][4 + qword])
+
+                boosted = get_data_generator(42).generate_boosted([original], [taints[0]], 2)
+                self.assertEqual(model.trace_test_case(boosted, nesting=1), [traces[0], traces[0]])
+
+    def test_partial_simd_write_preserves_upper_alias_dependencies(self) -> None:
+        instructions = [
+            Inst("vmovdqu ymm0, ymm1", 0, 0, 0),
+            Inst("movq xmm0, rax", 0, 0, 0),
+            Inst("vmovdqu ymmword ptr [r14], ymm0", 0, 0, 0),
+            Inst("mov rcx, qword ptr [r14]", 0, 0, 0),
+            Inst("and rcx, 0x1fff", 0, 0, 0),
+            Inst("mov rdx, qword ptr [r14 + rcx]", 0, 0, 0),
+            Inst("mov rbx, qword ptr [r14 + 24]", 0, 0, 0),
+            Inst("and rbx, 0x1fff", 0, 0, 0),
+            Inst("mov rcx, qword ptr [r14 + rbx]", 0, 0, 0),
+        ]
+        test_case = InstList(instructions, backend=self._backend)
+        input_ = InputData()
+        input_.linear_view(0)[:] = 0
+        _, taints = self._trace_with_taints(test_case, [input_])
+        self.assertTrue(taints[0][0]['gpr'][RAX])
+        self.assertTrue(taints[0][0]['simd'][7])
+
+    def test_non_temporal_load_propagates_memory_dependencies(self) -> None:
+        instructions = [
+            Inst("movntdqa xmm1, xmmword ptr [r14]", 0, 0, 0),
+            Inst("pmovmskb edi, xmm1", 0, 0, 0),
+            Inst("and rdi, 0x1fff", 0, 0, 0),
+            Inst("mov rax, qword ptr [r14 + rdi]", 0, 0, 0),
+        ]
+        test_case = InstList(instructions, backend=self._backend)
+        original = InputData()
+        original.linear_view(0)[:] = 0
+        changed = original.copy()
+        changed[0]['main'][1] = 0x80
+        model = self._get_model()
+        model.load_test_case(test_case.to_test_case())
+        traces, taints = model.trace_test_case_with_taints([original, changed], nesting=1)
+        self.assertNotEqual(traces[0], traces[1])
+        self.assertTrue(taints[0][0]['main'][0])
+        self.assertTrue(taints[0][0]['main'][1])
+        boosted = get_data_generator(42).generate_boosted([original], [taints[0]], 2)
+        self.assertEqual(model.trace_test_case(boosted, nesting=1), [traces[0], traces[0]])
+
+    def test_batch_taints_match_isolated_inputs(self) -> None:
+        instructions = [
+            Inst("and rax, 0x1ff8", 0, 0, 0),
+            Inst("mov rbx, qword ptr [r14 + rax]", 0, 0, 0),
+            Inst("and rbx, 0x1ff8", 0, 0, 0),
+            Inst("mov rcx, qword ptr [r14 + rbx]", 0, 0, 0),
+        ]
+        test_case = InstList(instructions, backend=self._backend)
+        first = InputData()
+        first.linear_view(0)[:] = 0
+        second = first.copy()
+        second[0]['gpr'][RAX] = 16
+        for inputs in ([first, second], [second, first]):
+            _, batch_taints = self._trace_with_taints(test_case, inputs)
+            for input_, batch_taint in zip(inputs, batch_taints):
+                _, isolated_taints = self._trace_with_taints(test_case, [input_])
+                np.testing.assert_array_equal(
+                    batch_taint.linear_view(0), isolated_taints[0].linear_view(0))
 
 
 class UnicornTaintTrackerTest(_SharedTaintTrackerTest):

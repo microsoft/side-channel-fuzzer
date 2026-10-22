@@ -111,6 +111,15 @@ class Decoder
             dr_abort();
         }
 
+        // MOVNTDQA is a load; normalize DynamoRIO's reversed memory/register operands.
+        if (instr_get_opcode(instr) == OP_movntdqa && instr_num_srcs(instr) == 1 &&
+            instr_num_dsts(instr) == 1 && opnd_is_memory_reference(instr_get_dst(instr, 0))) {
+            const opnd_t memory = instr_get_dst(instr, 0);
+            const opnd_t reg = instr_get_src(instr, 0);
+            instr_set_src(instr, 0, memory);
+            instr_set_dst(instr, 0, reg);
+        }
+
         // Cache the next_pc
         cached_entry.next_pc = next_pc;
 

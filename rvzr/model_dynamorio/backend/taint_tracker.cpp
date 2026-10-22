@@ -36,6 +36,7 @@ const unsigned MAX_REG_ID = 255;
 // Memory tracking granularity and alignment
 const uint64_t MEM_TRACKING_GRANULARITY = 8; // Track memory at 8-byte granularity
 const uint64_t QWORD_ALIGN_MASK = ~0x7ULL;   // Mask for 8-byte alignment (0xFFFFFFFFFFFFFFF8)
+const uint64_t SIMD_REGISTER_SIZE = 32;      // XMM/YMM aliases share a 256-bit dependency label
 
 /// @brief Mapping between DynamoRIO EFLAGS bits and our register IDs
 struct FlagMapping {
@@ -63,7 +64,7 @@ static const std::unordered_set<int> OVERRIDE_OPCODES = {
 // Helper Functions
 // =================================================================================================
 
-/// @brief Normalize register to its 64-bit equivalent for tracking
+/// @brief Normalize GPRs to 64 bits and SIMD aliases to their shared YMM register
 /// @param reg The register ID
 /// @return Normalized register ID
 static inline reg_id_t normalize_reg(reg_id_t reg)
@@ -71,6 +72,9 @@ static inline reg_id_t normalize_reg(reg_id_t reg)
     // For GPRs, normalize to 64-bit version
     if (reg_is_gpr(reg)) {
         return reg_resize_to_opsz(reg, OPSZ_8);
+    }
+    if (reg_is_strictly_xmm(reg) || reg_is_strictly_ymm(reg)) {
+        return reg_resize_to_opsz(reg, OPSZ_32);
     }
     return reg;
 }
@@ -206,11 +210,8 @@ static bool is_override_instruction(const TrackedInstruction *tracked_inst, Deco
         return false;
     }
 
-    // Check that the destination register is 64-bit or more
+    // SIMD labels include upper lanes preserved by partial writes, so retain their dependencies.
     const reg_id_t dest_reg = *tracked_inst->dest_regs.begin();
-    if (reg_is_xmm(dest_reg) || reg_is_ymm(dest_reg)) {
-        return true;
-    }
     if (reg_is_gpr(dest_reg)) {
         instr_t *instr =
             decoder->get_decoded_instr(tracked_inst->dc, (byte *)tracked_inst->instr_obs.pc);
@@ -234,6 +235,12 @@ static bool label_is_reg(tracked_label_t label) { return label <= MAX_REG_ID; }
 void TaintTracker::enable()
 {
     DR_ASSERT(not tracking_in_progress);
+    dependencies.reg.clear();
+    dependencies.mem.clear();
+    checkpoints.clear();
+    tainted_labels.clear();
+    pending_taint.clear();
+    current_instruction.reset();
     enabled = true;
     tracking_in_progress = true;
     sandbox_base = 0; // Will be set on first instruction
@@ -560,13 +567,17 @@ void TaintTracker::store_taints()
     // Write all collected labels to the output file
     for (const auto &label : tainted_labels) {
         uint64_t value = 0;
+        uint64_t size = MEM_TRACKING_GRANULARITY;
         if (label_is_reg(label)) {
-            auto dr_reg_id = static_cast<reg_id_t>(label);
+            const auto dr_reg_id = static_cast<reg_id_t>(label);
             const RVZRRegId reg_id = dr_reg_id_to_rvzr_reg_id(dr_reg_id);
             if (reg_id == RVZRRegId::RVZR_REG_IGNORED) {
                 continue; // Do not store taints of ignored registers
             }
             value = static_cast<uint64_t>(reg_id);
+            if (reg_is_xmm(dr_reg_id) || reg_is_ymm(dr_reg_id)) {
+                size = SIMD_REGISTER_SIZE;
+            }
         } else {
             // Memory address: convert from absolute to sandbox-relative
             DR_ASSERT_MSG(sandbox_base != 0,
@@ -574,7 +585,11 @@ void TaintTracker::store_taints()
             value = label - sandbox_base;
         }
 
-        stream.write(reinterpret_cast<const char *>(&value), sizeof(uint64_t));
+        // Each output entry protects one qword of the input during boosting.
+        for (uint64_t offset = 0; offset < size; offset += MEM_TRACKING_GRANULARITY) {
+            const uint64_t entry = value + offset;
+            stream.write(reinterpret_cast<const char *>(&entry), sizeof(entry));
+        }
     }
 
     // Write end-of-taint marker

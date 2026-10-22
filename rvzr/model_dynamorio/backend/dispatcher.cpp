@@ -303,7 +303,7 @@ static void dispatch_callback(uint64_t opcode, uint64_t pc, uint64_t has_mem_ref
     void *drcontext = dr_get_current_drcontext();
     dr_mcontext_t mc = {sizeof(mc), DR_MC_ALL};
     dr_get_mcontext(drcontext, &mc);
-    uint64_t mc_before = mc_fingerprint(&mc);
+    const uint64_t mc_before = mc_fingerprint(&mc);
 
     // create an instruction instance for the current instruction
     const instr_obs_t instr = {
